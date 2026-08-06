@@ -1,0 +1,131 @@
+# Intent
+
+<!-- decapod:declared-capabilities:start -->
+
+## Declared Capability Surfaces
+
+- `event-driven`
+- `persistent-state`
+- `public-api`
+
+<!-- decapod:declared-capabilities:end -->
+## Product Outcome
+Kaite provides a portable, production-ready AI execution environment that makes
+Buildkite a first-class orchestration layer for model training, evaluation,
+inference, and agent workloads. The first slice standardizes the container
+entrypoint, toolchain, accelerator selection, health/metrics surfaces, and
+collector-friendly logs across CPU, Apple Silicon arm64, NVIDIA, AMD, and
+Intel images.
+
+## What This Project Is
+Kaite is a Go-based container runtime for self-hosted Buildkite AI agents.
+The container is the workload environment: Buildkite dispatches jobs to the
+agent, and the image tag selects the target hardware contract.
+
+Key operating facts:
+- **Primary languages**: Go, Dockerfile, shell, YAML
+- **Detected surfaces**: Buildkite agent supervisor, Docker Bake image matrix,
+  Docker launcher, Kubernetes Job template, Prometheus/DogStatsD/OTel adapters
+
+## Product View
+```mermaid
+flowchart LR
+  U[AI Platform Operator] --> P[Kaite image and launcher]
+  P --> O[User-visible Outcome]
+  P --> G[Proof Gates]
+  G --> E[Evidence Artifacts]
+```
+
+## Inferred Baseline
+- Repository: kaite
+- Product type: self-hosted AI runtime image
+- Primary languages: Go
+- Detected surfaces: runtime, image matrix, deployment templates, CI
+
+## Scope
+| Area | In Scope | Proof Surface |
+|---|---|---|
+| Core workflow | Start a Buildkite agent in the selected hardware image | Go tests, container smoke tests, deployment examples |
+| Data contracts | Pass Buildkite, hardware, and observability inputs explicitly | INTERFACES.md and manifest review |
+| Delivery quality | Build and validate the image matrix without embedding secrets | VALIDATION.md and CI bake graph |
+
+## Non-Goals (Falsifiable)
+| Non-goal | How to falsify |
+|---|---|
+| Feature creep beyond the primary outcome | Any PR adds capability not tied to outcome criteria |
+| Shipping without evidence | Missing validation artifacts for promoted changes |
+| Ambiguous ownership boundaries | Missing owner/system-of-record in interfaces |
+
+## Constraints
+- Technical: runtime, dependency, and topology boundaries are explicit.
+- Operational: deployment, rollback, and incident ownership are defined.
+- Security/compliance: sensitive data handling and authz are mandatory.
+
+## Acceptance Criteria (must be objectively testable)
+- [ ] CPU, Apple Silicon arm64, NVIDIA, AMD, and Intel image targets are versioned and reproducible from the Bake definition.
+- [ ] Every published target declares its supported Linux platform; GPU images remain limited to platforms supported by their vendor runtime.
+- [ ] Image CI builds and runs `kaite smoke` for every target on a matching host class before the workflow can pass.
+- [ ] The default entrypoint validates the Buildkite token, forwards standard agent options, and exits with the child status.
+- [ ] KAITE_O11Y selects none, Prometheus, Datadog, or Splunk/OTel behavior without changing workload commands.
+- [ ] Docker and Kubernetes launch paths pass environment inputs and accelerator resources without committing secrets.
+- [ ] Go tests, bake-plan validation, CI, documentation, and Decapod validation are present.
+
+## Epistemic Custody Fields
+
+### Active Assumptions
+- [x] Buildkite cluster tokens are supplied at runtime through an environment variable or mounted file.
+- [x] Vendor collectors/agents own Datadog and Splunk credentials; Kaite emits compatible runtime signals.
+- [ ] Exact accelerator base-image availability is verified by image CI and may require operator overrides.
+- [x] Ubuntu/glibc is the common image contract; Apple Silicon is Linux arm64 CPU execution, not Apple Metal inside a container.
+
+### Confidence & Risk Level
+- **Confidence**: Medium (Rationale: runtime contract and local tests are concrete; accelerator builds depend on upstream base images.)
+- **Risk**: Medium (Impact of wrong assumptions: a hardware image or collector integration may require a target-specific override.)
+
+### Measured vs Inferred Facts
+| Fact | Source (Provenance) | Type (Measured/Inferred) |
+|---|---|---|
+| Buildkite start accepts token, tags, config, and Kubernetes exec options | Buildkite agent CLI contract | Measured from official docs |
+| Five hardware image targets select base images, platforms, and agent tags | docker-bake.hcl | Inferred from repository source |
+| O11y modes keep credentials outside the image | runtime and deployment docs | Inferred from repository source |
+
+### Unresolved Contradictions
+- [ ] List any evidence that conflicts with current assumptions or intent.
+
+### Deferred Questions
+- [ ] Should future releases publish framework-specific images separately from the base hardware images?
+- [ ] Which collector deployment is canonical for each operator's Kubernetes platform?
+
+### Stop Conditions
+- [ ] Explicit conditions under which the agent should stop and ask for help.
+
+### Proof Required Before Completion
+- [ ] GOCACHE=/tmp/kaite-gocache go test ./... passes.
+- [ ] docker buildx bake --print renders all five targets.
+- [ ] GitHub Actions routes CPU, arm64, NVIDIA, AMD, and Intel work to explicit host labels rather than relying on emulation for device proof.
+- [ ] decapod validate passes after generated artifacts and living specs are refreshed.
+
+## Tradeoffs Register
+| Decision | Benefit | Cost | Review Trigger |
+|---|---|---|---|
+| Simplicity vs extensibility | Faster iteration | Potential rework | Feature set expands |
+| Strict gates vs dev speed | Higher confidence | More upfront discipline | Lead time regressions |
+
+## First Implementation Slice
+- [x] Start Kaite as a Buildkite agent with runtime-selected hardware and o11y.
+- [x] Define token, tag, metrics, collector, Docker, and Kubernetes input contracts.
+- [x] Postpone framework-specific training images, checkpoint stores, and vendor collector deployment automation.
+
+## Open Questions (with decision deadlines)
+| Question | Owner | Deadline | Decision |
+|---|---|---|---|
+| Which interfaces are versioned at launch? | TBD | YYYY-MM-DD | |
+| Which non-functional target is hardest to hit? | TBD | YYYY-MM-DD | |
+
+<!-- decapod:codebase-attestation:start -->
+## Codebase Attestation
+
+- Repository signal fingerprint: `a053aa0c26e4414a6e960dc383ebef7f73fa571a2621bda5c1e51f4a6041d62e`
+- Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Refreshed from the current codebase by `decapod specs.refresh`
+<!-- decapod:codebase-attestation:end -->

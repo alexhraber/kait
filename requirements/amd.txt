@@ -1,0 +1,4 @@
+# ROCm 6.2.4 image contract.
+--index-url https://download.pytorch.org/whl/rocm6.2.4
+torch==2.6.0
+torchvision==0.21.0

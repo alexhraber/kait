@@ -1,0 +1,24 @@
+env:
+  KAITE_O11Y: prometheus
+
+steps:
+  - label: ":mag: CPU unit tests"
+    command: "kaite smoke"
+    agents:
+      queue: ai
+      kaite: "true"
+      kaite.hardware: cpu
+
+  - label: ":cuda: NVIDIA inference"
+    command: "kaite smoke"
+    agents:
+      queue: ai
+      kaite: "true"
+      kaite.hardware: nvidia
+
+  - label: ":apple: Apple Silicon CPU evaluation"
+    command: "kaite smoke"
+    agents:
+      queue: ai
+      kaite: "true"
+      kaite.hardware: apple

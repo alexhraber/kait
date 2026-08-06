@@ -1,0 +1,11 @@
+.git
+.decapod
+!.decapod/
+!.decapod/managed/
+!.decapod/managed/decapod
+target
+bin
+*.log
+__pycache__
+.pytest_cache
+node_modules

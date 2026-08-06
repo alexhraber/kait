@@ -1,0 +1,39 @@
+schema_version = "1.0.0"
+
+[init]
+specs = true
+ci = true
+diagram_style = "ascii"
+entrypoints = [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "CODEX.md",
+]
+
+[repo]
+product_name = "kaite"
+product_summary = "Provide a portable, production-ready AI execution environment that makes Buildkite a first-class orchestration layer for model training, evaluation, inference, and agent workloads. By standardizing the runtime, tooling, observability, checkpointing, and artifact flow inside a reusable open-source image, Kaite enables teams to run sophisticated AI workloads across any compatible GPU, cluster, or compute environment with greater consistency, visibility, and operational control."
+architecture_direction = "infra"
+done_criteria = "Kaite is done when it publishes reproducible, versioned CPU and GPU container images that can register as Buildkite agents or run as Buildkite job environments; includes validated AI tooling, accelerator detection, telemetry, checkpointing, artifact handling, and graceful process supervision; successfully executes reference workflows for model training, evaluation, inference, and agent workloads; and provides automated builds, security scans, compatibility tests, documentation, and examples sufficient for a team to deploy it without modifying the base image."
+base_branch = "main"
+primary_languages = ["Go"]
+external_tracker = false
+container_workspaces = true
+backend = "local"
+
+[governance]
+protected_paths = []
+approval_categories = ["destructive_operations"]
+
+[proof]
+commands = []
+
+[custody]
+isolation = "container"
+
+[tracker]
+provider = "decapod"
+
+[context]
+declared_sources = ["AGENTS.md"]

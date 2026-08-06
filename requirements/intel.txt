@@ -1,0 +1,5 @@
+# Intel oneAPI Base Toolkit 2025.0.1, Ubuntu 22.04, and Python 3.11 XPU contract.
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
+torch==2.5.1+cxx11.abi
+torchvision==0.20.1+cxx11.abi
+intel-extension-for-pytorch==2.5.10+xpu

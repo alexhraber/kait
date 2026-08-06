@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kaite-agent
+  labels:
+    app.kubernetes.io/name: kaite
+    app.kubernetes.io/component: buildkite-agent
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kaite
+        app.kubernetes.io/component: buildkite-agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: kaite
+          image: ghcr.io/alexhraber/kaite:cpu
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9090
+          env:
+            - name: BUILDKITE_AGENT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: buildkite-agent
+                  key: token
+            - name: BUILDKITE_AGENT_TAGS
+              value: kaite=true,kaite.hardware=cpu,kaite.o11y=prometheus
+            - name: BUILDKITE_AGENT_QUEUE
+              value: ai
+            - name: BUILDKITE_AGENT_DISCONNECT_AFTER_JOB
+              value: "true"
+            - name: KAITE_HARDWARE
+              value: cpu
+            - name: KAITE_O11Y
+              value: prometheus
+            - name: KAITE_METRICS_ADDR
+              value: 0.0.0.0:9090
+            - name: OTEL_SERVICE_NAME
+              value: kaite
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: kaite-observability
+                  key: otlp-endpoint
+                  optional: true
+          resources:
+            requests:
+              cpu: "1"
+              memory: 4Gi
+            limits:
+              cpu: "4"
+              memory: 16Gi
+          volumeMounts:
+            - name: builds
+              mountPath: /buildkite/builds
+      volumes:
+        - name: builds
+          emptyDir: {}
