@@ -61,8 +61,9 @@ if [[ -n "${BUILDKITE_AGENT_TOKEN_FILE:-}" ]]; then
   args+=(--volume "${BUILDKITE_AGENT_TOKEN_FILE}:${BUILDKITE_AGENT_TOKEN_FILE}:ro")
 fi
 
+command=()
 if [[ -n "${KAITE_CONTAINER_COMMAND:-}" ]]; then
-  args+=("${KAITE_CONTAINER_COMMAND}")
+  command+=("${KAITE_CONTAINER_COMMAND}")
 fi
 
 case "${hardware}" in
@@ -73,4 +74,4 @@ case "${hardware}" in
   *) echo "unsupported KAITE_HARDWARE=${hardware}" >&2; exit 2 ;;
 esac
 
-exec docker run "${args[@]}" "${image}"
+exec docker run "${args[@]}" "${image}" "${command[@]}"
