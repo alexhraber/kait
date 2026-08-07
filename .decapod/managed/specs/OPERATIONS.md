@@ -13,6 +13,12 @@ Kaite runs as a long-lived self-hosted agent or a one-shot Kubernetes Job.
 Docker hosts and Kubernetes node pools select the image tag and device
 resources; the Buildkite queue selects where work is dispatched.
 
+Semantic-tag publication uses the matching native GitHub host for each active
+image: CPU is built on `ubuntu-24.04` for `linux/amd64`, and Apple is built on
+`ubuntu-24.04-arm` for `linux/arm64`. Verification may use emulation only to
+inspect the already-published Apple image; release publication does not rely on
+QEMU to build an active image.
+
 ## Container Launch Wrapper
 `deploy/docker/run.sh` places runtime flags and environment bindings before the
 image reference, then places `KAITE_CONTAINER_COMMAND` after the image. This
@@ -113,7 +119,7 @@ vendor device runtime.
 <!-- decapod:codebase-attestation:start -->
 ## Codebase Attestation
 
-- Repository signal fingerprint: `877e66d244d32c9b5767465870b51ed52a23cf42e56c3c0b99bd519406969527`
+- Repository signal fingerprint: `cbee96c4be43cf806d232241a1410fff73ac802e59b68fbbcf848ecc7868cb27`
 - Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
