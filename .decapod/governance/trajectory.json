@@ -17,25 +17,50 @@
     ".decapod/governance/trajectory.json",
     ".decapod/governance/validation.json"
   ],
-  "inspected_files": [],
+  "inspected_files": [
+    ".github/workflows/release-images.yml",
+    "deploy/docker/run.sh"
+  ],
   "modified_files": [
     ".decapod/governance/trajectory.json",
-    ".decapod/governance/validation.json"
+    ".decapod/governance/validation.json",
+    ".decapod/managed/specs/OPERATIONS.md",
+    "deploy/docker/run.sh"
   ],
   "declared_commands": [
-    "decapod validate"
+    "GOCACHE=/tmp/kaite-gocache go test ./...",
+    "PATH=/tmp:/home/arx/.npm-global/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/arx/.codex/tmp/arg0/codex-arg0xF6qX2:/home/arx/.rustup/toolchains/1.96.1-x86_64-unknown-linux-gnu/bin:/home/arx/.opencode/bin:/home/arx/.local/bin:/home/arx/.npm-global/bin:/home/arx/bin:/run/wrappers/bin:/home/arx/.nix-profile/bin:/nix/profile/bin:/home/arx/.local/state/nix/profile/bin:/etc/profiles/per-user/arx/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:/nix/store/hnan7l0v68sahyxbazz5y358prz253d1-binutils-wrapper-2.44/bin:/nix/store/igqx4mxax0a3l8rzi3akmrzwi1lvqgw2-hyprland-qtutils-0.1.5/bin:/nix/store/1hzczc3l6axcdvkbyq5v1avk25j4nzv7-pciutils-3.14.0/bin:/nix/store/6ikkxfms757m551yq8bh714q0zpysrhq-pkgconf-wrapper-2.4.3/bin:/nix/store/yznkp69km88xpaxdhn5l80jsciqqjrrc-ghostty-1.3.1/bin:/home/arx/.cargo/bin KAITE_CONTAINER_COMMAND=smoke KAITE_HARDWARE=apple KAITE_IMAGE=example/kaite:test ./deploy/docker/run.sh",
+    "bash -n deploy/docker/run.sh",
+    "decapod validate",
+    "go vet ./..."
   ],
   "tool_calls": [],
   "checks": [
     {
       "name": "decapod validate",
       "status": "passed"
+    },
+    {
+      "name": "docker-wrapper-smoke",
+      "status": "passed"
+    },
+    {
+      "name": "go-test",
+      "status": "passed"
+    },
+    {
+      "name": "go-vet",
+      "status": "passed"
     }
   ],
   "evidence": [
+    "go-test-log",
+    "go-vet-log",
     "validation epoch ve_34a9a21247756002 completed with zero failures",
     "validation epoch ve_462ff4ace0bf618a completed with zero failures",
-    "validation epoch ve_55a1cfa0f2f098f4 completed with zero failures"
+    "validation epoch ve_55a1cfa0f2f098f4 completed with zero failures",
+    "validation epoch ve_5f3389e0e9cd22c9 completed with zero failures",
+    "wrapper-argv-output"
   ],
   "shortcut_risk_signals": [],
   "unresolved_assumptions": [],
@@ -46,7 +71,7 @@
     "shortcut_risk": "supported",
     "completion_proof": "supported"
   },
-  "artifact_hash": "sha256:c9fc161eb59f7a4840a02720b8f373fcea993631736198f729978f3892558d4b",
+  "artifact_hash": "sha256:572a922daed215c9296eef3a7f6fb699e4db80d8368d552642dd2c7799a44d41",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
@@ -114,6 +139,20 @@
       {
         "sequence": 8,
         "event_id": "event:8",
+        "intent_id": "intent:validation_01KZDDXE4AA56HD25V39BZCSQC",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:validation_01KZDDXE4AA56HD25V39BZCSQC"
+      },
+      {
+        "sequence": 9,
+        "event_id": "event:9",
+        "intent_id": "intent:validation_01KZDDXE4AA56HD25V39BZCSQC",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:validation_01KZDDXE4AA56HD25V39BZCSQC"
+      },
+      {
+        "sequence": 10,
+        "event_id": "event:10",
         "intent_id": "intent:validation_01KZDDXE4AA56HD25V39BZCSQC",
         "kind": "trajectory_step_recorded",
         "detail": "trajectory:validation_01KZDDXE4AA56HD25V39BZCSQC"
@@ -219,12 +258,56 @@
             ],
             "validation_findings": [],
             "custody_event_id": "event:8"
+          },
+          {
+            "sequence": 9,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json"
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_5f3389e0e9cd22c9 completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:9"
+          },
+          {
+            "sequence": 10,
+            "action": "validation",
+            "command": "bash -n deploy/docker/run.sh",
+            "scope": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json"
+            ],
+            "observations": [
+              "deploy/docker/run.sh",
+              ".github/workflows/release-images.yml",
+              "deploy/docker/run.sh",
+              ".decapod/managed/specs/OPERATIONS.md",
+              "wrapper-argv-output",
+              "go-test-log",
+              "go-vet-log"
+            ],
+            "proof_refs": [
+              "docker-wrapper-smoke",
+              "go-test",
+              "go-vet"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:10"
           }
         ]
       }
     },
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 8
+    "next_sequence": 10
   }
 }
