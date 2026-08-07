@@ -14,6 +14,7 @@
 - `secrets-handling`
 
 <!-- decapod:declared-capabilities:end -->
+
 ## Product Outcome
 Kaite provides a portable, production-ready AI execution environment that makes
 Buildkite a first-class orchestration layer for model training, evaluation,
@@ -132,9 +133,10 @@ flowchart LR
 | Which non-functional target is hardest to hit? | TBD | YYYY-MM-DD | |
 
 <!-- decapod:codebase-attestation:start -->
+
 ## Codebase Attestation
 
-- Repository signal fingerprint: `cbee96c4be43cf806d232241a1410fff73ac802e59b68fbbcf848ecc7868cb27`
-- Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

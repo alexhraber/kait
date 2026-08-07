@@ -19,6 +19,14 @@ image: CPU is built on `ubuntu-24.04` for `linux/amd64`, and Apple is built on
 inspect the already-published Apple image; release publication does not rely on
 QEMU to build an active image.
 
+Release promotion is a two-stage workflow. A push to `main` runs Release Please,
+which creates or updates the release PR for ordinary merged changes. Merging
+that release PR creates the semantic tag and GitHub release. Because a tag
+created with `GITHUB_TOKEN` does not start a second workflow, the promotion job
+explicitly dispatches `release-images.yml` against the created tag. That image
+workflow then builds, smoke-tests, and publishes the active images; it never
+resolves the release from a moving `main` ref.
+
 ## Container Launch Wrapper
 `deploy/docker/run.sh` places runtime flags and environment bindings before the
 image reference, then places `KAITE_CONTAINER_COMMAND` after the image. This
@@ -117,9 +125,10 @@ vendor device runtime.
 <!-- decapod:capability-overlay:persistent-state:end -->
 
 <!-- decapod:codebase-attestation:start -->
+
 ## Codebase Attestation
 
-- Repository signal fingerprint: `cbee96c4be43cf806d232241a1410fff73ac802e59b68fbbcf848ecc7868cb27`
-- Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

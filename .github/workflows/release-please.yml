@@ -1,0 +1,42 @@
+name: Release PR
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Create or update release PR
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Create or update release PR
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # GitHub intentionally does not start another workflow for a tag created
+      # with GITHUB_TOKEN. Dispatch against the exact tag after Release Please
+      # has created the release so image publication cannot follow main by
+      # accident.
+      - name: Dispatch tagged image release
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          gh workflow run release-images.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$TAG_NAME" \
+            -f version="$TAG_NAME" \
+            -f publish_stable=true \
+            -f enable_accelerators=false

@@ -1,27 +1,23 @@
 {
   "schema_version": "1.0.0",
-  "title": "Initial Kaite Buildkite AI runtime",
-  "intent": "Publish active CPU and Apple images from their matching native GitHub runners; keep accelerator paths inactive, and use emulation only for post-publish inspection when necessary.",
+  "title": "Release promotion and GHCR publication",
+  "intent": "After a normal pull request merges to main, maintain a Release Please release PR. When that release PR merges, create the semantic tag and GitHub release, then dispatch the tagged image workflow so active CPU and Apple images are built, smoke-tested, and published to GHCR. Keep NVIDIA, AMD, and Intel paths inactive. Update the README Decapod badge to v0.96.15.",
   "state": "APPROVED",
   "todo_ids": [
-    "code_01kzddj4bm7ze62p"
+    "code_01kzdjmnnfz0946t"
   ],
   "proof_hooks": [
-    "yq eval '.' .github/workflows/release-images.yml; GOCACHE=/tmp/kaite-gocache go test ./...; go vet ./...; decapod validate --refresh-specs"
+    "yq eval \".\" .github/workflows/release-please.yml .github/workflows/release-images.yml; GOCACHE=/tmp/kaite-gocache go test ./...; GOCACHE=/tmp/kaite-gocache go vet ./...; decapod validate --refresh-specs"
   ],
   "unknowns": [],
-  "human_questions": [
-    "Which additional native accelerator host pools will be approved before enabling their manual release jobs?"
-  ],
+  "human_questions": [],
   "stop_conditions": [],
   "unresolved_contradictions": [],
-  "deferred_questions": [
-    "Which matching accelerator hosts and runner labels will be approved before enabling NVIDIA, AMD, or Intel CI and release paths?"
-  ],
+  "deferred_questions": [],
   "constraints": {
     "forbidden_paths": [],
     "file_touch_budget": null
   },
   "phases": [],
-  "updated_at": "1786086894Z"
+  "updated_at": "1786088537Z"
 }
