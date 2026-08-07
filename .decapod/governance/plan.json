@@ -1,16 +1,18 @@
 {
   "schema_version": "1.0.0",
   "title": "Initial Kaite Buildkite AI runtime",
-  "intent": "Keep CPU and Apple arm64 as the active Kaite delivery targets; retain NVIDIA, AMD, and Intel image definitions as inactive manual opt-ins until matching host runners are deliberately registered, and publish only active images on semantic tags.",
+  "intent": "Correct the Docker launcher argv contract so runtime options precede the image and one-shot commands follow it; preserve inactive accelerator release gating while making published CPU and Apple smoke checks exercise the same wrapper.",
   "state": "APPROVED",
   "todo_ids": [
-    "fend_01kzchk41zgq2mhx"
+    "code_01kzddj4bm7ze62p"
   ],
   "proof_hooks": [
-    "GOCACHE=/tmp/kaite-gocache go test ./..."
+    "bash -n deploy/docker/run.sh; PATH=/tmp:/home/arx/.npm-global/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/arx/.codex/tmp/arg0/codex-arg0xF6qX2:/home/arx/.rustup/toolchains/1.96.1-x86_64-unknown-linux-gnu/bin:/home/arx/.opencode/bin:/home/arx/.local/bin:/home/arx/.npm-global/bin:/home/arx/bin:/run/wrappers/bin:/home/arx/.nix-profile/bin:/nix/profile/bin:/home/arx/.local/state/nix/profile/bin:/etc/profiles/per-user/arx/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:/nix/store/hnan7l0v68sahyxbazz5y358prz253d1-binutils-wrapper-2.44/bin:/nix/store/igqx4mxax0a3l8rzi3akmrzwi1lvqgw2-hyprland-qtutils-0.1.5/bin:/nix/store/1hzczc3l6axcdvkbyq5v1avk25j4nzv7-pciutils-3.14.0/bin:/nix/store/6ikkxfms757m551yq8bh714q0zpysrhq-pkgconf-wrapper-2.4.3/bin:/nix/store/yznkp69km88xpaxdhn5l80jsciqqjrrc-ghostty-1.3.1/bin:/home/arx/.cargo/bin KAITE_CONTAINER_COMMAND=smoke KAITE_HARDWARE=apple KAITE_IMAGE=example/kaite:test ./deploy/docker/run.sh; GOCACHE=/tmp/kaite-gocache go test ./...; go vet ./...; decapod validate --refresh-specs"
   ],
   "unknowns": [],
-  "human_questions": [],
+  "human_questions": [
+    "Which additional executor-specific launch wrappers should receive native smoke coverage after this Docker argv fix?"
+  ],
   "stop_conditions": [],
   "unresolved_contradictions": [],
   "deferred_questions": [
@@ -21,5 +23,5 @@
     "file_touch_budget": null
   },
   "phases": [],
-  "updated_at": "1786083301Z"
+  "updated_at": "1786085763Z"
 }
