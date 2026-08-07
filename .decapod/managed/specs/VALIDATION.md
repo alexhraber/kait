@@ -12,6 +12,8 @@ locally per hardware target.
 - Static checks: GOCACHE=/tmp/kaite-gocache go vet ./...
 - Formatting: gofmt -w cmd/kaite/*.go
 - Image contract: docker buildx bake --print
+- Dependency contract: `yq eval "." requirements/*.txt` plus native CPU and
+  Apple `*-slim` and `*-full` image builds and smoke checks
 - Governance: decapod validate
 
 ## Proof Surfaces
@@ -27,6 +29,7 @@ locally per hardware target.
 | Architecture and interface drift | decapod validate | Gate output |
 | Go tests pass | GOCACHE=/tmp/kaite-gocache go test ./... | CI and local logs |
 | Bake graph valid | docker buildx bake --print | CI output |
+| Active dependency layers resolve | native CPU/Apple slim/full Docker builds | Image build logs and variant-aware `kaite smoke` |
 | Docs/specs current | README and living-spec diff | PR diff |
 | Security scan | image scanner on tagged builds | Scanner reports |
 
@@ -41,7 +44,8 @@ locally per hardware target.
 ## Regression Guardrails
 - A missing Buildkite token must continue to fail closed.
 - Child exit codes must remain observable and non-zero when the job fails.
-- Hardware tags must match the image target and KAITE_HARDWARE value.
+- Hardware and variant tags must match the image target, KAITE_HARDWARE, and
+  KAITE_VARIANT values.
 - O11y mode changes must not require vendor credentials in the Kaite image.
 
 ## CI Flow
@@ -50,8 +54,9 @@ locally per hardware target.
 3. A push to `main` creates or updates the Release Please PR.
 4. Merging the Release Please PR creates the semantic tag and GitHub release;
    the release workflow explicitly dispatches image publication for that tag.
-5. The tagged image workflow builds active targets on native hosts, runs the
-   container smoke contract, and publishes versioned and stable GHCR tags.
+5. The tagged image workflow builds active `*-slim` and `*-full` targets on
+   native hosts, runs the container smoke contract for each variant, and
+   publishes versioned and stable GHCR tags.
 6. Image scanning and signing remain promotion requirements before production use.
 
 The release graph is proven by checking both workflow definitions: Release
@@ -59,6 +64,13 @@ Please owns the main-to-release-PR and release-PR-to-tag transitions, while
 `release-images.yml` owns the immutable tagged build, smoke, and GHCR boundary.
 The explicit dispatch is required because GitHub does not recursively trigger
 workflows from resources created with `GITHUB_TOKEN`.
+
+The dependency proof must show that the hardware manifest is installed before
+the shared AI/ML layers, that the active CPU and Apple manifests resolve Linux
+`amd64` and `arm64` wheels, that slim and full image tags are distinct, and that
+the variant-aware image smoke command imports the advertised full toolchain.
+Accelerator-only packages are not counted as portable proof until their
+matching inactive host jobs are deliberately enabled.
 
 ## Failure Recovery
 - A Go failure is fixed and rerun with the same cache override.
@@ -133,7 +145,7 @@ workflows from resources created with `GITHUB_TOKEN`.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

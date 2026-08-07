@@ -24,7 +24,7 @@ ordering, checkout, command execution, artifact upload, and job status.
 |---|---|---|
 | BUILDKITE_AGENT_TOKEN | Agent mode | Cluster token passed only to the child process |
 | BUILDKITE_AGENT_TOKEN_FILE | Agent mode alternative | Uses Buildkite file token syntax for a mounted secret |
-| BUILDKITE_AGENT_TAGS | Optional | Explicit tags; otherwise Kaite adds hardware and o11y tags |
+| BUILDKITE_AGENT_TAGS | Optional | Explicit tags; otherwise Kaite adds hardware, variant, and o11y tags |
 | BUILDKITE_AGENT_NAME | Optional | Forwarded to Buildkite agent start |
 | BUILDKITE_AGENT_CONFIG | Optional | Forwarded config path |
 | BUILDKITE_KUBERNETES_EXEC | Optional | Enables Buildkite Kubernetes log/exit transport |
@@ -33,6 +33,7 @@ ordering, checkout, command execution, artifact upload, and job status.
 | Input | Values | Default |
 |---|---|---|
 | KAITE_HARDWARE | cpu, apple, nvidia, amd, intel | cpu |
+| KAITE_VARIANT | slim, full | slim |
 | KAITE_O11Y | none, prometheus, datadog, splunk | none |
 | KAITE_RUN_MODE | agent, command | agent |
 | KAITE_COMMAND | shell command | unset; required in command mode |
@@ -49,15 +50,17 @@ ordering, checkout, command execution, artifact upload, and job status.
 
 | Target | Base and platform | Status | Hardware behavior |
 |---|---|---|---|
-| cpu | Ubuntu 24.04; linux/amd64 and linux/arm64 | active | Common CPU toolchain |
-| apple | Ubuntu 24.04; linux/arm64 | active | Apple Silicon CPU execution; no Metal device passthrough |
-| nvidia | CUDA 12.6.3; linux/amd64 | inactive | NVIDIA runtime and CUDA PyTorch wheels |
-| amd | ROCm 6.2.4; linux/amd64 | inactive | AMD runtime and ROCm PyTorch wheels |
-| intel | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04; linux/amd64 | inactive | Python 3.11, Intel XPU runtime, and extension wheels |
+| cpu-slim / cpu-full | Ubuntu 24.04; linux/amd64 and linux/arm64 | active | CPU PyTorch runtime; full adds AI/ML layers |
+| apple-slim / apple-full | Ubuntu 24.04; linux/arm64 | active | Apple Silicon CPU execution; full adds AI/ML layers; no Metal passthrough |
+| nvidia-slim / nvidia-full | CUDA 12.6.3; linux/amd64 | inactive | NVIDIA runtime; full adds AI/ML layers |
+| amd-slim / amd-full | ROCm 6.2.4; linux/amd64 | inactive | AMD runtime; full adds AI/ML layers |
+| intel-slim / intel-full | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04; linux/amd64 | inactive | Python 3.11 and Intel XPU runtime; full adds AI/ML layers |
 
 Inactive accelerator targets are available for deliberate local or manual
 workflow use. Their matching `kaite-nvidia`, `kaite-amd`, and `kaite-intel`
 runner labels do not participate in ordinary CI or semantic-tag releases.
+Canonical image tags use `<tag>-<hardware>-<variant>`, for example
+`v1.2.3-apple-full`; stable aliases use `apple-full` and `apple-slim`.
 
 ## Data Ownership
 - Buildkite is the source of truth for job state, logs, artifacts, and metadata.
@@ -111,7 +114,7 @@ runner labels do not participate in ordinary CI or semantic-tag releases.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

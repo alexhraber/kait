@@ -13,6 +13,7 @@ RUN test -n "${TARGETOS}" -a -n "${TARGETARCH}" \
 FROM ${BASE_IMAGE} AS runtime
 ARG BUILDKITE_AGENT_VERSION=3.123.1
 ARG KAITE_HARDWARE=cpu
+ARG KAITE_VARIANT=slim
 ARG KAITE_PYTHON=python3
 ARG KAITE_EXTRA_PYTHON_PACKAGES=""
 ARG TARGETARCH
@@ -23,6 +24,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     BUILDKITE_AGENT_HOOKS_PATH=/buildkite/hooks \
     BUILDKITE_BUILD_PATH=/buildkite/builds \
     KAITE_HARDWARE=${KAITE_HARDWARE} \
+    KAITE_VARIANT=${KAITE_VARIANT} \
     KAITE_O11Y=none \
     PATH=/opt/kaite/venv/bin:/buildkite/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     PYTHONUNBUFFERED=1
@@ -56,11 +58,21 @@ RUN mkdir -p /buildkite/bin /buildkite/builds /buildkite/hooks /opt/kaite /tmp/b
     && rm -rf /tmp/buildkite-agent
 
 COPY requirements /opt/kaite/requirements
-RUN "${KAITE_PYTHON}" -m venv /opt/kaite/venv \
-    && /opt/kaite/venv/bin/pip install --no-cache-dir --upgrade pip \
-    && /opt/kaite/venv/bin/pip install --no-cache-dir -r /opt/kaite/requirements/base.txt \
-    && if [ -f "/opt/kaite/requirements/${KAITE_HARDWARE}.txt" ]; then /opt/kaite/venv/bin/pip install --no-cache-dir -r "/opt/kaite/requirements/${KAITE_HARDWARE}.txt"; fi \
-    && if [ -n "${KAITE_EXTRA_PYTHON_PACKAGES}" ]; then /opt/kaite/venv/bin/pip install --no-cache-dir ${KAITE_EXTRA_PYTHON_PACKAGES}; fi
+RUN set -eux; \
+    "${KAITE_PYTHON}" -m venv /opt/kaite/venv; \
+    /opt/kaite/venv/bin/pip install --no-cache-dir --upgrade pip; \
+    case "${KAITE_VARIANT}" in \
+      slim) requirements_files="slim.txt ${KAITE_HARDWARE}.txt" ;; \
+      full) requirements_files="slim.txt ${KAITE_HARDWARE}.txt base.txt training.txt orchestration.txt serving.txt" ;; \
+      *) echo "unsupported KAITE_VARIANT: ${KAITE_VARIANT}" >&2; exit 1 ;; \
+    esac; \
+    for requirements_file in ${requirements_files}; do \
+      test -f "/opt/kaite/requirements/${requirements_file}" || { echo "missing requirements manifest: ${requirements_file}" >&2; exit 1; }; \
+      /opt/kaite/venv/bin/pip install --no-cache-dir -r "/opt/kaite/requirements/${requirements_file}"; \
+    done; \
+    if [ -n "${KAITE_EXTRA_PYTHON_PACKAGES}" ]; then \
+      /opt/kaite/venv/bin/pip install --no-cache-dir ${KAITE_EXTRA_PYTHON_PACKAGES}; \
+    fi
 
 COPY --from=kaite-build /out/kaite /usr/local/bin/kaite
 RUN chmod +x /usr/local/bin/kaite \

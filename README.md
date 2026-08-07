@@ -14,16 +14,20 @@ Create a Buildkite cluster agent token and run the published CPU image:
 ~~~bash
 BUILDKITE_AGENT_TOKEN=replace-me \
 KAITE_HARDWARE=cpu \
+KAITE_VARIANT=slim \
 KAITE_O11Y=prometheus \
-  KAITE_IMAGE=ghcr.io/alexhraber/kaite:cpu \
+  KAITE_IMAGE=ghcr.io/alexhraber/kaite:cpu-slim \
   ./deploy/docker/run.sh
 ~~~
 
-Set `KAITE_HARDWARE=apple` for the active arm64 CPU image. The NVIDIA, AMD, and
-Intel image contracts remain available for deliberate host testing, but their
-automatic CI/release paths and `kaite-nvidia`, `kaite-amd`, and `kaite-intel`
-runner labels are currently inactive. The launcher still adds accelerator
-device flags when an operator explicitly selects one of those images.
+Set `KAITE_HARDWARE=apple` and use `kaite:apple-slim` or `kaite:apple-full` for
+an active arm64 CPU image. Every image contains the pinned Buildkite agent;
+`slim` and `full` select the Python/tooling footprint around that agent. The
+NVIDIA, AMD, and Intel image contracts remain available for deliberate host
+testing, but their automatic CI/release paths and `kaite-nvidia`, `kaite-amd`,
+and `kaite-intel` runner labels are currently inactive. The launcher still adds
+accelerator device flags when an operator explicitly selects one of those
+images.
 
 ## Image catalog
 
@@ -32,14 +36,22 @@ to GHCR:
 
 | Image | Platform and runtime contract | Status | Included framework option |
 | --- | --- | --- | --- |
-| `ghcr.io/alexhraber/kaite:cpu` | Ubuntu 24.04, native `linux/amd64` release image | active | Common Python toolchain |
-| `ghcr.io/alexhraber/kaite:apple` | Ubuntu 24.04, `linux/arm64` CPU for Apple Silicon hosts | active | Common Python toolchain |
-| `ghcr.io/alexhraber/kaite:nvidia` | CUDA 12.6.3, `linux/amd64` | inactive | PyTorch CUDA 12.6 wheels |
-| `ghcr.io/alexhraber/kaite:amd` | ROCm 6.2.4, `linux/amd64` | inactive | PyTorch ROCm 6.2.4 wheels |
-| `ghcr.io/alexhraber/kaite:intel` | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04, `linux/amd64` | inactive | Python 3.11 + Intel Extension for PyTorch XPU |
+| `ghcr.io/alexhraber/kaite:cpu-slim` | Ubuntu 24.04, `linux/amd64` and `linux/arm64` | active | Agent plus compact Python and CPU PyTorch |
+| `ghcr.io/alexhraber/kaite:cpu-full` | Ubuntu 24.04, `linux/amd64` and `linux/arm64` | active | Agent plus complete portable AI/ML toolchain |
+| `ghcr.io/alexhraber/kaite:apple-slim` | Ubuntu 24.04, `linux/arm64` for Apple Silicon hosts | active | Agent plus compact Python and CPU PyTorch |
+| `ghcr.io/alexhraber/kaite:apple-full` | Ubuntu 24.04, `linux/arm64` for Apple Silicon hosts | active | Agent plus complete portable AI/ML toolchain |
+| `ghcr.io/alexhraber/kaite:nvidia-slim` | CUDA 12.6.3, `linux/amd64` | inactive | Agent plus CUDA PyTorch contract |
+| `ghcr.io/alexhraber/kaite:nvidia-full` | CUDA 12.6.3, `linux/amd64` | inactive | Agent plus complete CUDA AI/ML toolchain |
+| `ghcr.io/alexhraber/kaite:amd-slim` | ROCm 6.2.4, `linux/amd64` | inactive | Agent plus ROCm PyTorch contract |
+| `ghcr.io/alexhraber/kaite:amd-full` | ROCm 6.2.4, `linux/amd64` | inactive | Agent plus complete ROCm AI/ML toolchain |
+| `ghcr.io/alexhraber/kaite:intel-slim` | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04, `linux/amd64` | inactive | Agent plus Intel XPU contract |
+| `ghcr.io/alexhraber/kaite:intel-full` | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04, `linux/amd64` | inactive | Agent plus complete Intel AI/ML toolchain |
 
-Versioned active releases use tags such as `v1.2.3-cpu` (native amd64) and
-`v1.2.3-apple` (native arm64).
+Versioned releases use the canonical form `kaite:<tag>-<hardware>-<variant>`,
+such as `v1.2.3-cpu-slim`, `v1.2.3-cpu-full`, `v1.2.3-apple-slim`, and
+`v1.2.3-apple-full`. Stable aliases are `cpu-slim`, `cpu-full`, `apple-slim`,
+and `apple-full`; the older `cpu` and `apple` aliases continue to point at
+`slim` for compatibility.
 Accelerator tags are only produced by an explicit opt-in workflow run.
 `docker-bake.hcl` is the source of truth for the image matrix and can build
 the same targets locally:
@@ -47,7 +59,10 @@ the same targets locally:
 ~~~bash
 make build-plan
 make build-cpu
+make build-slim
+make build-full
 make build-all
+make build-all-full
 # Explicitly opt in to inactive accelerator targets.
 make build-all-accelerators
 ~~~
@@ -55,6 +70,17 @@ make build-all-accelerators
 On a matching accelerator host, run `deploy/docker/smoke.sh` to verify device
 visibility and the selected framework without a Buildkite token. The script
 uses the same Docker device flags as the agent launcher.
+
+## AI/ML toolchain
+
+Both variants include the Go supervisor, pinned Buildkite agent, Python
+environment, and selected hardware runtime. `*-slim` adds the compact data
+science foundation and hardware-specific PyTorch wheels. `*-full` adds the
+broader data/science layer, Hugging Face training stack, Ray/MLflow/W&B
+orchestration, and FastAPI/Gradio/Uvicorn serving tools. DeepSpeed,
+bitsandbytes, FlashAttention, s3fs, and vLLM remain explicit
+`KAITE_EXTRA_PYTHON_PACKAGES` operator extras because their native or cloud
+client contracts are not portable defaults.
 
 All images intentionally use Ubuntu/glibc so the Buildkite agent, Python
 wheels, and vendor runtimes share one Linux base. The Go supervisor is static,
@@ -70,6 +96,8 @@ Buildkite cluster, waits for matching work, and runs each step in the image.
 Required inputs are:
 
 - `BUILDKITE_AGENT_TOKEN`, or `BUILDKITE_AGENT_TOKEN_FILE` for a mounted secret.
+- `KAITE_VARIANT` (`slim` or `full`) and `KAITE_HARDWARE` select the image
+  contract; the image tag should use the matching `<tag>-<hardware>-<variant>`.
 - `BUILDKITE_AGENT_QUEUE` for the Buildkite queue and
   `BUILDKITE_AGENT_TAGS` for capability targeting. Kaite supplies `kaite=true`,
   `kaite.hardware`, and `kaite.o11y` tags when none are given.
@@ -132,6 +160,10 @@ dispatches the image workflow against that immutable tag. The active CPU and
 Apple images are built on native hosts, smoke-tested, and uploaded to GHCR with
 provenance and SBOM attestations. NVIDIA, AMD, and Intel remain inactive unless
 an operator explicitly enables the manual workflow on matching hosts.
+
+The `release-please.yml` job requires the repository setting “Allow GitHub
+Actions to create and approve pull requests” enabled for `GITHUB_TOKEN`, along
+with the workflow’s contents, issues, and pull-request write permissions.
 
 Image CI is host-matrixed and every active target runs `kaite smoke`: CPU uses
 `ubuntu-24.04` and Apple uses native `ubuntu-24.04-arm`. The

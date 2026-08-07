@@ -1,0 +1,4 @@
+# Common local and cluster-facing model serving interfaces.
+fastapi==0.141.1
+gradio==6.22.0
+uvicorn[standard]==0.52.1
