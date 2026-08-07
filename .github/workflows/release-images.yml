@@ -35,7 +35,7 @@ jobs:
         include:
           - hardware: cpu
             runner: ubuntu-24.04
-            platforms: linux/amd64,linux/arm64
+            platforms: linux/amd64
             base_image: ubuntu:24.04
             python_bin: python3
           - hardware: apple
@@ -62,10 +62,6 @@ jobs:
           publish_stable="${INPUT_PUBLISH_STABLE:-true}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "publish_stable=$publish_stable" >> "$GITHUB_OUTPUT"
-
-      - name: Set up QEMU for CPU multi-platform release
-        if: matrix.hardware == 'cpu'
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

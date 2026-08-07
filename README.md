@@ -32,13 +32,14 @@ to GHCR:
 
 | Image | Platform and runtime contract | Status | Included framework option |
 | --- | --- | --- | --- |
-| `ghcr.io/alexhraber/kaite:cpu` | Ubuntu 24.04, `linux/amd64` and `linux/arm64` | active | Common Python toolchain |
+| `ghcr.io/alexhraber/kaite:cpu` | Ubuntu 24.04, native `linux/amd64` release image | active | Common Python toolchain |
 | `ghcr.io/alexhraber/kaite:apple` | Ubuntu 24.04, `linux/arm64` CPU for Apple Silicon hosts | active | Common Python toolchain |
 | `ghcr.io/alexhraber/kaite:nvidia` | CUDA 12.6.3, `linux/amd64` | inactive | PyTorch CUDA 12.6 wheels |
 | `ghcr.io/alexhraber/kaite:amd` | ROCm 6.2.4, `linux/amd64` | inactive | PyTorch ROCm 6.2.4 wheels |
 | `ghcr.io/alexhraber/kaite:intel` | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04, `linux/amd64` | inactive | Python 3.11 + Intel Extension for PyTorch XPU |
 
-Versioned active releases use tags such as `v1.2.3-cpu` and `v1.2.3-apple`.
+Versioned active releases use tags such as `v1.2.3-cpu` (native amd64) and
+`v1.2.3-apple` (native arm64).
 Accelerator tags are only produced by an explicit opt-in workflow run.
 `docker-bake.hcl` is the source of truth for the image matrix and can build
 the same targets locally:
