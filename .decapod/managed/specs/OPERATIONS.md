@@ -5,7 +5,8 @@
   pool.
 - Dashboards should cover agent starts/exits, health, and job throughput.
 - Rollback is an image-tag change and queue drain.
-- Capacity guardrails are defined per accelerator class.
+- Capacity guardrails are defined per accelerator class; accelerator queues are
+  inactive until their matching host pools are deliberately enabled.
 
 ## Deployment Model
 Kaite runs as a long-lived self-hosted agent or a one-shot Kubernetes Job.
@@ -54,17 +55,22 @@ container logs with their node agent or OpenTelemetry Collector.
 - Post-incident: add a reference job or validation case for the failure mode.
 
 ## Rollout and Recovery
-- Publish a new immutable version tag.
+- Publish a new immutable version tag; ordinary semantic-tag releases contain
+  the active CPU and Apple images only.
 - Start one canary agent per hardware queue.
 - Verify health, agent registration, and a reference job.
 - Roll the queue to the new image after the canary is healthy.
 - Repoint the queue to the prior image tag if startup, health, or job behavior
   regresses.
 
+To activate NVIDIA, AMD, or Intel delivery, manually enable the accelerator
+workflow path only after registering the corresponding `kaite-*` runner and
+vendor device runtime.
+
 <!-- decapod:codebase-attestation:start -->
 ## Codebase Attestation
 
-- Repository signal fingerprint: `a053aa0c26e4414a6e960dc383ebef7f73fa571a2621bda5c1e51f4a6041d62e`
+- Repository signal fingerprint: `dff6fa2af071e116fb753ac55f5d10dd10bba726a15e2018e567c80dba7ffd30`
 - Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

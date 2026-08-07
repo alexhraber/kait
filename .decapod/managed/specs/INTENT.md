@@ -20,7 +20,10 @@ Intel images.
 ## What This Project Is
 Kaite is a Go-based container runtime for self-hosted Buildkite AI agents.
 The container is the workload environment: Buildkite dispatches jobs to the
-agent, and the image tag selects the target hardware contract.
+agent, and the image tag selects the target hardware contract. CPU and Apple
+arm64 are the active delivery targets for now; NVIDIA, AMD, and Intel remain
+explicit image contracts but their CI, release, and `kaite-*` runner paths are
+inactive until matching hosts are intentionally enabled.
 
 Key operating facts:
 - **Primary languages**: Go, Dockerfile, shell, YAML
@@ -64,7 +67,8 @@ flowchart LR
 ## Acceptance Criteria (must be objectively testable)
 - [ ] CPU, Apple Silicon arm64, NVIDIA, AMD, and Intel image targets are versioned and reproducible from the Bake definition.
 - [ ] Every published target declares its supported Linux platform; GPU images remain limited to platforms supported by their vendor runtime.
-- [ ] Image CI builds and runs `kaite smoke` for every target on a matching host class before the workflow can pass.
+- [ ] Image CI builds and runs `kaite smoke` for every active target on a matching host class before the workflow can pass.
+- [ ] NVIDIA, AMD, and Intel jobs remain inactive on ordinary pushes and tags, with explicit manual opt-in required when matching hosts are available.
 - [ ] The default entrypoint validates the Buildkite token, forwards standard agent options, and exits with the child status.
 - [ ] KAITE_O11Y selects none, Prometheus, Datadog, or Splunk/OTel behavior without changing workload commands.
 - [ ] Docker and Kubernetes launch paths pass environment inputs and accelerator resources without committing secrets.
@@ -102,7 +106,7 @@ flowchart LR
 ### Proof Required Before Completion
 - [ ] GOCACHE=/tmp/kaite-gocache go test ./... passes.
 - [ ] docker buildx bake --print renders all five targets.
-- [ ] GitHub Actions routes CPU, arm64, NVIDIA, AMD, and Intel work to explicit host labels rather than relying on emulation for device proof.
+- [ ] GitHub Actions routes active CPU and arm64 work to native hosts; accelerator work is routed to explicit host labels only after the inactive manual path is enabled, rather than relying on emulation for device proof.
 - [ ] decapod validate passes after generated artifacts and living specs are refreshed.
 
 ## Tradeoffs Register
@@ -125,7 +129,7 @@ flowchart LR
 <!-- decapod:codebase-attestation:start -->
 ## Codebase Attestation
 
-- Repository signal fingerprint: `a053aa0c26e4414a6e960dc383ebef7f73fa571a2621bda5c1e51f4a6041d62e`
+- Repository signal fingerprint: `dff6fa2af071e116fb753ac55f5d10dd10bba726a15e2018e567c80dba7ffd30`
 - Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

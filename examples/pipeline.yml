@@ -9,16 +9,17 @@ steps:
       kaite: "true"
       kaite.hardware: cpu
 
-  - label: ":cuda: NVIDIA inference"
-    command: "kaite smoke"
-    agents:
-      queue: ai
-      kaite: "true"
-      kaite.hardware: nvidia
-
   - label: ":apple: Apple Silicon CPU evaluation"
     command: "kaite smoke"
     agents:
       queue: ai
       kaite: "true"
       kaite.hardware: apple
+
+# Inactive until a matching accelerator host is deliberately enabled:
+# - label: ":cuda: NVIDIA inference"
+#   command: "kaite smoke"
+#   agents:
+#     queue: ai
+#     kaite: "true"
+#     kaite.hardware: nvidia

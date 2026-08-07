@@ -45,10 +45,12 @@ because their pinned vendor bases and framework wheels are amd64 contracts.
 musl is not an equivalent option for these images: it would require separate
 Python wheels, vendor libraries, and validation.
 
-Image delivery is host-matrixed. CI builds and runs `kaite smoke` on native
-CPU, arm64, NVIDIA, AMD, and Intel hosts; the accelerator runner labels are
-explicit inputs to the workflow so a successful build cannot substitute a
-device-free boot check for real accelerator validation.
+Image delivery is host-matrixed. Active CI builds and runs `kaite smoke` on
+native CPU and arm64 hosts. NVIDIA, AMD, and Intel image definitions and their
+`kaite-nvidia`, `kaite-amd`, and `kaite-intel` runner labels are retained as
+inactive manual opt-ins until matching accelerator hosts are registered; a
+successful active release therefore cannot accidentally queue work on absent
+GPU infrastructure.
 
 ## Strongest Existing Primitives
 - Go standard-library supervisor with no runtime library dependencies.
@@ -151,7 +153,7 @@ structured logs. The orchestrator owns restart and rollback.
 <!-- decapod:codebase-attestation:start -->
 ## Codebase Attestation
 
-- Repository signal fingerprint: `a053aa0c26e4414a6e960dc383ebef7f73fa571a2621bda5c1e51f4a6041d62e`
+- Repository signal fingerprint: `dff6fa2af071e116fb753ac55f5d10dd10bba726a15e2018e567c80dba7ffd30`
 - Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

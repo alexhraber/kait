@@ -19,24 +19,27 @@ KAITE_O11Y=prometheus \
   ./deploy/docker/run.sh
 ~~~
 
-Set `KAITE_HARDWARE=apple`, `nvidia`, `amd`, or `intel` for the matching image;
-the launcher adds accelerator device flags where Linux exposes them and
-forwards the Buildkite, metrics, and collector settings.
+Set `KAITE_HARDWARE=apple` for the active arm64 CPU image. The NVIDIA, AMD, and
+Intel image contracts remain available for deliberate host testing, but their
+automatic CI/release paths and `kaite-nvidia`, `kaite-amd`, and `kaite-intel`
+runner labels are currently inactive. The launcher still adds accelerator
+device flags when an operator explicitly selects one of those images.
 
 ## Image catalog
 
 The release workflow publishes versioned images and stable hardware aliases
 to GHCR:
 
-| Image | Platform and runtime contract | Included framework option |
-| --- | --- | --- |
-| `ghcr.io/alexhraber/kaite:cpu` | Ubuntu 24.04, `linux/amd64` and `linux/arm64` | Common Python toolchain |
-| `ghcr.io/alexhraber/kaite:apple` | Ubuntu 24.04, `linux/arm64` CPU for Apple Silicon hosts | Common Python toolchain |
-| `ghcr.io/alexhraber/kaite:nvidia` | CUDA 12.6.3, `linux/amd64` | PyTorch CUDA 12.6 wheels |
-| `ghcr.io/alexhraber/kaite:amd` | ROCm 6.2.4, `linux/amd64` | PyTorch ROCm 6.2.4 wheels |
-| `ghcr.io/alexhraber/kaite:intel` | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04, `linux/amd64` | Python 3.11 + Intel Extension for PyTorch XPU |
+| Image | Platform and runtime contract | Status | Included framework option |
+| --- | --- | --- | --- |
+| `ghcr.io/alexhraber/kaite:cpu` | Ubuntu 24.04, `linux/amd64` and `linux/arm64` | active | Common Python toolchain |
+| `ghcr.io/alexhraber/kaite:apple` | Ubuntu 24.04, `linux/arm64` CPU for Apple Silicon hosts | active | Common Python toolchain |
+| `ghcr.io/alexhraber/kaite:nvidia` | CUDA 12.6.3, `linux/amd64` | inactive | PyTorch CUDA 12.6 wheels |
+| `ghcr.io/alexhraber/kaite:amd` | ROCm 6.2.4, `linux/amd64` | inactive | PyTorch ROCm 6.2.4 wheels |
+| `ghcr.io/alexhraber/kaite:intel` | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04, `linux/amd64` | inactive | Python 3.11 + Intel Extension for PyTorch XPU |
 
-Versioned releases use tags such as `v1.2.3-cpu` and `v1.2.3-nvidia`.
+Versioned active releases use tags such as `v1.2.3-cpu` and `v1.2.3-apple`.
+Accelerator tags are only produced by an explicit opt-in workflow run.
 `docker-bake.hcl` is the source of truth for the image matrix and can build
 the same targets locally:
 
@@ -44,6 +47,8 @@ the same targets locally:
 make build-plan
 make build-cpu
 make build-all
+# Explicitly opt in to inactive accelerator targets.
+make build-all-accelerators
 ~~~
 
 On a matching accelerator host, run `deploy/docker/smoke.sh` to verify device
@@ -104,7 +109,9 @@ agent rather than in the Kaite image.
 a one-agent Job template: it registers, runs one matching Buildkite job, and
 disconnects so Kubernetes can mark the Job complete. It uses a Secret for the
 Buildkite token, exposes metrics for scraping, and leaves accelerator
-resource/device settings explicit. Change the image, `KAITE_HARDWARE`, agent
+resource/device settings explicit. CPU and Apple arm64 are the active image
+paths; NVIDIA, AMD, and Intel remain explicit operator opt-ins with inactive
+automatic CI/release runner labels. Change the image, `KAITE_HARDWARE`, agent
 tags, queue, and resource requests for the target hardware. Use a Deployment
 or Buildkite Agent Stack for a continuously replenished agent pool.
 
@@ -113,23 +120,23 @@ or Buildkite Agent Stack for a continuously replenished agent pool.
 ~~~yaml
 agents:
   queue: ai
-  kaite.hardware: nvidia
+  kaite.hardware: cpu
 ~~~
 
 ## Releases
 
-Push a semantic version tag such as `v1.2.3` to publish all hardware images.
-The workflow logs into GHCR with the repository token, builds the CPU, Apple,
-NVIDIA, AMD, and Intel variants with Buildx, publishes provenance and SBOM
-attestations, and pulls each published image to run `doctor`. A manual workflow run
-can publish a supplied version without changing the repository history.
+Push a semantic version tag such as `v1.2.3` to publish the active CPU and Apple
+images and create a GitHub release. The workflow logs into GHCR with the
+repository token, publishes provenance and SBOM attestations, and pulls each
+published image to run `doctor`. NVIDIA, AMD, and Intel publication is inactive
+on tag pushes; a manual workflow run must explicitly set
+`enable_accelerators=true` and requires the matching host labels.
 
-Image CI is host-matrixed and every target runs `kaite smoke`: CPU uses
-`ubuntu-24.04`, Apple uses native `ubuntu-24.04-arm`, and accelerator jobs use
-the `kaite-nvidia`, `kaite-amd`, and `kaite-intel` runner labels. Point those
-labels at matching GitHub-hosted larger runners or self-hosted machines with
-Docker and the vendor device runtime; GitHub does not provide one universal
-GPU label, and AMD/Intel smoke requires the corresponding hardware.
+Image CI is host-matrixed and every active target runs `kaite smoke`: CPU uses
+`ubuntu-24.04` and Apple uses native `ubuntu-24.04-arm`. The
+`kaite-nvidia`, `kaite-amd`, and `kaite-intel` jobs are retained as explicit
+manual opt-ins and remain inactive until matching hosts with Docker and vendor
+device runtimes are registered.
 
 ## Verification
 

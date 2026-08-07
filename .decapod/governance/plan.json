@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "title": "Initial Kaite Buildkite AI runtime",
-  "intent": "Publish a first usable Kaite self-hosted Buildkite agent image matrix for CPU, NVIDIA, AMD, and Intel hardware with a standard AI toolchain, safe container inputs, and selectable Prometheus, Datadog, or Splunk observability.",
+  "intent": "Keep CPU and Apple arm64 as the active Kaite delivery targets; retain NVIDIA, AMD, and Intel image definitions as inactive manual opt-ins until matching host runners are deliberately registered, and publish only active images on semantic tags.",
   "state": "APPROVED",
   "todo_ids": [
     "fend_01kzchk41zgq2mhx"
@@ -14,12 +14,12 @@
   "stop_conditions": [],
   "unresolved_contradictions": [],
   "deferred_questions": [
-    "Verify exact accelerator base-image availability and vendor collector deployment in image CI before production promotion."
+    "Which matching accelerator hosts and runner labels will be approved before enabling NVIDIA, AMD, or Intel CI and release paths?"
   ],
   "constraints": {
     "forbidden_paths": [],
     "file_touch_budget": null
   },
   "phases": [],
-  "updated_at": "1786055459Z"
+  "updated_at": "1786083301Z"
 }

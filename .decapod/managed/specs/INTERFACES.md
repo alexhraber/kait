@@ -47,13 +47,17 @@ ordering, checkout, command execution, artifact upload, and job status.
 
 ## Image Platform Contract
 
-| Target | Base and platform | Hardware behavior |
-|---|---|---|
-| cpu | Ubuntu 24.04; linux/amd64 and linux/arm64 | Common CPU toolchain |
-| apple | Ubuntu 24.04; linux/arm64 | Apple Silicon CPU execution; no Metal device passthrough |
-| nvidia | CUDA 12.6.3; linux/amd64 | NVIDIA runtime and CUDA PyTorch wheels |
-| amd | ROCm 6.2.4; linux/amd64 | AMD runtime and ROCm PyTorch wheels |
-| intel | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04; linux/amd64 | Python 3.11, Intel XPU runtime, and extension wheels |
+| Target | Base and platform | Status | Hardware behavior |
+|---|---|---|---|
+| cpu | Ubuntu 24.04; linux/amd64 and linux/arm64 | active | Common CPU toolchain |
+| apple | Ubuntu 24.04; linux/arm64 | active | Apple Silicon CPU execution; no Metal device passthrough |
+| nvidia | CUDA 12.6.3; linux/amd64 | inactive | NVIDIA runtime and CUDA PyTorch wheels |
+| amd | ROCm 6.2.4; linux/amd64 | inactive | AMD runtime and ROCm PyTorch wheels |
+| intel | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04; linux/amd64 | inactive | Python 3.11, Intel XPU runtime, and extension wheels |
+
+Inactive accelerator targets are available for deliberate local or manual
+workflow use. Their matching `kaite-nvidia`, `kaite-amd`, and `kaite-intel`
+runner labels do not participate in ordinary CI or semantic-tag releases.
 
 ## Data Ownership
 - Buildkite is the source of truth for job state, logs, artifacts, and metadata.
@@ -85,7 +89,7 @@ ordering, checkout, command execution, artifact upload, and job status.
 <!-- decapod:codebase-attestation:start -->
 ## Codebase Attestation
 
-- Repository signal fingerprint: `a053aa0c26e4414a6e960dc383ebef7f73fa571a2621bda5c1e51f4a6041d62e`
+- Repository signal fingerprint: `dff6fa2af071e116fb753ac55f5d10dd10bba726a15e2018e567c80dba7ffd30`
 - Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
