@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0.0",
-  "title": "Release promotion and GHCR publication",
-  "intent": "After a normal pull request merges to main, maintain a Release Please release PR. When that release PR merges, create the semantic tag and GitHub release, then dispatch the tagged image workflow so active CPU and Apple images are built, smoke-tested, and published to GHCR. Keep NVIDIA, AMD, and Intel paths inactive. Update the README Decapod badge to v0.96.15.",
+  "title": "Super AI/ML image toolchain and release governance",
+  "intent": "Starting from the merged GitHub main, add a layered, reproducible Kali-like AI/ML training and evaluation toolchain to Kaite for the active CPU amd64 and Apple arm64 images, with hardware-specific manifests preserved for inactive NVIDIA, AMD, and Intel paths. Cover the core Hugging Face and PyTorch ecosystem, distributed training, experiment tracking, serving, notebooks, data, and scientific tooling without claiming unavailable accelerator support. Document the GitHub Actions permission required for Release Please to create its release PR after the observed failure, while preserving the immutable tag-to-GHCR image release flow.",
   "state": "APPROVED",
   "todo_ids": [
-    "code_01kzdjmnnfz0946t"
+    "bugs_01kzdkrctdp41xkc"
   ],
   "proof_hooks": [
-    "yq eval \".\" .github/workflows/release-please.yml .github/workflows/release-images.yml; GOCACHE=/tmp/kaite-gocache go test ./...; GOCACHE=/tmp/kaite-gocache go vet ./...; decapod validate --refresh-specs"
+    "yq eval \".\" requirements/*.txt .github/workflows/release-please.yml; docker buildx bake --print; GOCACHE=/tmp/kaite-gocache go test ./...; GOCACHE=/tmp/kaite-gocache go vet ./...; decapod validate --refresh-specs"
   ],
   "unknowns": [],
   "human_questions": [],
@@ -19,5 +19,5 @@
     "file_touch_budget": null
   },
   "phases": [],
-  "updated_at": "1786088537Z"
+  "updated_at": "1786089618Z"
 }

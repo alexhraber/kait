@@ -7,6 +7,7 @@ import (
 
 func TestLoadConfigCommandMode(t *testing.T) {
 	t.Setenv("KAITE_HARDWARE", "nvidia")
+	t.Setenv("KAITE_VARIANT", "full")
 	t.Setenv("KAITE_O11Y", "prometheus")
 	t.Setenv("KAITE_RUN_MODE", "command")
 	t.Setenv("KAITE_COMMAND", "echo ready")
@@ -37,6 +38,15 @@ func TestLoadConfigRejectsUnknownHardware(t *testing.T) {
 	}
 }
 
+func TestLoadConfigRejectsUnknownVariant(t *testing.T) {
+	t.Setenv("KAITE_RUN_MODE", "command")
+	t.Setenv("KAITE_COMMAND", "true")
+	t.Setenv("KAITE_VARIANT", "max")
+	if _, err := loadConfig(); err == nil || !strings.Contains(err.Error(), "KAITE_VARIANT") {
+		t.Fatalf("loadConfig() error = %v, want KAITE_VARIANT validation", err)
+	}
+}
+
 func TestHardwareTargetsIncludeAppleSilicon(t *testing.T) {
 	for _, hardware := range []string{"cpu", "apple", "nvidia", "amd", "intel"} {
 		if err := validateHardware(hardware); err != nil {
@@ -49,7 +59,7 @@ func TestBuildAgentArgsUsesFileTokenAndHardwareTags(t *testing.T) {
 	t.Setenv("BUILDKITE_AGENT_TAGS", "queue=ai")
 	t.Setenv("BUILDKITE_AGENT_QUEUE", "ai")
 	t.Setenv("BUILDKITE_AGENT_ENDPOINT", "https://agent.example.test/v3")
-	cfg := config{hardware: "amd", o11y: "splunk", tokenFile: "/run/secrets/buildkite-agent-token"}
+	cfg := config{hardware: "amd", variant: "full", o11y: "splunk", tokenFile: "/run/secrets/buildkite-agent-token"}
 	args := strings.Join(buildAgentArgs(cfg), " ")
 	if !strings.Contains(args, "--token file:///run/secrets/buildkite-agent-token") {
 		t.Fatalf("args = %q, missing file token", args)
@@ -77,14 +87,14 @@ func TestLoadConfigRejectsTwoTokenSources(t *testing.T) {
 }
 
 func TestPrometheusMetricsExposeRuntimeLabels(t *testing.T) {
-	m := &metrics{hardware: "intel", o11y: "prometheus"}
+	m := &metrics{hardware: "intel", variant: "full", o11y: "prometheus"}
 	m.starts.Store(2)
 	m.running.Store(1)
 	output := m.prometheus()
 	for _, want := range []string{
-		"kaite_info{version=\"0.1.0\",hardware=\"intel\",o11y=\"prometheus\"} 1",
-		"kaite_agent_starts_total{hardware=\"intel\",o11y=\"prometheus\"} 2",
-		"kaite_agent_running{hardware=\"intel\",o11y=\"prometheus\"} 1",
+		"kaite_info{version=\"0.1.0\",hardware=\"intel\",variant=\"full\",o11y=\"prometheus\"} 1",
+		"kaite_agent_starts_total{hardware=\"intel\",variant=\"full\",o11y=\"prometheus\"} 2",
+		"kaite_agent_running{hardware=\"intel\",variant=\"full\",o11y=\"prometheus\"} 1",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("metrics missing %q in %s", want, output)

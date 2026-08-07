@@ -28,7 +28,9 @@ that dispatches and records jobs.
 - Runtime/languages: Go supervisor, Ubuntu-based Docker images, Python venv.
 - Hardware surfaces: Ubuntu CPU, Apple Silicon Linux arm64 CPU, CUDA/NVIDIA,
   ROCm/AMD, and Intel oneAPI.
-- Toolchain: NumPy, pandas, scikit-learn, Jupyter, pytest, requests, and PyYAML.
+- Toolchain: Go/Buildkite in every image; `*-slim` adds NumPy, pandas,
+  scikit-learn, Jupyter, pytest, requests, and PyYAML; `*-full` adds the
+  broader data, Hugging Face, orchestration, and serving layers.
 - Product type: self-hosted Buildkite AI runtime.
 
 ## Architecture Map
@@ -38,10 +40,11 @@ that dispatches and records jobs.
 - requirements/: portable Python defaults.
 - examples/: Buildkite targeting examples.
 
-The image matrix uses Ubuntu/glibc for every target. The CPU image publishes
-linux/amd64 and linux/arm64 variants; the Apple target is an explicit
-linux/arm64 CPU alias. NVIDIA, AMD, and Intel targets publish linux/amd64
-because their pinned vendor bases and framework wheels are amd64 contracts.
+The image matrix uses Ubuntu/glibc for every target. Each target has `*-slim`
+and `*-full` package variants. CPU publishes linux/amd64 and linux/arm64;
+Apple is an explicit linux/arm64 CPU target. NVIDIA, AMD, and Intel publish
+linux/amd64 because their pinned vendor bases and framework wheels are amd64
+contracts. Versioned tags are `<tag>-<hardware>-<variant>`.
 musl is not an equivalent option for these images: it would require separate
 Python wheels, vendor libraries, and validation.
 
@@ -60,7 +63,7 @@ GPU infrastructure.
 
 ## Data Flows
 1. Docker or Kubernetes injects environment and device resources.
-2. Kaite validates KAITE_HARDWARE, KAITE_O11Y, and Buildkite credentials.
+2. Kaite validates KAITE_HARDWARE, KAITE_VARIANT, KAITE_O11Y, and Buildkite credentials.
 3. Kaite starts buildkite-agent start, which polls Buildkite and executes jobs.
 4. Metrics are scraped by Prometheus or forwarded to DogStatsD/OTel
    collectors; logs remain structured on stdout/stderr.
@@ -174,7 +177,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

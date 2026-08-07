@@ -27,6 +27,16 @@ explicitly dispatches `release-images.yml` against the created tag. That image
 workflow then builds, smoke-tests, and publishes the active images; it never
 resolves the release from a moving `main` ref.
 
+The image dependency contract is layered and installed in a fixed order. Every
+variant contains the pinned Buildkite agent, Go supervisor, and the selected
+hardware manifest. `*-slim` stops after the compact Python foundation; `*-full`
+also installs portable data/science foundations, the Hugging Face training
+stack, experiment/distributed orchestration, and serving interfaces. CPU and
+Apple are the active portable contracts; vendor-specific native extensions
+remain operator extras until their inactive host paths are enabled and proven.
+Release Please requires the repository permission for `GITHUB_TOKEN` to create
+pull requests, in addition to the workflow scopes.
+
 ## Container Launch Wrapper
 `deploy/docker/run.sh` places runtime flags and environment bindings before the
 image reference, then places `KAITE_CONTAINER_COMMAND` after the image. This
@@ -75,8 +85,9 @@ container logs with their node agent or OpenTelemetry Collector.
 - Post-incident: add a reference job or validation case for the failure mode.
 
 ## Rollout and Recovery
-- Publish a new immutable version tag; ordinary semantic-tag releases contain
-  the active CPU and Apple images only.
+- Publish immutable `<tag>-<hardware>-<variant>` tags; ordinary semantic-tag
+  releases contain active `cpu-slim`, `cpu-full`, `apple-slim`, and
+  `apple-full` images plus compatibility aliases for the slim images.
 - Start one canary agent per hardware queue.
 - Verify health, agent registration, and a reference job.
 - Roll the queue to the new image after the canary is healthy.
@@ -128,7 +139,7 @@ vendor device runtime.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

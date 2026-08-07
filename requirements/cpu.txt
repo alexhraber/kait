@@ -1,0 +1,6 @@
+# Native Linux CPU image contract for amd64 and arm64.
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+torch==2.9.0
+torchvision==0.24.0
+torchaudio==2.9.0

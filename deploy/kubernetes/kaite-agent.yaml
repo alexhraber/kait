@@ -21,7 +21,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: kaite
-          image: ghcr.io/alexhraber/kaite:cpu
+          image: ghcr.io/alexhraber/kaite:cpu-slim
           imagePullPolicy: IfNotPresent
           ports:
             - name: metrics
@@ -33,13 +33,15 @@ spec:
                   name: buildkite-agent
                   key: token
             - name: BUILDKITE_AGENT_TAGS
-              value: kaite=true,kaite.hardware=cpu,kaite.o11y=prometheus
+              value: kaite=true,kaite.hardware=cpu,kaite.variant=slim,kaite.o11y=prometheus
             - name: BUILDKITE_AGENT_QUEUE
               value: ai
             - name: BUILDKITE_AGENT_DISCONNECT_AFTER_JOB
               value: "true"
             - name: KAITE_HARDWARE
               value: cpu
+            - name: KAITE_VARIANT
+              value: slim
             - name: KAITE_O11Y
               value: prometheus
             - name: KAITE_METRICS_ADDR

@@ -6,8 +6,13 @@ if [[ -z "${KAITE_CONTAINER_COMMAND:-}" && "${KAITE_RUN_MODE:-agent}" == "agent"
   exit 2
 fi
 hardware="${KAITE_HARDWARE:-cpu}"
+variant="${KAITE_VARIANT:-slim}"
 o11y="${KAITE_O11Y:-none}"
-image="${KAITE_IMAGE:-ghcr.io/alexhraber/kaite:${hardware}}"
+case "${variant}" in
+  slim|full) ;;
+  *) echo "unsupported KAITE_VARIANT=${variant}" >&2; exit 2 ;;
+esac
+image="${KAITE_IMAGE:-ghcr.io/alexhraber/kaite:${hardware}-${variant}}"
 
 args=(
   --rm
@@ -15,6 +20,7 @@ args=(
   --name "${KAITE_CONTAINER_NAME:-kaite-agent}"
   --publish "${KAITE_METRICS_PORT:-9090}:9090"
   --env "KAITE_HARDWARE=${hardware}"
+  --env "KAITE_VARIANT=${variant}"
   --env "KAITE_O11Y=${o11y}"
   --env "KAITE_METRICS_ADDR=${KAITE_METRICS_ADDR:-0.0.0.0:9090}"
   --env "OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-kaite}"

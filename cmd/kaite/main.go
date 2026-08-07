@@ -24,6 +24,7 @@ const version = "0.1.0"
 
 type config struct {
 	hardware       string
+	variant        string
 	o11y           string
 	runMode        string
 	metricsAddr    string
@@ -40,6 +41,7 @@ type metrics struct {
 	lastExit  atomic.Int64
 	startTime time.Time
 	hardware  string
+	variant   string
 	o11y      string
 }
 
@@ -85,10 +87,12 @@ func main() {
 	stats := &metrics{
 		startTime: time.Now().UTC(),
 		hardware:  cfg.hardware,
+		variant:   cfg.variant,
 		o11y:      cfg.o11y,
 	}
 	logEvent("info", "runtime_starting", map[string]string{
 		"hardware": cfg.hardware,
+		"variant":  cfg.variant,
 		"o11y":     cfg.o11y,
 		"run_mode": cfg.runMode,
 	})
@@ -122,6 +126,7 @@ func main() {
 func loadConfig() (config, error) {
 	cfg := config{
 		hardware:       lowerEnv("KAITE_HARDWARE", "cpu"),
+		variant:        lowerEnv("KAITE_VARIANT", "slim"),
 		o11y:           lowerEnv("KAITE_O11Y", "none"),
 		runMode:        lowerEnv("KAITE_RUN_MODE", "agent"),
 		metricsAddr:    os.Getenv("KAITE_METRICS_ADDR"),
@@ -131,6 +136,9 @@ func loadConfig() (config, error) {
 		command:        os.Getenv("KAITE_COMMAND"),
 	}
 	if err := validateHardware(cfg.hardware); err != nil {
+		return config{}, err
+	}
+	if err := validateVariant(cfg.variant); err != nil {
 		return config{}, err
 	}
 	switch cfg.o11y {
@@ -244,7 +252,11 @@ func buildAgentArgs(cfg config) []string {
 	if tags := os.Getenv("BUILDKITE_AGENT_TAGS"); tags != "" {
 		args = append(args, "--tags", tags)
 	} else {
-		args = append(args, "--tags", "kaite=true,kaite.hardware="+cfg.hardware+",kaite.o11y="+cfg.o11y)
+		variant := cfg.variant
+		if variant == "" {
+			variant = "slim"
+		}
+		args = append(args, "--tags", "kaite=true,kaite.hardware="+cfg.hardware+",kaite.variant="+variant+",kaite.o11y="+cfg.o11y)
 	}
 	appendEnvFlag := func(name, flag string) {
 		if value := os.Getenv(name); value != "" {
@@ -316,7 +328,7 @@ func shutdownServer(server *http.Server) {
 }
 
 func (m *metrics) prometheus() string {
-	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
+	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",variant=\"" + prometheusLabel(m.variant) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
 	var b strings.Builder
 	fmt.Fprintf(&b, "# HELP kaite_info Kaite runtime build and configuration information.\n# TYPE kaite_info gauge\nkaite_info{version=\"%s\",%s} 1\n", version, labels)
 	fmt.Fprintf(&b, "# HELP kaite_agent_starts_total Number of child process starts.\n# TYPE kaite_agent_starts_total counter\nkaite_agent_starts_total{%s} %d\n", labels, m.starts.Load())
@@ -337,7 +349,7 @@ func newDogStatsD(cfg config) (*dogStatsD, error) {
 	if err != nil {
 		return nil, err
 	}
-	tags := "kaite_hardware:" + cfg.hardware + ",kaite_o11y:datadog"
+	tags := "kaite_hardware:" + cfg.hardware + ",kaite_variant:" + cfg.variant + ",kaite_o11y:datadog"
 	return &dogStatsD{conn: conn, tags: tags}, nil
 }
 
@@ -360,6 +372,7 @@ func (d *dogStatsD) send(name, value string) {
 func writeDoctor(w io.Writer) error {
 	result := map[string]any{
 		"version": version,
+		"variant": lowerEnv("KAITE_VARIANT", "slim"),
 		"hardware": map[string]bool{
 			"cpu":    true,
 			"apple":  true,
@@ -375,30 +388,43 @@ func writeDoctor(w io.Writer) error {
 
 func writeSmoke(w io.Writer) error {
 	hardware := lowerEnv("KAITE_HARDWARE", "cpu")
+	variant := lowerEnv("KAITE_VARIANT", "slim")
+	if err := validateVariant(variant); err != nil {
+		return err
+	}
 	var frameworkCheck string
 	switch hardware {
 	case "cpu", "apple":
 		if hardware == "apple" && runtime.GOARCH != "arm64" {
 			return fmt.Errorf("apple hardware target requires linux/arm64 (running on %s)", runtime.GOARCH)
 		}
-		frameworkCheck = `import numpy, sklearn; print("cpu toolchain ready")`
+		frameworkCheck = `import numpy, sklearn, torch; print("cpu toolchain ready")`
+		if variant == "full" {
+			frameworkCheck = `import accelerate, datasets, diffusers, fastapi, gradio, lightning, mlflow, ray, torch, transformers, uvicorn, wandb; print("full AI/ML toolchain ready")`
+		}
 	case "nvidia", "amd":
 		if err := writeHardware(w); err != nil {
 			return err
 		}
 		frameworkCheck = `import torch; assert torch.cuda.is_available(), "torch cannot see the accelerator"; print(torch.cuda.get_device_name(0))`
+		if variant == "full" {
+			frameworkCheck = `import accelerate, datasets, diffusers, fastapi, gradio, lightning, mlflow, ray, transformers, uvicorn, wandb; import torch; assert torch.cuda.is_available(), "torch cannot see the accelerator"; print(torch.cuda.get_device_name(0))`
+		}
 	case "intel":
 		if err := writeHardware(w); err != nil {
 			return err
 		}
 		frameworkCheck = `import torch, intel_extension_for_pytorch; assert torch.xpu.is_available(), "torch cannot see the XPU"; print(torch.xpu.get_device_name(0))`
+		if variant == "full" {
+			frameworkCheck = `import accelerate, datasets, diffusers, fastapi, gradio, lightning, mlflow, ray, transformers, uvicorn, wandb; import torch, intel_extension_for_pytorch; assert torch.xpu.is_available(), "torch cannot see the XPU"; print(torch.xpu.get_device_name(0))`
+		}
 	default:
 		return fmt.Errorf("unsupported KAITE_HARDWARE=%s", hardware)
 	}
 	if err := runCheck(w, "python", "-c", frameworkCheck); err != nil {
 		return fmt.Errorf("%s framework check: %w", hardware, err)
 	}
-	fmt.Fprintf(w, "kaite smoke: %s ready\n", hardware)
+	fmt.Fprintf(w, "kaite smoke: %s-%s ready\n", hardware, variant)
 	return nil
 }
 
@@ -431,6 +457,15 @@ func validateHardware(hardware string) error {
 		return nil
 	default:
 		return fmt.Errorf("KAITE_HARDWARE must be one of cpu, apple, nvidia, amd, intel (got %q)", hardware)
+	}
+}
+
+func validateVariant(variant string) error {
+	switch variant {
+	case "slim", "full":
+		return nil
+	default:
+		return fmt.Errorf("KAITE_VARIANT must be one of slim, full (got %q)", variant)
 	}
 }
 

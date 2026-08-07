@@ -96,7 +96,7 @@ stateDiagram-v2
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

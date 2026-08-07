@@ -19,9 +19,9 @@
 Kaite provides a portable, production-ready AI execution environment that makes
 Buildkite a first-class orchestration layer for model training, evaluation,
 inference, and agent workloads. The first slice standardizes the container
-entrypoint, toolchain, accelerator selection, health/metrics surfaces, and
-collector-friendly logs across CPU, Apple Silicon arm64, NVIDIA, AMD, and
-Intel images.
+entrypoint, Buildkite agent, slim/full toolchain variants, accelerator
+selection, health/metrics surfaces, and collector-friendly logs across CPU,
+Apple Silicon arm64, NVIDIA, AMD, and Intel images.
 
 ## What This Project Is
 Kaite is a Go-based container runtime for self-hosted Buildkite AI agents.
@@ -72,10 +72,12 @@ flowchart LR
 
 ## Acceptance Criteria (must be objectively testable)
 - [ ] CPU, Apple Silicon arm64, NVIDIA, AMD, and Intel image targets are versioned and reproducible from the Bake definition.
+- [ ] Each hardware target exposes canonical `<tag>-<hardware>-slim` and `<tag>-<hardware>-full` image tags, with slim compatibility aliases preserved for active CPU and Apple images.
 - [ ] Every published target declares its supported Linux platform; GPU images remain limited to platforms supported by their vendor runtime.
 - [ ] Image CI builds and runs `kaite smoke` for every active target on a matching host class before the workflow can pass.
 - [ ] NVIDIA, AMD, and Intel jobs remain inactive on ordinary pushes and tags, with explicit manual opt-in required when matching hosts are available.
 - [ ] The default entrypoint validates the Buildkite token, forwards standard agent options, and exits with the child status.
+- [ ] Every image contains the pinned Buildkite agent; `kaite smoke` verifies the compact slim contract and imports the advertised full AI/ML package layer.
 - [ ] KAITE_O11Y selects none, Prometheus, Datadog, or Splunk/OTel behavior without changing workload commands.
 - [ ] Docker and Kubernetes launch paths pass environment inputs and accelerator resources without committing secrets.
 - [ ] Go tests, bake-plan validation, CI, documentation, and Decapod validation are present.
@@ -136,7 +138,7 @@ flowchart LR
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
