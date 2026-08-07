@@ -47,14 +47,25 @@ locally per hardware target.
 ## CI Flow
 1. Every pull request renders the Bake graph.
 2. Every pull request runs the Go tests through the repository validation job.
-3. Version tags publish all hardware image targets to the configured registry.
-4. Image scanning and signing remain promotion requirements before production use.
+3. A push to `main` creates or updates the Release Please PR.
+4. Merging the Release Please PR creates the semantic tag and GitHub release;
+   the release workflow explicitly dispatches image publication for that tag.
+5. The tagged image workflow builds active targets on native hosts, runs the
+   container smoke contract, and publishes versioned and stable GHCR tags.
+6. Image scanning and signing remain promotion requirements before production use.
+
+The release graph is proven by checking both workflow definitions: Release
+Please owns the main-to-release-PR and release-PR-to-tag transitions, while
+`release-images.yml` owns the immutable tagged build, smoke, and GHCR boundary.
+The explicit dispatch is required because GitHub does not recursively trigger
+workflows from resources created with `GITHUB_TOKEN`.
 
 ## Failure Recovery
 - A Go failure is fixed and rerun with the same cache override.
 - A stale spec is refreshed with Decapod, then its authored prose is reviewed.
 - A failed image target is isolated by target name and base-image override.
 - A missing vendor collector does not block local structured logs or Prometheus.
+
 ## Codebase Attestation
 
 - Repository signal fingerprint: `dff6fa2af071e116fb753ac55f5d10dd10bba726a15e2018e567c80dba7ffd30`
@@ -119,9 +130,10 @@ locally per hardware target.
 <!-- decapod:capability-overlay:public-api:end -->
 
 <!-- decapod:codebase-attestation:start -->
+
 ## Codebase Attestation
 
-- Repository signal fingerprint: `cbee96c4be43cf806d232241a1410fff73ac802e59b68fbbcf848ecc7868cb27`
-- Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Repository signal fingerprint: `0dcceed9a83bbe8931709f180ec7dc522f8223bb429a4802e41b6c80e237a371`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

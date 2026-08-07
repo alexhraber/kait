@@ -1,0 +1,10 @@
+{
+  "release-type": "simple",
+  "changelog-path": "CHANGELOG.md",
+  "include-component-in-tag": false,
+  "packages": {
+    ".": {
+      "component": "kaite"
+    }
+  }
+}

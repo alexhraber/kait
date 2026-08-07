@@ -1,6 +1,6 @@
 # kaite
 
-[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.96.13-dc2626)](https://github.com/DecapodLabs/decapod)
+[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.96.15-dc2626)](https://github.com/DecapodLabs/decapod)
 
 Kaite is the standard AI runtime for self-hosted Buildkite, packaging the
 agent, hardware-specific toolchains, observability, and lifecycle controls
@@ -126,12 +126,12 @@ agents:
 
 ## Releases
 
-Push a semantic version tag such as `v1.2.3` to publish the active CPU and Apple
-images and create a GitHub release. The workflow logs into GHCR with the
-repository token, publishes provenance and SBOM attestations, and pulls each
-published image to run `doctor`. NVIDIA, AMD, and Intel publication is inactive
-on tag pushes; a manual workflow run must explicitly set
-`enable_accelerators=true` and requires the matching host labels.
+Merging a normal pull request to `main` creates or updates the Release Please
+release PR. Merging that PR creates the semantic tag and GitHub release, then
+dispatches the image workflow against that immutable tag. The active CPU and
+Apple images are built on native hosts, smoke-tested, and uploaded to GHCR with
+provenance and SBOM attestations. NVIDIA, AMD, and Intel remain inactive unless
+an operator explicitly enables the manual workflow on matching hosts.
 
 Image CI is host-matrixed and every active target runs `kaite smoke`: CPU uses
 `ubuntu-24.04` and Apple uses native `ubuntu-24.04-arm`. The
