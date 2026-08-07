@@ -43,6 +43,8 @@ target "apple" {
 }
 
 target "nvidia" {
+  # Inactive in automatic CI and release workflows; invoke explicitly when a
+  # matching host is intentionally enabled.
   inherits = ["common"]
   platforms = ["linux/amd64"]
   tags = ["${REGISTRY}:nvidia-${VERSION}", "${REGISTRY}:nvidia"]
@@ -53,6 +55,8 @@ target "nvidia" {
 }
 
 target "amd" {
+  # Inactive in automatic CI and release workflows; invoke explicitly when a
+  # matching host is intentionally enabled.
   inherits = ["common"]
   platforms = ["linux/amd64"]
   tags = ["${REGISTRY}:amd-${VERSION}", "${REGISTRY}:amd"]
@@ -63,6 +67,8 @@ target "amd" {
 }
 
 target "intel" {
+  # Inactive in automatic CI and release workflows; invoke explicitly when a
+  # matching host is intentionally enabled.
   inherits = ["common"]
   platforms = ["linux/amd64"]
   tags = ["${REGISTRY}:intel-${VERSION}", "${REGISTRY}:intel"]
