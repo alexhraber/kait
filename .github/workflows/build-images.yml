@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      enable_accelerators:
+        description: Enable inactive NVIDIA, AMD, and Intel host jobs
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -27,24 +33,6 @@ jobs:
             platform: linux/arm64
             base_image: ubuntu:24.04
             python_bin: python3
-            smoke: true
-          - hardware: nvidia
-            runner: kaite-nvidia
-            platform: linux/amd64
-            base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
-            python_bin: python3
-            smoke: true
-          - hardware: amd
-            runner: kaite-amd
-            platform: linux/amd64
-            base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
-            python_bin: python3
-            smoke: true
-          - hardware: intel
-            runner: kaite-intel
-            platform: linux/amd64
-            base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
-            python_bin: python3.11
             smoke: true
     steps:
       - uses: actions/checkout@v4
@@ -78,3 +66,52 @@ jobs:
           HARDWARE: ${{ matrix.hardware }}
           PLATFORM: ${{ matrix.platform }}
         run: docker run --rm --platform "${PLATFORM}" -e KAITE_HARDWARE="${HARDWARE}" "kaite:ci-${HARDWARE}" smoke
+
+  build-accelerators:
+    name: Build inactive accelerator (${{ matrix.hardware }})
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_accelerators == true }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # These labels are deliberately inactive until matching hosts are registered.
+          - hardware: nvidia
+            runner: kaite-nvidia
+            platform: linux/amd64
+            base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
+            python_bin: python3
+          - hardware: amd
+            runner: kaite-amd
+            platform: linux/amd64
+            base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
+            python_bin: python3
+          - hardware: intel
+            runner: kaite-intel
+            platform: linux/amd64
+            base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
+            python_bin: python3.11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and smoke inactive accelerator image
+        env:
+          HARDWARE: ${{ matrix.hardware }}
+          PLATFORM: ${{ matrix.platform }}
+          BASE_IMAGE: ${{ matrix.base_image }}
+          PYTHON_BIN: ${{ matrix.python_bin }}
+        run: |
+          set -euo pipefail
+          docker buildx build \
+            --load \
+            --platform "${PLATFORM}" \
+            --tag "kaite:ci-${HARDWARE}" \
+            --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+            --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
+            --build-arg KAITE_HARDWARE="${HARDWARE}" \
+            --build-arg KAITE_PYTHON="${PYTHON_BIN}" \
+            --provenance=false \
+            --sbom=false \
+            .
+          docker run --rm --platform "${PLATFORM}" "kaite:ci-${HARDWARE}" doctor
+          docker run --rm --platform "${PLATFORM}" -e KAITE_HARDWARE="${HARDWARE}" "kaite:ci-${HARDWARE}" smoke

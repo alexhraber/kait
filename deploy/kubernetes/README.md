@@ -2,7 +2,9 @@
 
 kaite-agent.yaml is a self-hosted Buildkite agent Job. Create the
 buildkite-agent Secret with the cluster agent token, choose the hardware
-image, then set KAITE_O11Y to none, prometheus, datadog, or splunk.
+image, then set KAITE_O11Y to none, prometheus, datadog, or splunk. CPU and
+Apple arm64 are the active image paths. NVIDIA, AMD, and Intel remain explicit
+operator opt-ins and their automatic CI/release runner labels are inactive.
 
 Create the secret without putting the token in a manifest, then submit the
 Job:
@@ -26,11 +28,11 @@ the immutable hardware contract with agent tags:
 
 ~~~yaml
 steps:
-  - label: ":robot: GPU evaluation"
+  - label: ":robot: CPU evaluation"
     command: "kaite smoke"
     agents:
       queue: ai
-      kaite.hardware: nvidia
+      kaite.hardware: cpu
 ~~~
 
 For target hardware, change the image, KAITE_HARDWARE, agent tags, and
@@ -38,7 +40,8 @@ resource limits in the Job. The `cpu` image supports linux/amd64 and
 linux/arm64; use the `apple` image for an Apple Silicon host's Ubuntu arm64
 CPU workload. NVIDIA nodes require the NVIDIA device plugin; AMD nodes require
 the ROCm device plugin and /dev/kfd and /dev/dri; Intel nodes require the
-oneAPI runtime and /dev/dri.
+oneAPI runtime and /dev/dri. Those accelerator images are inactive in the
+repository's automatic CI and release paths until matching hosts are enabled.
 
 Observability is collector-friendly:
 

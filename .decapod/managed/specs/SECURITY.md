@@ -61,10 +61,30 @@ are controlled by Docker or Kubernetes configuration.
 - Vendor integrations are collector-friendly and do not require Kaite to own
   external API credentials.
 
+<!-- decapod:capability-overlay:public-api:start -->
+
+## Public API Security Overlay
+
+### Authentication Requirements
+- All public endpoints MUST validate authentication tokens
+- Token validation MUST include expiry, revocation, and scope checks
+- Anonymous access MUST be explicitly documented and justified
+
+### Input Validation
+- All request bodies MUST be validated against schemas
+- Reject requests with unknown fields (strict schema validation)
+- Size limits MUST be enforced on all request bodies
+
+### Rate Limiting
+- Limits and enforcement boundaries MUST be selected for this deployment
+- Clustered enforcement behavior MUST be documented when applicable
+- Client-visible throttling behavior MUST be part of the contract when applicable
+<!-- decapod:capability-overlay:public-api:end -->
+
 <!-- decapod:codebase-attestation:start -->
 ## Codebase Attestation
 
-- Repository signal fingerprint: `a053aa0c26e4414a6e960dc383ebef7f73fa571a2621bda5c1e51f4a6041d62e`
+- Repository signal fingerprint: `dff6fa2af071e116fb753ac55f5d10dd10bba726a15e2018e567c80dba7ffd30`
 - Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
