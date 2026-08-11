@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/alexhraber/kaite/compare/v0.2.2...v0.3.0) (2026-08-11)
+
+
+### Features
+
+* make workload capabilities explicit ([caf2736](https://github.com/alexhraber/kaite/commit/caf2736e1f4feca1a7f4ac1356ffbdcdc06d4187))
+* make workload capabilities explicit ([2b1596b](https://github.com/alexhraber/kaite/commit/2b1596b965c8d3974972ac632a6b2249c934279a))
+
 ## [0.2.2](https://github.com/alexhraber/kaite/compare/v0.2.1...v0.2.2) (2026-08-11)
 
 
