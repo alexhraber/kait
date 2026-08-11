@@ -27,10 +27,12 @@ Agent Stack only.
 ## Targeting
 
 Change `image`, `KAIT_HARDWARE`, `KAIT_VARIANT`, `KAIT_PROFILE`, capability
-tags, and resources for the host class. Active paths are CPU (`linux/amd64` + `arm64`)
-and Apple (`linux/arm64`). Accelerator images need the matching device plugin
-and stay manual opt-ins outside automatic CI/release. The image's baked
-identity must agree with the values and tags in the manifest.
+tags, and resources for the host class. Kubernetes supports the Linux container
+surface: CPU (`linux/amd64` + `arm64`) and explicit accelerator opt-ins with the
+matching device plugin. Apple GPU workers are not Kubernetes images; use the
+native macOS arm64 bundle and Buildkite macOS agent described in
+`deploy/macos/`. The image's baked identity must agree with the values and tags
+in the manifest.
 
 Pipeline side:
 

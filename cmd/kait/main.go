@@ -58,6 +58,8 @@ func main() {
 	stats := &metrics{
 		startTime:    time.Now().UTC(),
 		hardware:     cfg.hardware,
+		runtime:      cfg.identity.Runtime,
+		accelerator:  cfg.identity.Accelerator,
 		variant:      cfg.variant,
 		profile:      cfg.profile,
 		capabilities: strings.Join(cfg.capabilities, ","),
@@ -65,6 +67,8 @@ func main() {
 	}
 	logEvent("info", "runtime_starting", map[string]string{
 		"hardware":     cfg.hardware,
+		"runtime":      cfg.identity.Runtime,
+		"accelerator":  cfg.identity.Accelerator,
 		"variant":      cfg.variant,
 		"profile":      cfg.profile,
 		"capabilities": strings.Join(cfg.capabilities, ","),

@@ -1,19 +1,16 @@
 {
   "schema_version": "1.0.0",
   "title": "Realize Kait execution-substrate capability architecture",
-  "intent": "Review alexhraber/kait against the execution-substrate contract and implement an aggressive, coherent capability architecture with exactly the public profiles slim, full, data-science, training, orchestration, and serving. Make workload capabilities, hardware contracts, baked image identity, Buildkite metadata and selectors, doctor/smoke validation, CI/release artifacts, downstream derivation, and documentation agree as working Kait functionality, while deriving slim and full as intentional compositions from the same model.",
+  "intent": "Implement a native macOS arm64 Apple GPU/MPS execution surface for every official Kait workload profile. Keep legacy Linux Apple CPU images from advertising GPU access; use the authoritative capability model for native identity, dependency composition, Buildkite metadata, doctor/smoke, CI, release artifacts, and docs.",
   "state": "APPROVED",
   "todo_ids": [
-    "fend_01kzsbbcxbwgpdfb"
+    "feat_01kzshark33pppkx"
   ],
   "proof_hooks": [
-    "git diff --check",
-    "decapod validate",
-    "capability contract tests",
-    "doctor and smoke validation",
-    "image/release matrix validation",
-    "documentation consistency checks",
-    "slim/full compatibility profile resolution"
+    "native macOS arm64 matrix and package validation",
+    "MPS doctor and smoke validation",
+    "container/native matrix separation",
+    "release artifact and documentation checks"
   ],
   "unknowns": [],
   "human_questions": [],
@@ -25,5 +22,5 @@
     "file_touch_budget": 100
   },
   "phases": [],
-  "updated_at": "1786483443Z"
+  "updated_at": "1786489918Z"
 }

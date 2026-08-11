@@ -6,12 +6,15 @@
 - Secrets are supplied by the executor and never baked into an image.
 
 ## Runtime Interfaces
-Kait has an environment-driven container interface rather than an HTTP
-control-plane API. The runtime exposes health and Prometheus-compatible metrics.
+Kait has an environment-driven container interface and a native macOS worker
+interface rather than an HTTP control-plane API. Both expose health and
+Prometheus-compatible metrics when enabled; both load an immutable contract
+identity from a platform-specific path.
 
 | Interface | Inputs | Outputs | Errors | Ownership |
 |---|---|---|---|---|
 | Container entrypoint | KAIT_*, BUILDKITE_*, optional mounted token | Buildkite agent process | Exit 2 for invalid config; child exit otherwise | Orchestrator restarts container |
+| Native Apple runner | macOS arm64, installed identity, BUILDKITE_* token | Native Buildkite agent process | Fails closed if MPS or identity is unavailable | Operator/queue owner restarts worker |
 | GET /healthz | HTTP request | 200 while supervisor is alive | 5xx if server unavailable | Kubernetes liveness |
 | GET /readyz | HTTP request | 200 after child starts | 503 before child starts | Kubernetes readiness |
 | GET /metrics | HTTP request | Prometheus text exposition | 5xx if server unavailable | Prometheus scrape |
@@ -24,7 +27,7 @@ ordering, checkout, command execution, artifact upload, and job status.
 |---|---|---|
 | BUILDKITE_AGENT_TOKEN | Agent mode | Cluster token passed only to the child process |
 | BUILDKITE_AGENT_TOKEN_FILE | Agent mode alternative | Uses Buildkite file token syntax for a mounted secret |
-| BUILDKITE_AGENT_TAGS | Optional | Custom tags; Kait always derives reserved hardware/profile/capability tags from baked identity |
+| BUILDKITE_AGENT_TAGS | Optional | Custom tags; Kait always derives reserved runtime, accelerator, hardware/profile/capability tags from immutable identity |
 | BUILDKITE_AGENT_NAME | Optional | Forwarded to Buildkite agent start |
 | BUILDKITE_AGENT_CONFIG | Optional | Forwarded config path |
 | BUILDKITE_KUBERNETES_EXEC | Optional | Enables Buildkite Kubernetes log/exit transport |
@@ -47,18 +50,20 @@ ordering, checkout, command execution, artifact upload, and job status.
 | DogStatsD | Datadog runtime counters | KAIT_DD_AGENT_HOST and KAIT_DD_DOGSTATSD_PORT | UDP metrics are best-effort |
 | OpenTelemetry Collector | Splunk metrics/log pipeline | OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_SERVICE_NAME | Local logs and metrics remain available |
 
-## Image Platform Contract
+## Execution Surface Contract
 
 | Target | Base and platform | Status | Hardware behavior |
 |---|---|---|---|
-| `<hardware>-<profile>` | Contract model base/platform; six profiles per hardware | CPU/Apple active; accelerators opt-in | Identity and manifests are resolved from the shared profile model |
+| Linux `<hardware>-<profile>` | Contract model base/platform; six profiles per container hardware | CPU active; accelerators opt-in | Identity and manifests are resolved from the shared profile model |
+| Native `apple-<profile>` bundle | macOS arm64 + MPS, six profiles | Apple active | Identity and manifests are resolved from the shared profile model |
 
 Inactive accelerator targets are available for deliberate local or manual
 workflow use. Their matching `kait-nvidia`, `kait-amd`, and `kait-intel`
 runner labels do not participate in ordinary CI or semantic-tag releases.
-Canonical image tags use `<tag>-<hardware>-<profile>`, for example
-`v1.2.3-apple-training`; stable aliases use each profile name and retain
-`apple` as the slim compatibility alias.
+Canonical container tags use `<tag>-<hardware>-<profile>`; Apple native
+profiles use `kait-<tag>-apple-<profile>.tar.gz` release assets. Historical
+Apple OCI aliases are CPU-only compatibility artifacts and cannot satisfy an
+MPS selector.
 
 ## Data Ownership
 - Buildkite is the source of truth for job state, logs, artifacts, and metadata.
@@ -82,9 +87,8 @@ Canonical image tags use `<tag>-<hardware>-<profile>`, for example
 | Buildkite job failure | Buildkite policy | Child exit status | Buildkite job log and metric |
 
 ## Interface Versioning
-- Version strategy: GHCR image tags plus the supervisor `version` constant in
-  `cmd/kait/version.go` (kept in lockstep with the released package version,
-  currently `0.2.1`).
+- Version strategy: GHCR container tags or GitHub Release bundle names plus the
+  release-injected supervisor version variable in `cmd/kait/version.go`.
 - Backward compatibility: existing environment names remain stable within a
   major image line; new options are additive.
 - Deprecation: announce in README and living specs before removing an input.
@@ -122,7 +126,7 @@ Canonical image tags use `<tag>-<hardware>-<profile>`, for example
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `c70f67f5dedfa45dbe5c2c90971c52f165d80c3755cabac1982850ba12279dc0`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
+- Repository signal fingerprint: `d6993cfb34484a0c37b542359b327a6d9ef2f62893edf89c327a8429a5e19e94`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

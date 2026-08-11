@@ -5,19 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 )
 
-const defaultIdentityPath = "/etc/kait/identity.json"
+func defaultIdentityPath() string {
+	if runtime.GOOS == "darwin" {
+		return "/Library/Application Support/Kait/identity.json"
+	}
+	return "/etc/kait/identity.json"
+}
 
 // identityPath is a variable so unit tests can exercise baked identity checks
 // without writing to the host filesystem. Official images always use the
 // fixed default path; it is not a runtime configuration knob.
-var identityPath = defaultIdentityPath
+var identityPath = defaultIdentityPath()
 
 type identity struct {
 	Schema       int      `json:"schema"`
 	Hardware     string   `json:"hardware"`
+	Runtime      string   `json:"runtime,omitempty"`
+	Accelerator  string   `json:"accelerator,omitempty"`
 	Variant      string   `json:"variant"`
 	Profile      string   `json:"profile"`
 	Capabilities []string `json:"capabilities"`
@@ -38,6 +46,8 @@ func loadRuntimeIdentity() (identity, error) {
 		return identity{}, fmt.Errorf("parse Kait image identity %s: %w", identityPath, err)
 	}
 	id.Hardware = strings.ToLower(strings.TrimSpace(id.Hardware))
+	id.Runtime = strings.ToLower(strings.TrimSpace(id.Runtime))
+	id.Accelerator = strings.ToLower(strings.TrimSpace(id.Accelerator))
 	id.Variant = strings.ToLower(strings.TrimSpace(id.Variant))
 	id.Profile = strings.ToLower(strings.TrimSpace(id.Profile))
 	if id.Profile == "" {
@@ -99,11 +109,14 @@ func validateVariant(variant string) error {
 }
 
 func validateIdentity(id identity) error {
-	if id.Schema != 1 && id.Schema != 2 {
+	if id.Schema != 1 && id.Schema != 2 && id.Schema != 3 {
 		return fmt.Errorf("unsupported Kait image identity schema %d", id.Schema)
 	}
 	if err := validateHardware(id.Hardware); err != nil {
 		return err
+	}
+	if id.Schema < 3 && id.Hardware == "apple" {
+		return fmt.Errorf("legacy Apple identity schema %d is CPU-only; install a native macOS MPS bundle", id.Schema)
 	}
 	if err := validateVariant(id.Variant); err != nil {
 		return err
@@ -118,10 +131,19 @@ func validateIdentity(id identity) error {
 	if !sameCapabilities(profileDefinition.Capabilities, id.Capabilities) {
 		return fmt.Errorf("Kait image identity capabilities %q do not match profile %q", strings.Join(id.Capabilities, ","), id.Profile)
 	}
-	if id.Schema == 2 && len(id.Requirements) == 0 {
-		return fmt.Errorf("Kait image identity schema 2 must declare requirements")
+	if id.Schema >= 3 {
+		hardwareDefinition := authoritativeCapabilities.Hardware[id.Hardware]
+		if id.Runtime != hardwareDefinition.Runtime {
+			return fmt.Errorf("Kait identity runtime %q does not match hardware %q runtime %q", id.Runtime, id.Hardware, hardwareDefinition.Runtime)
+		}
+		if id.Accelerator != hardwareDefinition.Accelerator {
+			return fmt.Errorf("Kait identity accelerator %q does not match hardware %q accelerator %q", id.Accelerator, id.Hardware, hardwareDefinition.Accelerator)
+		}
+		if len(id.Requirements) == 0 {
+			return fmt.Errorf("Kait image identity schema 3 must declare requirements")
+		}
 	}
-	if len(id.Requirements) > 0 {
+	if id.Schema >= 3 {
 		expected, err := orderedRequirements(id.Hardware, id.Profile)
 		if err != nil {
 			return err
@@ -152,6 +174,12 @@ func canonicalAgentTags(id identity, o11y string) []string {
 		"kait.variant=" + id.Variant,
 		"kait.profile=" + id.Profile,
 		"kait.o11y=" + o11y,
+	}
+	if id.Runtime != "" {
+		tags = append(tags, "kait.runtime="+id.Runtime)
+	}
+	if id.Accelerator != "" {
+		tags = append(tags, "kait.accelerator="+id.Accelerator)
 	}
 	for _, capability := range id.Capabilities {
 		tags = append(tags, "kait.capability."+capability+"=true")

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 )
 
 // configureHardwareEnvironment applies vendor-specific shell environments when
@@ -43,11 +44,23 @@ func configureHardwareEnvironment() error {
 	return nil
 }
 
-func requireAppleArch() error {
-	if runtime.GOARCH != "arm64" {
-		return fmt.Errorf("apple hardware target requires linux/arm64 (running on %s)", runtime.GOARCH)
+func requireApplePlatform() error {
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+		return fmt.Errorf("apple hardware target requires native macOS/arm64 (running on %s/%s)", runtime.GOOS, runtime.GOARCH)
 	}
 	return nil
+}
+
+func detectAppleGPU() bool {
+	if requireApplePlatform() != nil {
+		return false
+	}
+	output, err := exec.Command("system_profiler", "SPDisplaysDataType", "-json").Output()
+	if err != nil {
+		return false
+	}
+	text := string(output)
+	return strings.Contains(text, "Apple") && strings.Contains(text, "spdisplays")
 }
 
 func commandAvailable(name string) bool {

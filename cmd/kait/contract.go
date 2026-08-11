@@ -19,6 +19,7 @@ import (
 var capabilityContractFS embed.FS
 
 type hardwareDefinition struct {
+	Runtime            string   `json:"runtime"`
 	Platforms          []string `json:"platforms"`
 	Python             string   `json:"python"`
 	BaseImage          string   `json:"base_image"`
@@ -77,8 +78,20 @@ func validateCapabilityModel(model capabilityModel) error {
 		if !ok {
 			return fmt.Errorf("hardware order references undefined hardware %q", hardware)
 		}
-		if len(definition.Platforms) == 0 || definition.BaseImage == "" || definition.Runner == "" {
-			return fmt.Errorf("hardware %q must define platforms, base image, and runner", hardware)
+		if definition.Runtime == "" || len(definition.Platforms) == 0 || definition.Runner == "" || definition.Accelerator == "" {
+			return fmt.Errorf("hardware %q must define runtime, platforms, runner, and accelerator", hardware)
+		}
+		switch definition.Runtime {
+		case "container":
+			if definition.BaseImage == "" {
+				return fmt.Errorf("container hardware %q must define a base image", hardware)
+			}
+		case "native-macos":
+			if definition.BaseImage != "" || len(definition.Platforms) != 1 || definition.Platforms[0] != "darwin/arm64" {
+				return fmt.Errorf("native-macos hardware %q must target darwin/arm64 and have no base image", hardware)
+			}
+		default:
+			return fmt.Errorf("hardware %q has unsupported runtime %q", hardware, definition.Runtime)
 		}
 		for _, profile := range definition.SupportedProfiles {
 			if _, ok := model.Profiles[profile]; !ok {
@@ -279,8 +292,10 @@ func resolveContract(hardware, profile, variant, declaredCapabilities string) (i
 	}
 	_ = hardwareDefinition
 	return identity{
-		Schema:       2,
+		Schema:       3,
 		Hardware:     hardware,
+		Runtime:      hardwareDefinition.Runtime,
+		Accelerator:  hardwareDefinition.Accelerator,
 		Variant:      variant,
 		Profile:      profile,
 		Capabilities: capabilities,
@@ -309,6 +324,8 @@ func writeContract(w io.Writer, args []string) error {
 
 type matrixEntry struct {
 	Hardware     string   `json:"hardware"`
+	Runtime      string   `json:"runtime"`
+	Accelerator  string   `json:"accelerator"`
 	Profile      string   `json:"profile"`
 	Variant      string   `json:"variant"`
 	Runner       string   `json:"runner"`
@@ -326,11 +343,15 @@ func writeMatrix(w io.Writer, args []string) error {
 	flags.SetOutput(io.Discard)
 	activeOnly := flags.Bool("active-only", false, "include only active hardware")
 	acceleratorsOnly := flags.Bool("accelerators-only", false, "include only inactive accelerator hardware")
+	runtimeName := flags.String("runtime", "", "filter by execution runtime (container or native-macos)")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	if *activeOnly && *acceleratorsOnly {
 		return errors.New("matrix cannot select both active-only and accelerators-only")
+	}
+	if *runtimeName != "" && *runtimeName != "container" && *runtimeName != "native-macos" {
+		return fmt.Errorf("matrix runtime must be container or native-macos (got %q)", *runtimeName)
 	}
 	entries := make([]matrixEntry, 0)
 	for _, hardware := range authoritativeCapabilities.HardwareOrder {
@@ -341,6 +362,9 @@ func writeMatrix(w io.Writer, args []string) error {
 		if *acceleratorsOnly && definition.Active {
 			continue
 		}
+		if *runtimeName != "" && definition.Runtime != *runtimeName {
+			continue
+		}
 		for _, profile := range authoritativeCapabilities.ProfileOrder {
 			if !hardwareSupportsProfile(hardware, profile) {
 				continue
@@ -348,6 +372,8 @@ func writeMatrix(w io.Writer, args []string) error {
 			profileDefinition := authoritativeCapabilities.Profiles[profile]
 			entries = append(entries, matrixEntry{
 				Hardware:     hardware,
+				Runtime:      definition.Runtime,
+				Accelerator:  definition.Accelerator,
 				Profile:      profile,
 				Variant:      profileDefinition.Variant,
 				Runner:       definition.Runner,

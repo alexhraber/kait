@@ -95,8 +95,10 @@ func buildAgentArgs(cfg config) ([]string, error) {
 	id := cfg.identity
 	if id.Hardware == "" {
 		id = identity{
-			Schema:       1,
+			Schema:       3,
 			Hardware:     cfg.hardware,
+			Runtime:      authoritativeCapabilities.Hardware[cfg.hardware].Runtime,
+			Accelerator:  authoritativeCapabilities.Hardware[cfg.hardware].Accelerator,
 			Variant:      cfg.variant,
 			Profile:      cfg.profile,
 			Capabilities: cfg.capabilities,

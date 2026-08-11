@@ -10,14 +10,15 @@
 
 ## Deployment Model
 Kait runs as a long-lived self-hosted agent or a one-shot Kubernetes Job.
-Docker hosts and Kubernetes node pools select the image tag and device
-resources; the Buildkite queue selects where work is dispatched.
+Docker hosts and Kubernetes node pools select Linux image tags and device
+resources; native macOS arm64 hosts install Apple MPS bundles. The Buildkite
+queue selects where work is dispatched.
 
 Semantic-tag publication uses the matching native GitHub host for each active
-image: CPU is built on `ubuntu-24.04` for `linux/amd64`, and Apple is built on
-`ubuntu-24.04-arm` for `linux/arm64`. Verification may use emulation only to
-inspect the already-published Apple image; release publication does not rely on
-QEMU to build an active image.
+surface: Linux containers are built on `ubuntu-24.04` for their declared Linux
+platforms, and Apple bundles are built and smoked on `macos-14` for
+`darwin/arm64`. Release publication does not rely on QEMU or a Linux VM to
+prove Apple MPS access.
 
 Release promotion is a two-stage workflow. A push to `main` runs Release Please,
 which creates or updates the release PR for ordinary merged changes. Merging
@@ -35,13 +36,15 @@ and asks Release Please to open that patch release PR. An existing pending
 release PR and a release-PR merge are excluded, so the fallback cannot create
 parallel release candidates or recurse on its own release commit.
 
-The image dependency contract is layered and installed in a fixed order. Every
-variant contains the pinned Buildkite agent, Go supervisor, and the selected
-hardware manifest. `*-slim` stops after the compact Python foundation; `*-full`
+The execution dependency contract is layered and installed in a fixed order.
+Every variant contains the Go supervisor and selected hardware manifest;
+container variants also contain the pinned Linux Buildkite agent, while the
+native bundle uses the host's native macOS agent. `*-slim` stops after the compact Python foundation; `*-full`
 also installs portable data/science foundations, the Hugging Face training
-stack, experiment/distributed orchestration, and serving interfaces. CPU and
-Apple are the active portable contracts; vendor-specific native extensions
-remain operator extras until their inactive host paths are enabled and proven.
+stack, experiment/distributed orchestration, and serving interfaces. CPU Linux
+containers and Apple native MPS bundles are active contracts; vendor-specific
+native extensions remain operator extras until their inactive host paths are
+enabled and proven.
 Release Please requires the repository permission for `GITHUB_TOKEN` to create
 pull requests, in addition to the workflow scopes.
 
@@ -50,6 +53,13 @@ pull requests, in addition to the workflow scopes.
 image reference, then places `KAIT_CONTAINER_COMMAND` after the image. This
 keeps agent launches and one-shot commands such as `smoke` valid for Docker
 and Kubernetes executor workflows.
+
+## Native Apple Launch Wrapper
+`deploy/macos/install.sh` installs the immutable Apple identity, ordered Python
+manifests, and Darwin/arm64 supervisor. `deploy/macos/run.sh` asserts the
+Apple hardware class, preserves the host's native Metal environment, and
+starts the host-installed Buildkite agent. It intentionally does not launch an
+Apple GPU job inside an OCI container.
 
 ## Service Level Objectives
 | SLI | Initial target | Measurement |
@@ -106,7 +116,8 @@ user-facing conventional types (`feat`, `fix`, `perf`). Squash titles of
 `chore:` / `docs:` / `ci:` produce a successful Release PR workflow run with
 **no** release PR and a skipped image dispatch (observed after #13).
 
-After active images pass verify, the **Annotate GitHub release with image tags**
+After active container images and native Apple bundles pass verify, the
+**Annotate GitHub release with image tags**
 job appends a Container images section (pull table + example) to the existing
 release body. It uses `gh release edit --notes-file` (or `create` only if the
 release is missing). It never uses `--generate-notes`. Re-runs are idempotent:
@@ -122,9 +133,10 @@ in README/CONTRIBUTING; automation via Packages REST visibility endpoints may
 return 404 depending on token scopes.
 
 ## Rollout and Recovery
-- Publish immutable `<tag>-<hardware>-<variant>` tags; ordinary semantic-tag
-  releases contain active `cpu-slim`, `cpu-full`, `apple-slim`, and
-  `apple-full` images plus compatibility aliases for the slim images.
+- Publish immutable `<tag>-<hardware>-<profile>` container tags and
+  `kait-<tag>-apple-<profile>.tar.gz` native bundles; ordinary semantic-tag
+  releases contain active CPU containers and Apple MPS assets. Historical
+  Apple OCI aliases remain CPU-only compatibility artifacts.
 - Start one canary agent per hardware queue.
 - Verify health, agent registration, and a reference job.
 - Roll the queue to the new image after the canary is healthy.
@@ -176,7 +188,7 @@ vendor device runtime.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `c70f67f5dedfa45dbe5c2c90971c52f165d80c3755cabac1982850ba12279dc0`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
+- Repository signal fingerprint: `d6993cfb34484a0c37b542359b327a6d9ef2f62893edf89c327a8429a5e19e94`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

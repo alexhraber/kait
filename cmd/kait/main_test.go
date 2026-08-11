@@ -52,6 +52,13 @@ func TestCapabilityContractDefinesOfficialProfilesAndHardware(t *testing.T) {
 			}
 		}
 	}
+	apple, err := resolveContract("apple", "data-science", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if apple.Runtime != "native-macos" || apple.Accelerator != "mps" || apple.Requirements[0] != "apple-mps.txt" {
+		t.Fatalf("Apple contract = %+v, want native macOS MPS with apple-mps.txt", apple)
+	}
 }
 
 func TestCapabilityCompositionIsIntentional(t *testing.T) {
@@ -129,6 +136,8 @@ func TestBuildAgentArgsUsesIdentityTagsAndRejectsOverrides(t *testing.T) {
 		"custom=true",
 		"kait=true",
 		"kait.hardware=cpu",
+		"kait.runtime=container",
+		"kait.accelerator=cpu",
 		"kait.profile=full",
 		"kait.capability.training=true",
 		"kait.capability.serving=true",
@@ -183,12 +192,59 @@ func TestMatrixIsDerivedFromContract(t *testing.T) {
 		t.Fatalf("active matrix entries = %d, want 12", len(matrix.Include))
 	}
 	for _, entry := range matrix.Include {
-		if entry.Hardware != "cpu" && entry.Hardware != "apple" {
-			t.Fatalf("inactive hardware in active matrix: %+v", entry)
+		if entry.Hardware == "cpu" && entry.Runtime != "container" {
+			t.Fatalf("CPU matrix entry is not a container: %+v", entry)
+		}
+		if entry.Hardware == "apple" && (entry.Runtime != "native-macos" || entry.Accelerator != "mps") {
+			t.Fatalf("Apple matrix entry is not native MPS: %+v", entry)
 		}
 		if entry.Capabilities == "" || entry.Target == "" {
 			t.Fatalf("incomplete matrix entry: %+v", entry)
 		}
+	}
+	var containers bytes.Buffer
+	if err := writeMatrix(&containers, []string{"--active-only", "--runtime", "container"}); err != nil {
+		t.Fatal(err)
+	}
+	var containerMatrix struct {
+		Include []matrixEntry `json:"include"`
+	}
+	if err := json.Unmarshal(containers.Bytes(), &containerMatrix); err != nil {
+		t.Fatal(err)
+	}
+	if len(containerMatrix.Include) != len(profileNames()) {
+		t.Fatalf("container matrix entries = %d, want %d", len(containerMatrix.Include), len(profileNames()))
+	}
+	for _, entry := range containerMatrix.Include {
+		if entry.Hardware != "cpu" || entry.Runtime != "container" {
+			t.Fatalf("non-container hardware in container matrix: %+v", entry)
+		}
+	}
+	var native bytes.Buffer
+	if err := writeMatrix(&native, []string{"--active-only", "--runtime", "native-macos"}); err != nil {
+		t.Fatal(err)
+	}
+	var nativeMatrix struct {
+		Include []matrixEntry `json:"include"`
+	}
+	if err := json.Unmarshal(native.Bytes(), &nativeMatrix); err != nil {
+		t.Fatal(err)
+	}
+	if len(nativeMatrix.Include) != len(profileNames()) {
+		t.Fatalf("native matrix entries = %d, want %d", len(nativeMatrix.Include), len(profileNames()))
+	}
+	for _, entry := range nativeMatrix.Include {
+		if entry.Hardware != "apple" || entry.Runtime != "native-macos" {
+			t.Fatalf("unexpected native matrix entry: %+v", entry)
+		}
+	}
+}
+
+func TestNativeIdentityCannotClaimContainerRuntime(t *testing.T) {
+	id := installTestIdentity(t, "apple", "full")
+	id.Runtime = "container"
+	if err := validateIdentity(id); err == nil || !strings.Contains(err.Error(), "runtime") {
+		t.Fatalf("validateIdentity() error = %v, want runtime mismatch", err)
 	}
 }
 

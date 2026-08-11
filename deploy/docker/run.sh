@@ -84,7 +84,11 @@ case "${hardware}" in
   nvidia) args+=(--gpus "${KAIT_GPU_DEVICES:-all}") ;;
   amd) args+=(--device /dev/kfd --device /dev/dri --group-add video) ;;
   intel) args+=(--device /dev/dri --group-add video) ;;
-  cpu|apple) ;;
+  cpu) ;;
+  apple)
+    echo "Apple GPU workers require the native macOS arm64 bundle; Apple Container/Linux OCI images do not expose Metal/MPS" >&2
+    exit 2
+    ;;
   *) echo "unsupported KAIT_HARDWARE=${hardware}" >&2; exit 2 ;;
 esac
 

@@ -20,7 +20,8 @@ jobs:
     name: Resolve capability matrix
     runs-on: ubuntu-24.04
     outputs:
-      active: ${{ steps.matrix.outputs.active }}
+      containers: ${{ steps.matrix.outputs.containers }}
+      native: ${{ steps.matrix.outputs.native }}
       accelerators: ${{ steps.matrix.outputs.accelerators }}
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +32,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "active=$(go run ./cmd/kait matrix --active-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
+          echo "containers=$(go run ./cmd/kait matrix --active-only --runtime container | tr -d '\n')" >> "$GITHUB_OUTPUT"
+          echo "native=$(go run ./cmd/kait matrix --active-only --runtime native-macos | tr -d '\n')" >> "$GITHUB_OUTPUT"
           echo "accelerators=$(go run ./cmd/kait matrix --accelerators-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
 
   build:
@@ -40,7 +42,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.active) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.containers) }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -58,6 +60,7 @@ jobs:
             --tag "${IMAGE}" \
             --build-arg BASE_IMAGE="${{ matrix.base_image }}" \
             --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
+            --build-arg KAIT_VERSION=ci \
             --build-arg KAIT_HARDWARE="${{ matrix.hardware }}" \
             --build-arg KAIT_VARIANT="${{ matrix.variant }}" \
             --build-arg KAIT_PROFILE="${{ matrix.profile }}" \
@@ -68,6 +71,39 @@ jobs:
             .
           docker run --rm --platform "${{ matrix.platform }}" "${IMAGE}" doctor
           docker run --rm --platform "${{ matrix.platform }}" "${IMAGE}" smoke
+
+  build-native:
+    name: Build native ${{ matrix.hardware }}-${{ matrix.profile }}
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.native) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build and smoke native Apple MPS worker
+        env:
+          PROFILE: ${{ matrix.profile }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]
+          go build -trimpath -o "$RUNNER_TEMP/kait" ./cmd/kait
+          go run ./cmd/kait contract --hardware apple --profile "$PROFILE" > "$RUNNER_TEMP/identity.json"
+          jq -e '.schema == 3 and .runtime == "native-macos" and .accelerator == "mps"' "$RUNNER_TEMP/identity.json" >/dev/null
+          sudo mkdir -p "/Library/Application Support/Kait"
+          sudo cp "$RUNNER_TEMP/identity.json" "/Library/Application Support/Kait/identity.json"
+          python3 -m venv "$RUNNER_TEMP/kait-venv"
+          "$RUNNER_TEMP/kait-venv/bin/pip" install --upgrade pip
+          while IFS= read -r manifest; do
+            "$RUNNER_TEMP/kait-venv/bin/pip" install -r "requirements/$manifest"
+          done < <(jq -r '.requirements[]' "$RUNNER_TEMP/identity.json")
+          export PATH="$RUNNER_TEMP/kait-venv/bin:$PATH"
+          "$RUNNER_TEMP/kait" doctor
+          "$RUNNER_TEMP/kait" smoke
 
   build-accelerators:
     name: Build accelerator ${{ matrix.hardware }}-${{ matrix.profile }}
@@ -91,6 +127,7 @@ jobs:
             --tag "${IMAGE}" \
             --build-arg BASE_IMAGE="${{ matrix.base_image }}" \
             --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
+            --build-arg KAIT_VERSION=ci \
             --build-arg KAIT_HARDWARE="${{ matrix.hardware }}" \
             --build-arg KAIT_VARIANT="${{ matrix.variant }}" \
             --build-arg KAIT_PROFILE="${{ matrix.profile }}" \
