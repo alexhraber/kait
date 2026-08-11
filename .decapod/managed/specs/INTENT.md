@@ -31,7 +31,7 @@ deliberate host testing but are inactive in automatic CI and release until
 matching runners exist.
 
 Key operating facts:
-- **Release images:** Release Please tags must dispatch `release-images.yml` (requires `actions: write` on the release job) or GHCR never receives versioned tags.
+- **Release images:** Release Please tags must dispatch `release-images.yml` (requires `actions: write` on the release job) or GHCR never receives versioned tags. Managed entrypoints and Dockerfile.decapod pin track Decapod **0.96.16**.
 - **Primary languages**: Go, Dockerfile, shell, YAML
 - **Surfaces**: Go supervisor, Docker Bake matrix, Docker launcher, Kubernetes
   Job template, Python requirement layers, Release Please + GHCR image CI
