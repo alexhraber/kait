@@ -84,6 +84,15 @@ container logs with their node agent or OpenTelemetry Collector.
 - Communication: record the affected hardware queue and observability mode.
 - Post-incident: add a reference job or validation case for the failure mode.
 
+## Release image promotion
+
+GitHub Releases are created by Release Please on merge of its release PR. Image
+publication is a separate `workflow_dispatch` of `release-images.yml` against
+the immutable tag, because tags created with `GITHUB_TOKEN` do not re-trigger
+`on: push: tags` workflows. The Release Please job therefore needs
+`actions: write` so it can dispatch image builds; without that permission the
+tag and release still appear but GHCR stays empty (observed for v0.2.0).
+
 ## Rollout and Recovery
 - Publish immutable `<tag>-<hardware>-<variant>` tags; ordinary semantic-tag
   releases contain active `cpu-slim`, `cpu-full`, `apple-slim`, and
@@ -139,7 +148,7 @@ vendor device runtime.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `6c4805884ae976e92ae4a4aa78a88d1ef2b5d83bc3a16bd9d53bdd45c03b6a87`
+- Repository signal fingerprint: `c26fd3e39755202a0870c2ba78cc44f5f53bbdae45cc614ec6a8311547f5b2db`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

@@ -47,11 +47,23 @@ to pull something in.
 
 1. Merge ordinary PRs to `main` → Release Please maintains a release PR.
 2. Merge the release PR → creates the semver tag and GitHub release.
-3. The image workflow builds active CPU/Apple tags against that tag.
+3. Release Please dispatches `release-images.yml` against that tag (GitHub does
+   not re-trigger `on: push` tags created with `GITHUB_TOKEN`).
+4. Image CI builds active CPU/Apple slim+full tags to GHCR with provenance/SBOM.
 
-The Release Please workflow needs “Allow GitHub Actions to create and approve
-pull requests” enabled on the repository, plus contents/issues/pull-requests
-write permissions.
+Repository settings:
+
+- Enable “Allow GitHub Actions to create and approve pull requests”.
+- The release workflow must keep `contents`, `issues`, `pull-requests`, and
+  **`actions: write`** so it can `workflow_dispatch` the image job. Without
+  `actions: write`, the tag/release still appears but GHCR stays empty.
+
+To republish an existing tag (e.g. after a failed dispatch):
+
+```bash
+gh workflow run release-images.yml --ref v0.2.0 \
+  -f version=v0.2.0 -f publish_stable=true -f enable_accelerators=false
+```
 
 Accelerator images (NVIDIA/AMD/Intel) stay manual opt-in until matching runners
 exist. Do not re-enable them on the default CI path without host capacity.

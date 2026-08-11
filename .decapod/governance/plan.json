@@ -1,26 +1,26 @@
 {
   "schema_version": "1.0.0",
-  "title": "Architecture doc expansion",
-  "intent": "Add docs/architecture.md covering supervisor layout, image matrix, deploy paths, and observability; link from README; keep root README thin. Push onto polish/repo-cleanup.",
+  "title": "Fix release image dispatch for GHCR publication",
+  "intent": "Grant actions:write on Release Please so workflow_dispatch of release-images.yml succeeds after tag creation; document republish path; align Decapod 0.96.16 pins; recover v0.2.0 GHCR matrix (cpu/apple slim+full).",
   "state": "APPROVED",
   "todo_ids": [
-    "feat_01kzqhb5s1z1s7pv"
+    "feat_01kzqnht6c7gryje"
   ],
   "proof_hooks": [
-    "GOCACHE=/tmp/kaite-gocache go test ./...",
-    "decapod validate"
+    "decapod validate --refresh-specs",
+    "gh workflow run release-images.yml --ref v0.2.0 -f version=v0.2.0 -f publish_stable=true -f enable_accelerators=false"
   ],
   "unknowns": [],
   "human_questions": [],
   "stop_conditions": [
-    "No runtime behavior changes"
+    "Do not re-enable accelerator auto-release without matching hosts"
   ],
   "unresolved_contradictions": [],
   "deferred_questions": [],
   "constraints": {
     "forbidden_paths": [],
-    "file_touch_budget": 15
+    "file_touch_budget": 25
   },
   "phases": [],
-  "updated_at": "1786422646Z"
+  "updated_at": "1786427100Z"
 }
