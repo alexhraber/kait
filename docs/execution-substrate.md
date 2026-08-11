@@ -124,6 +124,14 @@ The current official workload capabilities are:
 
 The current hardware classes are CPU, Apple, NVIDIA, AMD, and Intel.
 
+Kait publishes six explicit profiles across the hardware matrix: the
+compatibility profiles `slim` and `full`, plus the workload profiles
+`data-science`, `training`, `orchestration`, and `serving`. The workload
+profiles are real image compositions, not aliases to a larger image. `training`
+composes the data-science foundation; `orchestration` and `serving` remain
+independent so their selectors describe meaningful execution environments;
+`full` composes all four official workload capabilities.
+
 These two dimensions give Buildkite's scheduling surface computational
 meaning. A worker advertises the hardware and runtime capability available at
 that execution surface.
@@ -152,6 +160,13 @@ The request identifies the execution requirement: NVIDIA-backed Kait training
 capability. Buildkite routes the job onto an eligible execution surface. Kait
 supplies the training runtime. The pipeline expresses the computational
 capability required for the job.
+
+The image's `/etc/kait/identity.json` is baked during construction by the same
+contract resolver that selects its manifests. `kait doctor` reports that
+identity and host hardware evidence, while `kait smoke` executes bounded local
+checks for every advertised capability. Runtime environment variables may
+assert the baked values but cannot create a capability claim or replace a
+different image identity.
 
 This is the operating model Kait makes concrete:
 

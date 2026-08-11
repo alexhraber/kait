@@ -7,12 +7,27 @@ import (
 )
 
 func main() {
-	if err := configureHardwareEnvironment(); err != nil {
-		logEvent("error", "hardware_environment_failed", map[string]string{"error": err.Error()})
-		os.Exit(1)
+	contractCommand := len(os.Args) > 1 && (os.Args[1] == "contract" || os.Args[1] == "matrix")
+	if !contractCommand {
+		if err := configureHardwareEnvironment(); err != nil {
+			logEvent("error", "hardware_environment_failed", map[string]string{"error": err.Error()})
+			os.Exit(1)
+		}
 	}
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "contract":
+			if err := writeContract(os.Stdout, os.Args[2:]); err != nil {
+				logEvent("error", "contract_failed", map[string]string{"error": err.Error()})
+				os.Exit(2)
+			}
+			return
+		case "matrix":
+			if err := writeMatrix(os.Stdout, os.Args[2:]); err != nil {
+				logEvent("error", "matrix_failed", map[string]string{"error": err.Error()})
+				os.Exit(2)
+			}
+			return
 		case "doctor":
 			if err := writeDoctor(os.Stdout); err != nil {
 				logEvent("error", "doctor_failed", map[string]string{"error": err.Error()})
@@ -44,12 +59,14 @@ func main() {
 		startTime:    time.Now().UTC(),
 		hardware:     cfg.hardware,
 		variant:      cfg.variant,
+		profile:      cfg.profile,
 		capabilities: strings.Join(cfg.capabilities, ","),
 		o11y:         cfg.o11y,
 	}
 	logEvent("info", "runtime_starting", map[string]string{
 		"hardware":     cfg.hardware,
 		"variant":      cfg.variant,
+		"profile":      cfg.profile,
 		"capabilities": strings.Join(cfg.capabilities, ","),
 		"o11y":         cfg.o11y,
 		"run_mode":     cfg.runMode,

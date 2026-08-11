@@ -7,12 +7,17 @@ if [[ -z "${KAIT_CONTAINER_COMMAND:-}" && "${KAIT_RUN_MODE:-agent}" == "agent" &
 fi
 hardware="${KAIT_HARDWARE:-cpu}"
 variant="${KAIT_VARIANT:-slim}"
+profile="${KAIT_PROFILE:-${variant}}"
 o11y="${KAIT_O11Y:-none}"
-case "${variant}" in
-  slim|full) ;;
-  *) echo "unsupported KAIT_VARIANT=${variant}" >&2; exit 2 ;;
+case "${profile}" in
+  slim|full|data-science|training|orchestration|serving) ;;
+  *) echo "unsupported KAIT_PROFILE=${profile}" >&2; exit 2 ;;
 esac
-image="${KAIT_IMAGE:-ghcr.io/alexhraber/kait:${hardware}-${variant}}"
+case "${profile}" in
+  slim|data-science) variant="slim" ;;
+  full|training|orchestration|serving) variant="full" ;;
+esac
+image="${KAIT_IMAGE:-ghcr.io/alexhraber/kait:${hardware}-${profile}}"
 
 args=(
   --rm
@@ -21,6 +26,7 @@ args=(
   --publish "${KAIT_METRICS_PORT:-9090}:9090"
   --env "KAIT_HARDWARE=${hardware}"
   --env "KAIT_VARIANT=${variant}"
+  --env "KAIT_PROFILE=${profile}"
   --env "KAIT_O11Y=${o11y}"
   --env "KAIT_METRICS_ADDR=${KAIT_METRICS_ADDR:-0.0.0.0:9090}"
   --env "OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-kait}"
@@ -52,6 +58,7 @@ for name in \
   BUILDKITE_KUBERNETES_EXEC \
   KAIT_RUN_MODE \
   KAIT_COMMAND \
+  KAIT_PROFILE \
   KAIT_CAPABILITIES \
   DD_AGENT_HOST \
   DD_DOGSTATSD_PORT \

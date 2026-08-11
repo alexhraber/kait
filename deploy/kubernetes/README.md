@@ -15,7 +15,7 @@ kubectl apply -f deploy/kubernetes/kait-agent.yaml
 
 Defaults in the template:
 
-- image `ghcr.io/alexhraber/kait:cpu-slim` (`data-science` capability)
+- image `ghcr.io/alexhraber/kait:cpu-data-science` (`data-science` profile)
 - queue `ai`, `BUILDKITE_AGENT_DISCONNECT_AFTER_JOB=true`
 - Prometheus scrape annotations on port `9090`
 
@@ -26,8 +26,8 @@ Agent Stack only.
 
 ## Targeting
 
-Change `image`, `KAIT_HARDWARE`, `KAIT_VARIANT`, capability tags, and
-resources for the host class. Active paths are CPU (`linux/amd64` + `arm64`)
+Change `image`, `KAIT_HARDWARE`, `KAIT_VARIANT`, `KAIT_PROFILE`, capability
+tags, and resources for the host class. Active paths are CPU (`linux/amd64` + `arm64`)
 and Apple (`linux/arm64`). Accelerator images need the matching device plugin
 and stay manual opt-ins outside automatic CI/release. The image's baked
 identity must agree with the values and tags in the manifest.

@@ -1,17 +1,19 @@
 {
   "schema_version": "1.0.0",
-  "title": "Automate release publication after merge",
-  "intent": "Make Kait releases run automatically on the post-merge main path, and update README Decapod identity to v0.97.0 without changing the existing release contract.",
+  "title": "Realize Kait execution-substrate capability architecture",
+  "intent": "Review alexhraber/kait against the execution-substrate contract and implement an aggressive, coherent capability architecture with exactly the public profiles slim, full, data-science, training, orchestration, and serving. Make workload capabilities, hardware contracts, baked image identity, Buildkite metadata and selectors, doctor/smoke validation, CI/release artifacts, downstream derivation, and documentation agree as working Kait functionality, while deriving slim and full as intentional compositions from the same model.",
   "state": "APPROVED",
   "todo_ids": [
-    "docs_01kzs983z7h7kkdq"
+    "fend_01kzsbbcxbwgpdfb"
   ],
   "proof_hooks": [
     "git diff --check",
-    "go test ./...",
     "decapod validate",
-    "GitHub workflow syntax and trigger inspection",
-    "README badge shows v0.97.0"
+    "capability contract tests",
+    "doctor and smoke validation",
+    "image/release matrix validation",
+    "documentation consistency checks",
+    "slim/full compatibility profile resolution"
   ],
   "unknowns": [],
   "human_questions": [],
@@ -20,8 +22,8 @@
   "deferred_questions": [],
   "constraints": {
     "forbidden_paths": [],
-    "file_touch_budget": 6
+    "file_touch_budget": 100
   },
   "phases": [],
-  "updated_at": "1786481536Z"
+  "updated_at": "1786483443Z"
 }

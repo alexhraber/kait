@@ -10,46 +10,24 @@ import (
 
 const defaultIdentityPath = "/etc/kait/identity.json"
 
-// identityPath is a variable so unit tests can exercise image/runtime
-// identity checks without writing to the host filesystem. The image always
-// uses the fixed default path; it is not a runtime configuration knob.
+// identityPath is a variable so unit tests can exercise baked identity checks
+// without writing to the host filesystem. Official images always use the
+// fixed default path; it is not a runtime configuration knob.
 var identityPath = defaultIdentityPath
 
 type identity struct {
 	Schema       int      `json:"schema"`
 	Hardware     string   `json:"hardware"`
 	Variant      string   `json:"variant"`
+	Profile      string   `json:"profile"`
 	Capabilities []string `json:"capabilities"`
-}
-
-var supportedCapabilities = map[string]bool{
-	"data-science":  true,
-	"training":      true,
-	"orchestration": true,
-	"serving":       true,
+	Requirements []string `json:"requirements,omitempty"`
 }
 
 func loadRuntimeIdentity() (identity, error) {
 	data, err := os.ReadFile(identityPath)
 	if errors.Is(err, os.ErrNotExist) {
-		id := identity{
-			Schema:   1,
-			Hardware: lowerEnv("KAIT_HARDWARE", "cpu"),
-			Variant:  lowerEnv("KAIT_VARIANT", "slim"),
-		}
-		capabilities := strings.TrimSpace(os.Getenv("KAIT_CAPABILITIES"))
-		if capabilities == "" {
-			id.Capabilities = capabilitiesForVariant(id.Variant)
-		} else {
-			id.Capabilities, err = parseCapabilities(capabilities)
-			if err != nil {
-				return identity{}, err
-			}
-		}
-		if err := validateIdentity(id); err != nil {
-			return identity{}, err
-		}
-		return id, nil
+		return identity{}, fmt.Errorf("Kait baked image identity is missing at %s", identityPath)
 	}
 	if err != nil {
 		return identity{}, fmt.Errorf("read Kait image identity %s: %w", identityPath, err)
@@ -61,6 +39,10 @@ func loadRuntimeIdentity() (identity, error) {
 	}
 	id.Hardware = strings.ToLower(strings.TrimSpace(id.Hardware))
 	id.Variant = strings.ToLower(strings.TrimSpace(id.Variant))
+	id.Profile = strings.ToLower(strings.TrimSpace(id.Profile))
+	if id.Profile == "" {
+		id.Profile = profileForIdentity(id)
+	}
 	if err := validateIdentity(id); err != nil {
 		return identity{}, err
 	}
@@ -70,6 +52,9 @@ func loadRuntimeIdentity() (identity, error) {
 	}
 	if value := strings.TrimSpace(os.Getenv("KAIT_VARIANT")); value != "" && strings.ToLower(value) != id.Variant {
 		return identity{}, fmt.Errorf("KAIT_VARIANT=%q conflicts with baked image variant %q", value, id.Variant)
+	}
+	if value := strings.TrimSpace(os.Getenv("KAIT_PROFILE")); value != "" && strings.ToLower(value) != id.Profile {
+		return identity{}, fmt.Errorf("KAIT_PROFILE=%q conflicts with baked image profile %q", value, id.Profile)
 	}
 	if value := strings.TrimSpace(os.Getenv("KAIT_CAPABILITIES")); value != "" {
 		capabilities, err := parseCapabilities(value)
@@ -99,8 +84,22 @@ func sameCapabilities(left, right []string) bool {
 	return true
 }
 
+func validateHardware(hardware string) error {
+	if _, ok := authoritativeCapabilities.Hardware[hardware]; !ok {
+		return fmt.Errorf("KAIT_HARDWARE must be one of %s (got %q)", strings.Join(supportedHardwareNames(), ", "), hardware)
+	}
+	return nil
+}
+
+func validateVariant(variant string) error {
+	if variant != "slim" && variant != "full" {
+		return fmt.Errorf("KAIT_VARIANT must be one of slim, full (got %q)", variant)
+	}
+	return nil
+}
+
 func validateIdentity(id identity) error {
-	if id.Schema != 1 {
+	if id.Schema != 1 && id.Schema != 2 {
 		return fmt.Errorf("unsupported Kait image identity schema %d", id.Schema)
 	}
 	if err := validateHardware(id.Hardware); err != nil {
@@ -109,58 +108,41 @@ func validateIdentity(id identity) error {
 	if err := validateVariant(id.Variant); err != nil {
 		return err
 	}
-	if len(id.Capabilities) == 0 {
-		return fmt.Errorf("Kait image identity must declare at least one capability")
+	profileDefinition, ok := authoritativeCapabilities.Profiles[id.Profile]
+	if !ok {
+		return fmt.Errorf("unsupported Kait image profile %q", id.Profile)
 	}
-	seen := make(map[string]bool, len(id.Capabilities))
-	for _, capability := range id.Capabilities {
-		if !supportedCapabilities[capability] {
-			return fmt.Errorf("unsupported Kait capability %q", capability)
-		}
-		if seen[capability] {
-			return fmt.Errorf("duplicate Kait capability %q", capability)
-		}
-		seen[capability] = true
+	if profileDefinition.Variant != id.Variant {
+		return fmt.Errorf("Kait image profile %q requires variant %q, got %q", id.Profile, profileDefinition.Variant, id.Variant)
 	}
-	if !seen["data-science"] {
-		return fmt.Errorf("Kait image identity must include data-science capability")
+	if !sameCapabilities(profileDefinition.Capabilities, id.Capabilities) {
+		return fmt.Errorf("Kait image identity capabilities %q do not match profile %q", strings.Join(id.Capabilities, ","), id.Profile)
+	}
+	if id.Schema == 2 && len(id.Requirements) == 0 {
+		return fmt.Errorf("Kait image identity schema 2 must declare requirements")
+	}
+	if len(id.Requirements) > 0 {
+		expected, err := orderedRequirements(id.Hardware, id.Profile)
+		if err != nil {
+			return err
+		}
+		if !sameStrings(expected, id.Requirements) {
+			return fmt.Errorf("Kait image identity requirements do not match profile %q", id.Profile)
+		}
 	}
 	return nil
 }
 
-func capabilitiesForVariant(variant string) []string {
-	if variant == "full" {
-		return []string{"data-science", "training", "orchestration", "serving"}
+func sameStrings(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
 	}
-	return []string{"data-science"}
-}
-
-func parseCapabilities(value string) ([]string, error) {
-	var capabilities []string
-	seen := make(map[string]bool)
-	for _, raw := range strings.Split(value, ",") {
-		capability := strings.ToLower(strings.TrimSpace(raw))
-		if capability == "" {
-			return nil, fmt.Errorf("KAIT_CAPABILITIES contains an empty capability")
-		}
-		if !supportedCapabilities[capability] {
-			return nil, fmt.Errorf("unsupported Kait capability %q", capability)
-		}
-		if seen[capability] {
-			return nil, fmt.Errorf("duplicate Kait capability %q", capability)
-		}
-		seen[capability] = true
-		capabilities = append(capabilities, capability)
-	}
-	if len(capabilities) == 0 {
-		return nil, fmt.Errorf("KAIT_CAPABILITIES must not be empty")
-	}
-	for _, capability := range capabilities {
-		if capability == "data-science" {
-			return capabilities, nil
+	for index := range left {
+		if left[index] != right[index] {
+			return false
 		}
 	}
-	return nil, fmt.Errorf("KAIT_CAPABILITIES must include data-science")
+	return true
 }
 
 func canonicalAgentTags(id identity, o11y string) []string {
@@ -168,6 +150,7 @@ func canonicalAgentTags(id identity, o11y string) []string {
 		"kait=true",
 		"kait.hardware=" + id.Hardware,
 		"kait.variant=" + id.Variant,
+		"kait.profile=" + id.Profile,
 		"kait.o11y=" + o11y,
 	}
 	for _, capability := range id.Capabilities {

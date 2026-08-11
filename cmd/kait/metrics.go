@@ -21,6 +21,7 @@ type metrics struct {
 	startTime    time.Time
 	hardware     string
 	variant      string
+	profile      string
 	capabilities string
 	o11y         string
 }
@@ -72,7 +73,7 @@ func shutdownServer(server *http.Server) {
 }
 
 func (m *metrics) prometheus() string {
-	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",variant=\"" + prometheusLabel(m.variant) + "\",capabilities=\"" + prometheusLabel(m.capabilities) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
+	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",variant=\"" + prometheusLabel(m.variant) + "\",profile=\"" + prometheusLabel(m.profile) + "\",capabilities=\"" + prometheusLabel(m.capabilities) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
 	var b strings.Builder
 	fmt.Fprintf(&b, "# HELP kait_info Kait runtime build and configuration information.\n# TYPE kait_info gauge\nkait_info{version=\"%s\",%s} 1\n", version, labels)
 	fmt.Fprintf(&b, "# HELP kait_agent_starts_total Number of child process starts.\n# TYPE kait_agent_starts_total counter\nkait_agent_starts_total{%s} %d\n", labels, m.starts.Load())

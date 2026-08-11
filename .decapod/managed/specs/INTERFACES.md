@@ -24,7 +24,7 @@ ordering, checkout, command execution, artifact upload, and job status.
 |---|---|---|
 | BUILDKITE_AGENT_TOKEN | Agent mode | Cluster token passed only to the child process |
 | BUILDKITE_AGENT_TOKEN_FILE | Agent mode alternative | Uses Buildkite file token syntax for a mounted secret |
-| BUILDKITE_AGENT_TAGS | Optional | Explicit tags; otherwise Kait adds hardware, variant, and o11y tags |
+| BUILDKITE_AGENT_TAGS | Optional | Custom tags; Kait always derives reserved hardware/profile/capability tags from baked identity |
 | BUILDKITE_AGENT_NAME | Optional | Forwarded to Buildkite agent start |
 | BUILDKITE_AGENT_CONFIG | Optional | Forwarded config path |
 | BUILDKITE_KUBERNETES_EXEC | Optional | Enables Buildkite Kubernetes log/exit transport |
@@ -34,6 +34,7 @@ ordering, checkout, command execution, artifact upload, and job status.
 |---|---|---|
 | KAIT_HARDWARE | cpu, apple, nvidia, amd, intel | cpu |
 | KAIT_VARIANT | slim, full | slim |
+| KAIT_PROFILE | slim, full, data-science, training, orchestration, serving | baked image profile |
 | KAIT_O11Y | none, prometheus, datadog, splunk | none |
 | KAIT_RUN_MODE | agent, command | agent |
 | KAIT_COMMAND | shell command | unset; required in command mode |
@@ -50,17 +51,14 @@ ordering, checkout, command execution, artifact upload, and job status.
 
 | Target | Base and platform | Status | Hardware behavior |
 |---|---|---|---|
-| cpu-slim / cpu-full | Ubuntu 24.04; linux/amd64 and linux/arm64 | active | CPU PyTorch runtime; full adds AI/ML layers |
-| apple-slim / apple-full | Ubuntu 24.04; linux/arm64 | active | Apple Silicon CPU execution; full adds AI/ML layers; no Metal passthrough |
-| nvidia-slim / nvidia-full | CUDA 12.6.3; linux/amd64 | inactive | NVIDIA runtime; full adds AI/ML layers |
-| amd-slim / amd-full | ROCm 6.2.4; linux/amd64 | inactive | AMD runtime; full adds AI/ML layers |
-| intel-slim / intel-full | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04; linux/amd64 | inactive | Python 3.11 and Intel XPU runtime; full adds AI/ML layers |
+| `<hardware>-<profile>` | Contract model base/platform; six profiles per hardware | CPU/Apple active; accelerators opt-in | Identity and manifests are resolved from the shared profile model |
 
 Inactive accelerator targets are available for deliberate local or manual
 workflow use. Their matching `kait-nvidia`, `kait-amd`, and `kait-intel`
 runner labels do not participate in ordinary CI or semantic-tag releases.
-Canonical image tags use `<tag>-<hardware>-<variant>`, for example
-`v1.2.3-apple-full`; stable aliases use `apple-full` and `apple-slim`.
+Canonical image tags use `<tag>-<hardware>-<profile>`, for example
+`v1.2.3-apple-training`; stable aliases use each profile name and retain
+`apple` as the slim compatibility alias.
 
 ## Data Ownership
 - Buildkite is the source of truth for job state, logs, artifacts, and metadata.
@@ -86,7 +84,7 @@ Canonical image tags use `<tag>-<hardware>-<variant>`, for example
 ## Interface Versioning
 - Version strategy: GHCR image tags plus the supervisor `version` constant in
   `cmd/kait/version.go` (kept in lockstep with the released package version,
-  currently `0.2.0`).
+  currently `0.2.1`).
 - Backward compatibility: existing environment names remain stable within a
   major image line; new options are additive.
 - Deprecation: announce in README and living specs before removing an input.
@@ -124,7 +122,7 @@ Canonical image tags use `<tag>-<hardware>-<variant>`, for example
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `b6d11da136f226514164fe45295784a398101fde9125eea090293ec174e43be7`
+- Repository signal fingerprint: `c70f67f5dedfa45dbe5c2c90971c52f165d80c3755cabac1982850ba12279dc0`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

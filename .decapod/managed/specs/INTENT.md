@@ -16,19 +16,21 @@
 <!-- decapod:declared-capabilities:end -->
 
 ## Product Outcome
-Kait ships self-hosted Buildkite agents with a portable AI/ML runtime: a
-pinned agent, slim/full Python toolchains, hardware image contracts, and
-collector-friendly metrics. Operators pick an image tag for the host class and
-run ordinary Buildkite jobs inside that environment.
+Kait ships self-hosted Buildkite agents with a portable, capability-oriented
+AI/ML runtime: a pinned agent, profile-derived Python toolchains, hardware image
+contracts, baked identity, and collector-friendly metrics. Operators pick a
+workload profile and hardware image tag, then run ordinary Buildkite jobs in
+the validated execution surface.
 
 ## What This Project Is
 A small Go supervisor (`cmd/kait`) packaged into hardware-specific Linux
-images. Buildkite remains the orchestrator; Kait owns process supervision,
+images. Buildkite remains the orchestrator; Kait owns the authoritative
+capability model, profile composition, baked identity, process supervision,
 input validation, health/metrics, and diagnostic subcommands (`doctor`,
 `smoke`, `hardware`). Active delivery targets are CPU and Apple Silicon
-(linux/arm64). NVIDIA, AMD, and Intel bake targets stay available for
-deliberate host testing but are inactive in automatic CI and release until
-matching runners exist.
+(linux/arm64). NVIDIA, AMD, and Intel profiles stay available for deliberate
+host testing but are inactive in automatic CI and release until matching
+runners exist.
 
 Key operating facts:
 - **Release images:** Release Please tags must dispatch `release-images.yml`
@@ -46,8 +48,9 @@ Key operating facts:
 - **Decapod pin:** managed entrypoints and Dockerfile.decapod track the
   evaluating Decapod release (refresh via validate / workspace ensure).
 - **Primary languages**: Go, Dockerfile, shell, YAML
-- **Surfaces**: Go supervisor, Docker Bake matrix, Docker launcher, Kubernetes
-  Job template, Python requirement layers, Release Please + GHCR image CI
+- **Surfaces**: embedded capability model, Go supervisor, Docker Bake matrix,
+  Docker launcher, Kubernetes Job template, Python requirement layers,
+  generated Release/CI matrices, Release Please + GHCR image CI
 - **Docs**: root README for operators (quick start + badges); `SECURITY.md` for
   vulnerability reporting; `docs/architecture.md` for system layout
 
@@ -86,16 +89,16 @@ flowchart LR
 - Security/compliance: sensitive data handling and authz are mandatory.
 
 ## Acceptance Criteria (must be objectively testable)
-- [ ] CPU, Apple Silicon arm64, NVIDIA, AMD, and Intel image targets are versioned and reproducible from the Bake definition.
-- [ ] Each hardware target exposes canonical `<tag>-<hardware>-slim` and `<tag>-<hardware>-full` image tags, with slim compatibility aliases preserved for active CPU and Apple images.
+- [ ] The authoritative contract defines CPU, Apple Silicon arm64, NVIDIA, AMD, and Intel hardware plus the public profiles `slim`, `full`, `data-science`, `training`, `orchestration`, and `serving`.
+- [ ] Each supported hardware/profile target is versioned and reproducible from the Bake projection, with `slim`/`full` compatibility aliases preserved.
 - [ ] Every published target declares its supported Linux platform; GPU images remain limited to platforms supported by their vendor runtime.
-- [ ] Image CI builds and runs `kait smoke` for every active target on a matching host class before the workflow can pass.
+- [ ] Image CI builds and runs `kait smoke` for every active hardware/profile target on a matching host class before the workflow can pass.
 - [ ] NVIDIA, AMD, and Intel jobs remain inactive on ordinary pushes and tags, with explicit manual opt-in required when matching hosts are available.
 - [ ] The default entrypoint validates the Buildkite token, forwards standard agent options, and exits with the child status.
-- [ ] Every image contains the pinned Buildkite agent; `kait smoke` verifies the compact slim contract and imports the advertised full AI/ML package layer.
+- [ ] Every image contains the pinned Buildkite agent, a mandatory contract-derived identity, and representative smoke proof for every advertised capability.
 - [ ] KAIT_O11Y selects none, Prometheus, Datadog, or Splunk/OTel behavior without changing workload commands.
 - [ ] Docker and Kubernetes launch paths pass environment inputs and accelerator resources without committing secrets.
-- [ ] Go tests, bake-plan validation, CI, documentation, and Decapod validation are present.
+- [ ] Go contract tests, generated matrix validation, bake-plan validation, CI, release workflows, documentation, and Decapod validation are present.
 
 ## Epistemic Custody Fields
 
@@ -120,7 +123,7 @@ flowchart LR
 - [ ] List any evidence that conflicts with current assumptions or intent.
 
 ### Deferred Questions
-- [ ] Should future releases publish framework-specific images separately from the base hardware images?
+- [x] Should future releases publish framework-specific images separately from the base hardware images? — Yes; the six profile images are now first-class contract artifacts.
 - [ ] Which collector deployment is canonical for each operator's Kubernetes platform?
 
 ### Stop Conditions
@@ -128,7 +131,7 @@ flowchart LR
 
 ### Proof Required Before Completion
 - [ ] GOCACHE=/tmp/kait-gocache go test ./... passes.
-- [ ] docker buildx bake --print renders all five targets.
+- [ ] `kait matrix` resolves all 30 structural hardware/profile combinations and `docker buildx bake --print` renders the profile targets.
 - [ ] GitHub Actions routes active CPU and arm64 work to native hosts; accelerator work is routed to explicit host labels only after the inactive manual path is enabled, rather than relying on emulation for device proof.
 - [ ] decapod validate passes after generated artifacts and living specs are refreshed.
 
@@ -141,7 +144,7 @@ flowchart LR
 ## First Implementation Slice
 - [x] Start Kait as a Buildkite agent with runtime-selected hardware and o11y.
 - [x] Define token, tag, metrics, collector, Docker, and Kubernetes input contracts.
-- [x] Postpone framework-specific training images, checkpoint stores, and vendor collector deployment automation.
+- [x] Keep checkpoint stores, workflow orchestration, and vendor collector deployment automation outside Kait.
 
 ## Open Questions (with decision deadlines)
 | Question | Owner | Deadline | Decision |
@@ -153,7 +156,7 @@ flowchart LR
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `b6d11da136f226514164fe45295784a398101fde9125eea090293ec174e43be7`
+- Repository signal fingerprint: `c70f67f5dedfa45dbe5c2c90971c52f165d80c3755cabac1982850ba12279dc0`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
