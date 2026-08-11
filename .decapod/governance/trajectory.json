@@ -5,8 +5,9 @@
   "task_id": "fend_01kzsbbcxbwgpdfb",
   "original_intent": "Make the execution model declared by the Kait execution-substrate document real as validated Buildkite execution surfaces.",
   "derived_intent": "Implement an aggressive authoritative capability model for slim, full, data-science, training, orchestration, and serving across dependencies, hardware, identity, tags, diagnostics, CI, release, and docs.",
-  "current_phase": "repository audit",
+  "current_phase": "verification",
   "next_transitions": [
+    "publication review",
     "repository audit -> capability contract implementation",
     "repository audit complete -> contract implementation"
   ],
@@ -43,27 +44,65 @@
     "requirements/slim.txt",
     "requirements/training.txt"
   ],
-  "modified_files": [],
+  "modified_files": [
+    ".github/workflows/build-images.yml",
+    ".github/workflows/release-images.yml",
+    "Dockerfile",
+    "cmd/kait/capability-contract.json",
+    "cmd/kait/contract.go",
+    "docker-bake.hcl"
+  ],
   "declared_commands": [],
   "tool_calls": [],
-  "checks": [],
+  "checks": [
+    {
+      "name": "PR #23 Decapod validate",
+      "status": "passed"
+    },
+    {
+      "name": "PR #23 active image builds and smokes",
+      "status": "passed"
+    },
+    {
+      "name": "active profile matrix",
+      "status": "passed"
+    },
+    {
+      "name": "git diff --check",
+      "status": "passed"
+    },
+    {
+      "name": "go test",
+      "status": "passed"
+    },
+    {
+      "name": "go vet",
+      "status": "passed"
+    }
+  ],
   "evidence": [
+    "PR #23 checks: 12 active CPU/Apple image builds and smokes passed; accelerator jobs skipped by explicit opt-in policy",
     "Published execution-substrate contract retrieved from alexhraber.github.io/kait/execution-substrate/",
+    "local CPU data-science doctor/smoke passed",
+    "local CPU orchestration smoke passed with Ray local execution, SQLite MLflow, disabled W&B",
+    "local CPU serving doctor/smoke passed",
     "origin/main fetched at dfdc06a and isolated container branch fast-forwarded to that tip"
   ],
   "shortcut_risk_signals": [],
   "unresolved_assumptions": [
+    "NVIDIA, AMD, and Intel accelerator smoke still requires matching physical hosts",
     "Physical accelerator smoke remains unavailable on ordinary CI hosts and is reported as such",
     "The current repository requirement manifests and hardware bases are the source evidence for supported capability/hardware combinations until contract tests prove otherwise"
   ],
-  "proof_status": "no_checks_run",
+  "completion_claim": "Capability-oriented execution contracts are implemented and validated for active CPU/Apple profiles; inactive accelerator proof remains host-dependent.",
+  "proof_status": "passed",
   "verdicts": {
     "intent_alignment": "supported",
     "boundary_discipline": "supported",
     "shortcut_risk": "supported",
-    "completion_proof": "unsupported"
+    "completion_proof": "supported"
   },
-  "artifact_hash": "sha256:da799378e591102189ca1fc534ace6fecbf31726cfb5e3e78d1f6f99b4da9268",
+  "artifact_hash": "sha256:8fcc04294039a2862803b3c9c52520795e46516bcb463d76cdcb8755ef3d81bf",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
@@ -102,6 +141,13 @@
       {
         "sequence": 4,
         "event_id": "event:4",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:kait-execution-substrate-2026-08-11"
+      },
+      {
+        "sequence": 5,
+        "event_id": "event:5",
         "intent_id": "intent:kait-execution-substrate-2026-08-11",
         "kind": "trajectory_step_recorded",
         "detail": "trajectory:kait-execution-substrate-2026-08-11"
@@ -154,12 +200,43 @@
               "Physical accelerator smoke remains unavailable on ordinary CI hosts and is reported as such"
             ],
             "custody_event_id": "event:4"
+          },
+          {
+            "sequence": 5,
+            "action": "verification",
+            "scope": [
+              "Dockerfile,cmd/kait,requirements,docker-bake.hcl,deploy,examples,.github/workflows,README.md,docs,tests,.decapod/managed/specs"
+            ],
+            "observations": [
+              "cmd/kait/capability-contract.json",
+              "cmd/kait/contract.go",
+              "Dockerfile",
+              "docker-bake.hcl",
+              ".github/workflows/build-images.yml",
+              ".github/workflows/release-images.yml",
+              "PR #23 checks: 12 active CPU/Apple image builds and smokes passed; accelerator jobs skipped by explicit opt-in policy",
+              "local CPU data-science doctor/smoke passed",
+              "local CPU serving doctor/smoke passed",
+              "local CPU orchestration smoke passed with Ray local execution, SQLite MLflow, disabled W&B"
+            ],
+            "proof_refs": [
+              "go test",
+              "go vet",
+              "git diff --check",
+              "active profile matrix",
+              "PR #23 Decapod validate",
+              "PR #23 active image builds and smokes"
+            ],
+            "validation_findings": [
+              "NVIDIA, AMD, and Intel accelerator smoke still requires matching physical hosts"
+            ],
+            "custody_event_id": "event:5"
           }
         ]
       }
     },
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 4
+    "next_sequence": 5
   }
 }
