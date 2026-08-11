@@ -80,7 +80,8 @@ docs directory owns the Jekyll configuration and shared layout; the site does
 not require an application server or a separate deployment workflow. The
 execution-substrate article explains Buildkite as the execution substrate and
 positions Kaite as the validated capability layer that makes that model
-concrete for power users.
+concrete for power users. It closes by returning to the governing invariant:
+the workload changes; the execution model remains.
 
 ## Strongest Existing Primitives
 - Go standard-library supervisor (no third-party runtime deps); version constant
