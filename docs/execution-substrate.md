@@ -6,33 +6,39 @@ description: A capability-oriented description of Buildkite execution and Kaite 
 
 # Buildkite as an execution substrate
 
-Buildkite provides a distributed system for declaring, scheduling, and
-observing executable work. Its primary vocabulary is familiar: pipelines,
-builds, jobs, queues, agents, steps, and artifacts. These objects describe an
-execution model that applies across heterogeneous machines and runtime
-environments.
+Buildkite provides a distributed execution substrate for declaring,
+scheduling, routing, and observing computational work. Its familiar
+primitives—pipelines, builds, jobs, queues, agents, steps, artifacts,
+dependencies, and gates—form a general execution model across heterogeneous
+machines and runtime environments.
 
-A pipeline declares work and dependency. A job is a bounded execution unit. A
-queue selects a class of workers. Agent tags describe worker attributes. The
-Buildkite control plane assigns jobs to eligible agents. The agent starts the
-job on its local execution surface and reports status, logs, and outputs.
+Continuous integration and delivery are first-class applications of that
+model. The same primitives also coordinate model training, evaluation, data
+processing, rendering, simulation, security analysis, hardware validation,
+operational automation, and other bounded computation. The workload changes;
+the execution model remains.
 
-Continuous integration and delivery are the most common workloads for this
-model. The same execution model also applies to data processing, model
-training, evaluation, rendering, simulation, security analysis, hardware
-validation, and operational automation.
+A pipeline describes executable work and dependency. A job is a bounded
+execution unit. Queues and agent tags form the placement surface. Agents expose
+execution capacity to the Buildkite control plane. Buildkite matches work to
+eligible agents, coordinates its progression, and records the resulting
+status, logs, artifacts, and metadata.
+
+For power users, this is the productive abstraction: computational intent
+enters Buildkite, is resolved against available execution capability, runs on
+the appropriate hardware, and produces results that can drive subsequent
+computation.
 
 ## Execution intent
 
-Source control is one source of execution intent. A commit or pull request can
-start a pipeline. Other sources include a webhook, a scheduled event, an
-operational signal, a data arrival, a security finding, a model result, or the
-completion of another execution.
+Source control is one producer of execution intent. Commits and pull requests
+create work, as do webhooks, schedules, operational alerts, data arrivals,
+security findings, model outputs, external events, and preceding executions.
 
-The source event supplies context for the work. The pipeline translates that
-context into executable steps, dependencies, resource requirements, and
-completion conditions. Buildkite schedules the resulting jobs against the
-available worker fleet.
+The initiating event provides context. The pipeline translates that context
+into executable steps, dependencies, capability requirements, gates, and
+completion conditions. Buildkite schedules the resulting jobs across the
+available execution fleet.
 
 The execution path is:
 
@@ -40,72 +46,72 @@ The execution path is:
 event
   -> execution intent
   -> pipeline and jobs
-  -> capability and queue matching
-  -> agent execution
+  -> capability matching
+  -> execution surface
   -> result and evidence
   -> subsequent work
 ```
 
-This model separates the meaning of the work from the machine that performs
-it. A job can describe its requirements through queue and agent selectors
-while the fleet changes underneath those selectors.
+This separation between computational intent and physical execution is one of
+Buildkite's core properties. Jobs declare what they require through queues and
+agent selectors while the infrastructure satisfying those selectors evolves
+independently.
 
-## Agents and execution surfaces
+## Agents as execution surfaces
 
-A Buildkite agent connects the control plane to a local execution surface. The
-surface includes the host operating system, processors, memory, devices,
-filesystems, network boundaries, credentials, installed tools, and runtime
-configuration available to the job.
+A Buildkite agent attaches local compute to the control plane. Behind that
+attachment point is an execution surface composed of operating system,
+processors, memory, accelerators, devices, filesystems, network locality,
+credentials, installed software, and runtime configuration.
 
-Agent tags make selected properties of that surface addressable to the
-scheduler. A queue provides a broad placement boundary. Tags add constraints
-such as hardware, operating system, architecture, software environment, or
-organizational policy.
+Queues establish broad execution boundaries. Agent tags expose selected
+properties of those surfaces to scheduling. Together they organize a fleet
+around executable capability.
 
-The resulting fleet can contain multiple execution classes. Examples include
-Linux hosts, Apple hosts, ARM machines, NVIDIA systems, large-memory workers,
-protected network segments, physical test devices, and specialized laboratory
-equipment. Each class participates in the same scheduling system while
-retaining its own operational and hardware requirements.
+A Buildkite fleet can span ordinary Linux hosts, Apple systems, ARM machines,
+NVIDIA GPU workers, high-memory hosts, protected network segments, physical
+test devices, laboratory equipment, and specialized internal infrastructure
+while remaining accessible through the same execution plane.
 
-The scheduling property is capability matching. A job declares the
-capabilities required for its work. An agent advertises the capabilities
-available on its execution surface. Buildkite selects an agent satisfying the
-declared selectors.
+For a power user, the useful scheduling abstraction is capability matching. A
+job declares the properties required for its work, an agent advertises
+properties of its execution surface, and Buildkite matches jobs against
+eligible agents through queues and agent tags.
 
 ## Runtime environments as capability contracts
 
-A container image provides the user-space runtime for a job. For a specialized
-workload, the image also establishes a computational capability. Its contract
-can include:
+Runtime images make execution capabilities reproducible.
 
-- language runtimes and system libraries;
-- frameworks and command-line tools;
-- hardware and accelerator assumptions;
-- diagnostic and observability commands;
-- environment identity and version information; and
-- representative checks that establish the advertised behavior.
+For specialized workloads, an image defines the user-space contract under
+which a class of computation executes: language runtimes, frameworks,
+command-line tools, accelerator support, system libraries, diagnostics,
+observability hooks, environment identity, and representative validation.
 
-The contract defines a boundary around a package inventory. A training
-environment, an inference environment, and a software-engineering environment
-have different compatibility surfaces even when they share a base operating
-system or language runtime.
+A training environment, an inference environment, a rendering environment,
+and an agentic software-engineering environment are different computational
+contracts even when they share the same operating system or programming
+language.
 
-Capability contracts give platform teams a stable unit for composition and
-testing. They also give pipeline authors a stable selector for scheduling.
-Image construction, worker metadata, pipeline selectors, and validation are
-four views of the same execution contract.
+This gives the execution fleet semantic structure. Infrastructure can
+advertise that a validated environment exists for a known class of work,
+alongside the hardware and operating-system properties of the host.
 
 ## Kaite
+
+The execution-substrate model gains a concrete runtime boundary when the
+properties exposed through agent tags correspond to reproducible execution
+environments. Kaite provides that layer for AI and machine-learning workloads.
 
 Kaite supplies capability-oriented runtime environments for self-hosted
 Buildkite agents. An official image contains the Buildkite agent, a pinned
 Python toolchain, workload dependencies, hardware handling, diagnostics, and
-lightweight observability. The image is prepared before a job arrives.
+lightweight observability. The image is prepared and validated before a job
+arrives, allowing the worker to advertise a known computational capability
+alongside the characteristics of the host on which it runs.
 
-Kaite separates hardware capability from workload capability. Hardware names
-identify the execution context supported by an image. Workload capabilities
-identify the class of computation prepared by the image.
+Kaite separates hardware capability from workload capability. Hardware
+identifies the execution context available to the runtime. Workload capability
+identifies the class of computation the environment is prepared to perform.
 
 The current official workload capabilities are:
 
@@ -116,56 +122,21 @@ The current official workload capabilities are:
 | `orchestration` | Ray execution with MLflow and Weights & Biases tooling |
 | `serving` | FastAPI, Gradio, and Uvicorn application interfaces |
 
-The current official hardware classes are CPU, Apple, NVIDIA, AMD, and Intel.
-CPU and Apple images are active release targets. Accelerator-specific paths
-remain available for deliberate activation when matching hosts are registered.
+The current hardware classes are CPU, Apple, NVIDIA, AMD, and Intel.
 
-`slim` and `full` remain compatibility names for dependency composition. The
-capability aliases expose the workload meaning of those compositions. The
-published image tags and aliases are documented in the [capability contract](capabilities.md).
+These two dimensions give Buildkite's scheduling surface computational
+meaning. A worker advertises the hardware and runtime capability available at
+that execution surface.
 
-## Identity and validation
-
-Each Kaite image contains a baked identity at
-`/etc/kaite/identity.json`. The identity records the hardware class, variant,
-observability setting, and declared workload capabilities.
-
-The supervisor loads that identity before starting the Buildkite agent. Runtime
-settings for hardware, variant, observability, and capabilities are compared
-with the baked values. A mismatch terminates startup. The worker therefore
-advertises the identity of the image that is running on the execution surface.
-
-The identity produces Buildkite agent tags. A worker with CPU hardware and
-the training capability advertises tags equivalent to:
+For example:
 
 ```text
 kaite=true
-kaite.hardware=cpu
+kaite.hardware=nvidia
 kaite.capability.training=true
 ```
 
-`kaite doctor` reports the baked identity and detected hardware. `kaite smoke`
-checks representative framework imports for the declared capabilities and
-performs the hardware check when the image expects an accelerator. These
-commands connect image construction to runtime validation.
-
-The contract is therefore expressed across four surfaces:
-
-```text
-image identity
-  -> supervisor validation
-  -> Buildkite agent tags
-  -> pipeline selectors
-```
-
-The smoke and doctor commands provide the validation surface for the first
-three stages. A pipeline provides the workload-specific execution check.
-
-## Selecting capability from a pipeline
-
-A pipeline selects a capability through Buildkite agent matching.
-For example, a training step can request NVIDIA hardware and the training
-capability:
+A pipeline can address that capability directly:
 
 ```yaml
 steps:
@@ -177,16 +148,45 @@ steps:
       kaite.capability.training: "true"
 ```
 
-The queue identifies the broad worker pool. The two Kaite selectors identify
-the hardware class and workload environment. The job remains independent of a
-specific host, container process, or image digest. Production workflows can
-pin the underlying image separately through an immutable Kaite release tag.
+The request identifies the execution requirement: NVIDIA-backed Kaite training
+capability. Buildkite routes the job onto an eligible execution surface. Kaite
+supplies the training runtime. The pipeline expresses the computational
+capability required for the job.
 
-The same pipeline can route different stages to different execution surfaces:
+This is the operating model Kaite makes concrete:
+
+```text
+Buildkite       -> execution substrate
+queues and tags -> capability routing
+Kaite           -> runtime contract
+agent           -> attachment to the execution surface
+hardware        -> computation
+pipeline        -> composition of executions
+```
+
+## Heterogeneous execution graphs
+
+Once runtime capability is explicit, a single pipeline can use different
+classes of compute naturally.
+
+Data preparation can run on CPU workers. Training can move to NVIDIA workers.
+Evaluation can fan out across another fleet. Serving validation can return to
+CPU infrastructure. Other branches can target protected networks, different
+architectures, or specialized runtime profiles.
+
+Each stage declares what it needs. Buildkite resolves those requirements
+independently.
+
+The execution graph therefore assigns runtime placement to individual jobs.
+The pipeline remains the logical composition of the computation, while each
+job selects the execution surface that satisfies its requirements.
+
+For example:
 
 ```yaml
 steps:
   - label: ":bar_chart: prepare data"
+    key: "prepare-data"
     command: "python prepare.py"
     agents:
       queue: ai
@@ -194,8 +194,9 @@ steps:
       kaite.capability.data-science: "true"
 
   - label: ":brain: train"
+    key: "train"
     command: "python train.py"
-    depends_on: "prepare data"
+    depends_on: "prepare-data"
     agents:
       queue: ai
       kaite.hardware: nvidia
@@ -210,30 +211,13 @@ steps:
       kaite.capability.serving: "true"
 ```
 
-The pipeline describes the computational stages and their dependencies. The
-worker fleet supplies the matching environments.
+Buildkite also supports dynamic pipelines. Earlier computation can inspect
+inputs or results and materialize additional work at runtime. A classification
+step can discover that hundreds of independent evaluations are required. Those
+jobs can fan across the appropriate capability class, converge into
+aggregation, and produce another stage of computation.
 
-## Dynamic execution graphs
-
-Buildkite pipelines can generate additional work as an execution progresses.
-An initial job can inspect an input, enumerate objects, classify a condition,
-or produce data for a subsequent set of jobs. The resulting steps can carry
-different queues, selectors, dependencies, and concurrency limits.
-
-This creates a progressively materialized execution graph:
-
-```text
-initial event
-  -> classification
-  -> fan-out across capability classes
-  -> fan-in and evaluation
-  -> follow-up execution
-```
-
-For example, a model-evaluation graph can prepare data on CPU workers, run
-accelerated evaluation on GPU workers, aggregate results, and publish an
-artifact. The graph remains one coordinated Buildkite execution while each
-stage uses its own runtime contract.
+The graph is progressively constructed from what execution discovers.
 
 Individual jobs remain finite. They receive inputs, perform bounded work,
 produce outputs and evidence, and finish with a status. Subsequent executions
@@ -244,9 +228,9 @@ the history between those executions.
 
 AI systems introduce software that can create execution intent during a larger
 task. A reasoning process can determine that it requires compilation,
-evaluation, data preparation, training, rendering, or validation. Each request
-can be represented as a bounded Buildkite job with explicit capability
-selectors.
+evaluation, data preparation, training, rendering, simulation, or validation.
+Each request can be represented as a bounded Buildkite job with explicit
+capability selectors.
 
 The responsibilities are distinct:
 
@@ -260,10 +244,13 @@ The responsibilities are distinct:
 | Hardware | Performs the computation |
 | Results and evidence | Provide inputs for decisions and subsequent work |
 
-This separation allows a reasoning environment to request specialized work
-without embedding every runtime, framework, and hardware dependency in the
-reasoning environment itself. Kaite supplies those dependencies as versioned
-execution environments. Buildkite supplies the scheduling and execution graph.
+The reasoning environment can remain bounded while specialized work is
+requested through Buildkite. Kaite supplies the requested dependencies as
+versioned execution environments. Buildkite supplies the scheduling and
+execution graph.
+
+This creates a distributed computer composed of intentionally specialized
+execution surfaces with explicit provisioning boundaries.
 
 ## Direct use and downstream derivation
 
@@ -284,23 +271,48 @@ COPY platform-config/ /etc/acme/
 
 The derived image inherits the common Python, ML, accelerator, Buildkite,
 diagnostic, and observability substrate. The organization adds its packages,
-certificates, tooling, and configuration. Changes to the dependencies that
+certificates, tooling, and configuration. Changes to dependencies that
 underpin a Kaite capability require rerunning the corresponding doctor and
 smoke checks and owning the resulting compatibility surface.
 
-## The execution-substrate perspective
+## The power-user model
 
-Buildkite exposes a general execution model through its existing primitives:
-pipelines describe work, jobs provide bounded units, queues and agent tags
-route those units, agents attach execution surfaces, and results enable later
-steps.
+The productive way to use Buildkite is to separate computational intent from
+execution placement.
 
-Kaite gives that model a tested runtime vocabulary for AI and machine-learning
-work. Its image identity connects dependency composition to hardware, runtime
-validation, and Buildkite agent metadata. Its capability selectors let a
-pipeline request a known execution environment. Its immutable artifacts let an
-organization derive a controlled extension of that environment.
+Pipelines express work.
 
-Under this model, a workload selects the required capability and hardware.
-Buildkite schedules the job. Kaite supplies the runtime. The execution surface
-performs the work and returns evidence to the graph.
+Jobs bound execution.
+
+Dependencies describe computational relationships.
+
+Queues and agent tags route work according to capability.
+
+Agents attach machines and environments to the execution plane.
+
+Dynamic pipelines allow computation to produce further computation.
+
+Gates control progression.
+
+Artifacts, logs, metadata, and status preserve the result.
+
+Kaite extends this model by giving AI and machine-learning execution surfaces
+stable runtime identities that pipelines can address directly.
+
+Under this model, the workload declares what it requires. Buildkite finds
+matching execution capacity. Kaite supplies the runtime contract. The hardware
+performs the computation. The result returns to the graph and becomes
+available to whatever happens next.
+
+This is a usage model for the tool in front of us: a distributed execution
+substrate whose existing primitives route computational intent across
+heterogeneous, capability-defined infrastructure.
+
+This perspective identifies how the existing platform is used. CI/CD remains
+a first-class workload, while the execution model underneath it applies
+wherever bounded work must be routed to a known execution capability.
+
+Under this model, a workload declares what it requires. Buildkite finds an
+eligible execution surface. Kaite gives that surface a reproducible runtime
+contract. The hardware performs the computation, and the result returns to the
+larger execution graph.

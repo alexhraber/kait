@@ -118,7 +118,7 @@
     "shortcut_risk": "supported",
     "completion_proof": "caution"
   },
-  "artifact_hash": "sha256:accfb89294e706233c2a837928f2191f5d91ad329b2449ff92e50c418157c065",
+  "artifact_hash": "sha256:38a60001e77650c6789b6844ef3ae292cd255672ed37157d7eca20ef7224466b",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
@@ -200,6 +200,13 @@
       {
         "sequence": 10,
         "event_id": "event:10",
+        "intent_id": "intent:validation_01KZS21CZV6C8D3K7N9TMSQ6G4",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:validation_01KZS21CZV6C8D3K7N9TMSQ6G4"
+      },
+      {
+        "sequence": 11,
+        "event_id": "event:11",
         "intent_id": "intent:validation_01KZS21CZV6C8D3K7N9TMSQ6G4",
         "kind": "trajectory_step_recorded",
         "detail": "trajectory:validation_01KZS21CZV6C8D3K7N9TMSQ6G4"
@@ -344,12 +351,32 @@
             ],
             "validation_findings": [],
             "custody_event_id": "event:10"
+          },
+          {
+            "sequence": 11,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "docs/ landing page, Jekyll config/layout, existing architecture and capability docs, new execution-substrate article, README documentation link, governed specs and receipts."
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_83b14f822f96ef58 completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:11"
           }
         ]
       }
     },
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 10
+    "next_sequence": 11
   }
 }
