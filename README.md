@@ -4,7 +4,7 @@
 [![CI](https://github.com/alexhraber/kait/actions/workflows/build-images.yml/badge.svg?branch=main)](https://github.com/alexhraber/kait/actions/workflows/build-images.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GHCR](https://img.shields.io/badge/ghcr.io-alexhraber%2Fkait-blue)](https://github.com/alexhraber/kait/pkgs/container/kait)
-[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.96.21-dc2626)](https://github.com/DecapodLabs/decapod)
+[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.97.0-dc2626)](https://github.com/DecapodLabs/decapod)
 
 Self-hosted [Buildkite](https://buildkite.com) agents with a batteries-included
 AI/ML execution environment. Choose the work capability and hardware; the
@@ -205,6 +205,10 @@ Release Please opens a release PR from `main`. Merging it:
 2. Dispatches `release-images.yml` against that tag (`actions: write` required)
 3. Publishes active CPU/Apple slim+full images to GHCR with provenance and SBOM
 4. Annotates the GitHub release with pull commands
+
+When a merged change has no conventional release unit, the same workflow opens
+an automatic patch release PR so infrastructure, documentation, and identity
+changes still reach the versioned image publication path.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 

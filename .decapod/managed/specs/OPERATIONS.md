@@ -27,6 +27,14 @@ explicitly dispatches `release-images.yml` against the created tag. That image
 workflow then builds, smoke-tests, and publishes the active images; it never
 resolves the release from a moving `main` ref.
 
+The release workflow also has a patch-release fallback for merged changes that
+Release Please classifies as non-releasable (`docs`, `ci`, `chore`, or similar).
+When no release PR is created or updated and no release is being published, the
+workflow computes the next patch version from `.release-please-manifest.json`
+and asks Release Please to open that patch release PR. An existing pending
+release PR and a release-PR merge are excluded, so the fallback cannot create
+parallel release candidates or recurse on its own release commit.
+
 The image dependency contract is layered and installed in a fixed order. Every
 variant contains the pinned Buildkite agent, Go supervisor, and the selected
 hardware manifest. `*-slim` stops after the compact Python foundation; `*-full`
@@ -168,7 +176,7 @@ vendor device runtime.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
+- Repository signal fingerprint: `b6d11da136f226514164fe45295784a398101fde9125eea090293ec174e43be7`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

@@ -258,6 +258,7 @@ PR → main
       │
       ▼
 Release Please PR (changelog + version bump)
+      │  (automatic patch fallback for non-release commits)
       │ merge
       ▼
 semver tag + GitHub Release
