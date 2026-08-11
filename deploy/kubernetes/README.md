@@ -1,6 +1,6 @@
-# Kaite on Kubernetes
+# Kait on Kubernetes
 
-[`kaite-agent.yaml`](kaite-agent.yaml) is a one-shot Buildkite agent Job: the
+[`kait-agent.yaml`](kait-agent.yaml) is a one-shot Buildkite agent Job: the
 pod registers, claims one matching job, then disconnects so the Job can finish.
 
 ## Quick start
@@ -10,12 +10,12 @@ kubectl create secret generic buildkite-agent \
   --from-literal=token="$BUILDKITE_AGENT_TOKEN" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl apply -f deploy/kubernetes/kaite-agent.yaml
+kubectl apply -f deploy/kubernetes/kait-agent.yaml
 ```
 
 Defaults in the template:
 
-- image `ghcr.io/alexhraber/kaite:cpu-slim` (`data-science` capability)
+- image `ghcr.io/alexhraber/kait:cpu-slim` (`data-science` capability)
 - queue `ai`, `BUILDKITE_AGENT_DISCONNECT_AFTER_JOB=true`
 - Prometheus scrape annotations on port `9090`
 
@@ -26,7 +26,7 @@ Agent Stack only.
 
 ## Targeting
 
-Change `image`, `KAITE_HARDWARE`, `KAITE_VARIANT`, capability tags, and
+Change `image`, `KAIT_HARDWARE`, `KAIT_VARIANT`, capability tags, and
 resources for the host class. Active paths are CPU (`linux/amd64` + `arm64`)
 and Apple (`linux/arm64`). Accelerator images need the matching device plugin
 and stay manual opt-ins outside automatic CI/release. The image's baked
@@ -37,19 +37,19 @@ Pipeline side:
 ```yaml
 steps:
   - label: ":robot: CPU evaluation"
-    command: "kaite smoke"
+    command: "kait smoke"
     agents:
       queue: ai
-      kaite.hardware: cpu
-      kaite.capability.data-science: "true"
+      kait.hardware: cpu
+      kait.capability.data-science: "true"
 ```
 
 ## Observability
 
-| `KAITE_O11Y` | Behavior |
+| `KAIT_O11Y` | Behavior |
 | --- | --- |
 | `prometheus` | `/metrics` + logs on stdout/stderr |
-| `datadog` | DogStatsD counters (`KAITE_DD_*` / `DD_*`); agent owns credentials |
+| `datadog` | DogStatsD counters (`KAIT_DD_*` / `DD_*`); agent owns credentials |
 | `splunk` | Same metrics + standard `OTEL_*` for a collector sidecar/DaemonSet |
 
 Keep vendor API keys out of the image and this manifest. Use Secrets or the

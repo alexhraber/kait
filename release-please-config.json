@@ -4,7 +4,7 @@
   "include-component-in-tag": false,
   "packages": {
     ".": {
-      "component": "kaite",
+      "component": "kait",
       "changelog-sections": [
         { "type": "feat", "section": "Features" },
         { "type": "fix", "section": "Bug Fixes" },
