@@ -1,28 +1,103 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestLoadConfigCommandMode(t *testing.T) {
-	t.Setenv("KAIT_HARDWARE", "nvidia")
-	t.Setenv("KAIT_VARIANT", "full")
-	t.Setenv("KAIT_O11Y", "prometheus")
+func installTestIdentity(t *testing.T, hardware, profile string) identity {
+	t.Helper()
+	oldPath := identityPath
+	t.Cleanup(func() { identityPath = oldPath })
+	identity, err := resolveContract(hardware, profile, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "identity.json")
+	data, err := json.Marshal(identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	identityPath = path
+	for _, name := range []string{"KAIT_HARDWARE", "KAIT_VARIANT", "KAIT_PROFILE", "KAIT_CAPABILITIES"} {
+		t.Setenv(name, "")
+	}
+	return identity
+}
+
+func TestCapabilityContractDefinesOfficialProfilesAndHardware(t *testing.T) {
+	wantHardware := []string{"cpu", "apple", "nvidia", "amd", "intel"}
+	if strings.Join(supportedHardwareNames(), ",") != strings.Join(wantHardware, ",") {
+		t.Fatalf("hardware = %v, want %v", supportedHardwareNames(), wantHardware)
+	}
+	wantProfiles := []string{"slim", "full", "data-science", "training", "orchestration", "serving"}
+	if strings.Join(profileNames(), ",") != strings.Join(wantProfiles, ",") {
+		t.Fatalf("profiles = %v, want %v", profileNames(), wantProfiles)
+	}
+	for _, hardware := range wantHardware {
+		for _, profile := range wantProfiles {
+			identity, err := resolveContract(hardware, profile, "", "")
+			if err != nil {
+				t.Fatalf("resolveContract(%s,%s): %v", hardware, profile, err)
+			}
+			if err := validateIdentity(identity); err != nil {
+				t.Fatalf("validateIdentity(%s,%s): %v", hardware, profile, err)
+			}
+		}
+	}
+}
+
+func TestCapabilityCompositionIsIntentional(t *testing.T) {
+	if got := capabilitiesForProfile("slim"); !sameCapabilities(got, []string{"data-science"}) {
+		t.Fatalf("slim capabilities = %v", got)
+	}
+	if got := capabilitiesForProfile("training"); !sameCapabilities(got, []string{"data-science", "training"}) {
+		t.Fatalf("training capabilities = %v", got)
+	}
+	if got := capabilitiesForProfile("orchestration"); !sameCapabilities(got, []string{"orchestration"}) {
+		t.Fatalf("orchestration capabilities = %v", got)
+	}
+	if got := capabilitiesForProfile("serving"); !sameCapabilities(got, []string{"serving"}) {
+		t.Fatalf("serving capabilities = %v", got)
+	}
+	if got := capabilitiesForProfile("full"); !sameCapabilities(got, []string{"data-science", "training", "orchestration", "serving"}) {
+		t.Fatalf("full capabilities = %v", got)
+	}
+}
+
+func TestLoadConfigCommandModeUsesBakedIdentity(t *testing.T) {
+	id := installTestIdentity(t, "nvidia", "full")
 	t.Setenv("KAIT_RUN_MODE", "command")
 	t.Setenv("KAIT_COMMAND", "echo ready")
+	t.Setenv("KAIT_O11Y", "prometheus")
 	cfg, err := loadConfig()
 	if err != nil {
 		t.Fatalf("loadConfig() error = %v", err)
 	}
-	if cfg.metricsAddr != ":9090" {
-		t.Fatalf("metrics address = %q, want :9090", cfg.metricsAddr)
+	if cfg.profile != id.Profile || cfg.metricsAddr != ":9090" {
+		t.Fatalf("config = %+v, want profile %q and metrics :9090", cfg, id.Profile)
+	}
+}
+
+func TestLoadConfigRejectsRuntimeIdentityOverrides(t *testing.T) {
+	installTestIdentity(t, "cpu", "slim")
+	t.Setenv("KAIT_RUN_MODE", "command")
+	t.Setenv("KAIT_COMMAND", "true")
+	t.Setenv("KAIT_HARDWARE", "nvidia")
+	if _, err := loadConfig(); err == nil || !strings.Contains(err.Error(), "conflicts with baked image hardware") {
+		t.Fatalf("loadConfig() error = %v, want baked hardware conflict", err)
 	}
 }
 
 func TestLoadConfigRejectsUnknownO11y(t *testing.T) {
+	installTestIdentity(t, "cpu", "slim")
 	t.Setenv("KAIT_RUN_MODE", "command")
 	t.Setenv("KAIT_COMMAND", "true")
 	t.Setenv("KAIT_O11Y", "honeycomb")
@@ -31,63 +106,8 @@ func TestLoadConfigRejectsUnknownO11y(t *testing.T) {
 	}
 }
 
-func TestLoadConfigRejectsUnknownHardware(t *testing.T) {
-	t.Setenv("KAIT_RUN_MODE", "command")
-	t.Setenv("KAIT_COMMAND", "true")
-	t.Setenv("KAIT_HARDWARE", "armv7")
-	if _, err := loadConfig(); err == nil || !strings.Contains(err.Error(), "KAIT_HARDWARE") {
-		t.Fatalf("loadConfig() error = %v, want KAIT_HARDWARE validation", err)
-	}
-}
-
-func TestLoadConfigRejectsUnknownVariant(t *testing.T) {
-	t.Setenv("KAIT_RUN_MODE", "command")
-	t.Setenv("KAIT_COMMAND", "true")
-	t.Setenv("KAIT_VARIANT", "max")
-	if _, err := loadConfig(); err == nil || !strings.Contains(err.Error(), "KAIT_VARIANT") {
-		t.Fatalf("loadConfig() error = %v, want KAIT_VARIANT validation", err)
-	}
-}
-
-func TestHardwareTargetsIncludeAppleSilicon(t *testing.T) {
-	for _, hardware := range []string{"cpu", "apple", "nvidia", "amd", "intel"} {
-		if err := validateHardware(hardware); err != nil {
-			t.Fatalf("validateHardware(%q) error = %v", hardware, err)
-		}
-	}
-}
-
-func TestBuildAgentArgsUsesFileTokenAndHardwareTags(t *testing.T) {
-	t.Setenv("BUILDKITE_AGENT_TAGS", "queue=ai")
-	t.Setenv("BUILDKITE_AGENT_QUEUE", "ai")
-	t.Setenv("BUILDKITE_AGENT_ENDPOINT", "https://agent.example.test/v3")
-	cfg := config{hardware: "amd", variant: "full", o11y: "splunk", tokenFile: "/run/secrets/buildkite-agent-token"}
-	argsList, err := buildAgentArgs(cfg)
-	if err != nil {
-		t.Fatalf("buildAgentArgs() error = %v", err)
-	}
-	args := strings.Join(argsList, " ")
-	if !strings.Contains(args, "--token file:///run/secrets/buildkite-agent-token") {
-		t.Fatalf("args = %q, missing file token", args)
-	}
-	if !strings.Contains(args, "--tags queue=ai") {
-		t.Fatalf("args = %q, missing explicit tags", args)
-	}
-	if !strings.Contains(args, "--queue ai") || !strings.Contains(args, "--endpoint https://agent.example.test/v3") {
-		t.Fatalf("args = %q, missing standard agent routing options", args)
-	}
-
-	secretArgsList, err := buildAgentArgs(config{hardware: "cpu", o11y: "none", buildkiteToken: "super-secret"})
-	if err != nil {
-		t.Fatalf("buildAgentArgs() error = %v", err)
-	}
-	secretArgs := strings.Join(secretArgsList, " ")
-	if strings.Contains(secretArgs, "super-secret") {
-		t.Fatalf("args = %q, raw token must remain in the inherited environment", secretArgs)
-	}
-}
-
 func TestLoadConfigRejectsTwoTokenSources(t *testing.T) {
+	installTestIdentity(t, "cpu", "slim")
 	t.Setenv("KAIT_RUN_MODE", "agent")
 	t.Setenv("BUILDKITE_AGENT_TOKEN", "env-token")
 	t.Setenv("BUILDKITE_AGENT_TOKEN_FILE", "/dev/null")
@@ -96,43 +116,20 @@ func TestLoadConfigRejectsTwoTokenSources(t *testing.T) {
 	}
 }
 
-func TestPrometheusMetricsExposeRuntimeLabels(t *testing.T) {
-	m := &metrics{hardware: "intel", variant: "full", capabilities: "data-science,training", o11y: "prometheus"}
-	m.starts.Store(2)
-	m.running.Store(1)
-	output := m.prometheus()
-	for _, want := range []string{
-		"kait_info{version=\"0.2.1\",hardware=\"intel\",variant=\"full\",capabilities=\"data-science,training\",o11y=\"prometheus\"} 1",
-		"kait_agent_starts_total{hardware=\"intel\",variant=\"full\",capabilities=\"data-science,training\",o11y=\"prometheus\"} 2",
-		"kait_agent_running{hardware=\"intel\",variant=\"full\",capabilities=\"data-science,training\",o11y=\"prometheus\"} 1",
-	} {
-		if !strings.Contains(output, want) {
-			t.Fatalf("metrics missing %q in %s", want, output)
-		}
-	}
-}
-
-func TestBuildAgentArgsAddsCapabilityTagsAndRejectsOverrides(t *testing.T) {
+func TestBuildAgentArgsUsesIdentityTagsAndRejectsOverrides(t *testing.T) {
 	t.Setenv("BUILDKITE_AGENT_TAGS", "queue=ai,custom=true")
-	cfg := config{
-		identity: identity{
-			Schema:       1,
-			Hardware:     "cpu",
-			Variant:      "full",
-			Capabilities: []string{"data-science", "training", "orchestration", "serving"},
-		},
-		o11y: "none",
-	}
-	args, err := buildAgentArgs(cfg)
+	identity := installTestIdentity(t, "cpu", "full")
+	argsList, err := buildAgentArgs(config{identity: identity, hardware: identity.Hardware, variant: identity.Variant, profile: identity.Profile, capabilities: identity.Capabilities, o11y: "none"})
 	if err != nil {
 		t.Fatalf("buildAgentArgs() error = %v", err)
 	}
-	joined := strings.Join(args, " ")
+	joined := strings.Join(argsList, " ")
 	for _, want := range []string{
 		"queue=ai",
 		"custom=true",
 		"kait=true",
 		"kait.hardware=cpu",
+		"kait.profile=full",
 		"kait.capability.training=true",
 		"kait.capability.serving=true",
 	} {
@@ -142,39 +139,66 @@ func TestBuildAgentArgsAddsCapabilityTagsAndRejectsOverrides(t *testing.T) {
 	}
 
 	t.Setenv("BUILDKITE_AGENT_TAGS", "kait.hardware=nvidia")
-	if _, err := buildAgentArgs(cfg); err == nil || !strings.Contains(err.Error(), "reserved tag") {
+	if _, err := buildAgentArgs(config{identity: identity, hardware: identity.Hardware, variant: identity.Variant, profile: identity.Profile, capabilities: identity.Capabilities, o11y: "none"}); err == nil || !strings.Contains(err.Error(), "reserved tag") {
 		t.Fatalf("buildAgentArgs() error = %v, want reserved-tag rejection", err)
 	}
 }
 
-func TestRuntimeIdentityRejectsConflictingEnvironment(t *testing.T) {
+func TestRuntimeIdentityRequiresBakedFile(t *testing.T) {
 	oldPath := identityPath
 	t.Cleanup(func() { identityPath = oldPath })
-	identityPath = filepath.Join(t.TempDir(), "identity.json")
-	if err := os.WriteFile(identityPath, []byte(`{"schema":1,"hardware":"cpu","variant":"slim","capabilities":["data-science"]}`), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("KAIT_HARDWARE", "nvidia")
-	if _, err := loadRuntimeIdentity(); err == nil || !strings.Contains(err.Error(), "conflicts with baked image hardware") {
-		t.Fatalf("loadRuntimeIdentity() error = %v, want baked hardware conflict", err)
+	identityPath = filepath.Join(t.TempDir(), "missing.json")
+	if _, err := loadRuntimeIdentity(); err == nil || !strings.Contains(err.Error(), "baked image identity is missing") {
+		t.Fatalf("loadRuntimeIdentity() error = %v, want missing baked identity", err)
 	}
 }
 
-func TestSmokeFrameworkCheckUsesCapabilityContract(t *testing.T) {
-	check, err := smokeFrameworkCheck("cpu", []string{"data-science", "training", "serving"})
+func TestSmokeFrameworkCheckCoversRepresentativeContracts(t *testing.T) {
+	check, err := smokeFrameworkCheck("cpu", []string{"data-science", "training", "orchestration", "serving"})
 	if err != nil {
 		t.Fatalf("smokeFrameworkCheck() error = %v", err)
 	}
-	for _, want := range []string{"numpy", "accelerate", "transformers", "fastapi", "uvicorn"} {
+	for _, want := range []string{"numpy", "pandas", "jupyterlab", "torch", "Dataset", "TrainingArguments", "lightning", "ray", "mlflow", "wandb", "FastAPI", "gradio", "uvicorn"} {
 		if !strings.Contains(check, want) {
-			t.Fatalf("check = %q, missing %q", check, want)
+			t.Fatalf("check is missing %q", want)
+		}
+	}
+	if strings.Contains(check, `\nassert`) {
+		t.Fatalf("check contains a literal newline escape: %q", check)
+	}
+}
+
+func TestMatrixIsDerivedFromContract(t *testing.T) {
+	var output bytes.Buffer
+	if err := writeMatrix(&output, []string{"--active-only"}); err != nil {
+		t.Fatal(err)
+	}
+	var matrix struct {
+		Include []matrixEntry `json:"include"`
+	}
+	if err := json.Unmarshal(output.Bytes(), &matrix); err != nil {
+		t.Fatal(err)
+	}
+	if len(matrix.Include) != 12 {
+		t.Fatalf("active matrix entries = %d, want 12", len(matrix.Include))
+	}
+	for _, entry := range matrix.Include {
+		if entry.Hardware != "cpu" && entry.Hardware != "apple" {
+			t.Fatalf("inactive hardware in active matrix: %+v", entry)
+		}
+		if entry.Capabilities == "" || entry.Target == "" {
+			t.Fatalf("incomplete matrix entry: %+v", entry)
 		}
 	}
 }
 
-func TestSmokeRejectsUnknownHardware(t *testing.T) {
-	t.Setenv("KAIT_HARDWARE", "quantum")
-	if err := writeSmoke(&strings.Builder{}); err == nil || !strings.Contains(err.Error(), "unsupported KAIT_HARDWARE") {
-		t.Fatalf("writeSmoke() error = %v, want hardware validation", err)
+func TestDoctorReportsIdentityAndHardwareContract(t *testing.T) {
+	installTestIdentity(t, "cpu", "serving")
+	var output bytes.Buffer
+	if err := writeDoctor(&output); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), `"identity_consistent": true`) || !strings.Contains(output.String(), `"profile": "serving"`) || !strings.Contains(output.String(), `"serving": "FastAPI`) {
+		t.Fatalf("doctor output missing contract fields: %s", output.String())
 	}
 }

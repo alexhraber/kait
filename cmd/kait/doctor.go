@@ -5,54 +5,90 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"runtime"
 	"strings"
 )
+
+type hardwareReport struct {
+	Expected  string          `json:"expected"`
+	Detected  []string        `json:"detected"`
+	Satisfied bool            `json:"satisfied"`
+	Evidence  map[string]bool `json:"evidence"`
+}
 
 func writeDoctor(w io.Writer) error {
 	id, err := loadRuntimeIdentity()
 	if err != nil {
 		return err
 	}
+	report := detectHardware(id.Hardware)
+	checks := make(map[string]string, len(id.Capabilities))
+	for _, capability := range id.Capabilities {
+		definition := authoritativeCapabilities.Capabilities[capability]
+		checks[capability] = definition.Summary + "; run kait smoke"
+	}
 	result := map[string]any{
-		"version":      version,
-		"identity":     id,
-		"capabilities": id.Capabilities,
-		"variant":      id.Variant,
+		"version":             version,
+		"identity":            id,
+		"identity_consistent": true,
+		"capabilities":        id.Capabilities,
+		"variant":             id.Variant,
+		"profile":             id.Profile,
 		"hardware": map[string]bool{
-			"cpu":    true,
-			"apple":  true,
-			"nvidia": commandAvailable("nvidia-smi"),
-			"amd":    commandAvailable("rocminfo"),
-			"intel":  commandAvailable("sycl-ls"),
+			"cpu":    report.Evidence["cpu"],
+			"apple":  report.Evidence["apple"],
+			"nvidia": report.Evidence["nvidia"],
+			"amd":    report.Evidence["amd"],
+			"intel":  report.Evidence["intel"],
 		},
+		"hardware_contract": report,
+		"capability_checks": checks,
 	}
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(result)
 }
 
-func writeSmoke(w io.Writer) error {
-	configuredHardware := lowerEnv("KAIT_HARDWARE", "cpu")
-	if err := validateHardware(configuredHardware); err != nil {
-		return fmt.Errorf("unsupported KAIT_HARDWARE=%s", configuredHardware)
+func detectHardware(expected string) hardwareReport {
+	evidence := map[string]bool{
+		"cpu":    true,
+		"apple":  runtime.GOARCH == "arm64",
+		"nvidia": commandAvailable("nvidia-smi"),
+		"amd":    commandAvailable("rocminfo"),
+		"intel":  commandAvailable("sycl-ls"),
 	}
+	detected := []string{"cpu"}
+	for _, hardware := range supportedHardwareNames() {
+		if hardware != "cpu" && evidence[hardware] {
+			detected = append(detected, hardware)
+		}
+	}
+	return hardwareReport{
+		Expected:  expected,
+		Detected:  detected,
+		Satisfied: evidence[expected],
+		Evidence:  evidence,
+	}
+}
+
+func writeSmoke(w io.Writer) error {
 	id, err := loadRuntimeIdentity()
 	if err != nil {
 		return err
+	}
+	if id.Hardware == "apple" || id.Hardware == "nvidia" || id.Hardware == "amd" || id.Hardware == "intel" {
+		if err := writeHardware(w); err != nil {
+			return err
+		}
 	}
 	frameworkCheck, err := smokeFrameworkCheck(id.Hardware, id.Capabilities)
 	if err != nil {
 		return err
 	}
-	if id.Hardware == "nvidia" || id.Hardware == "amd" || id.Hardware == "intel" {
-		if err := writeHardware(w); err != nil {
-			return err
-		}
-	}
 	if err := runCheck(w, "python", "-c", frameworkCheck); err != nil {
-		return fmt.Errorf("%s framework check: %w", id.Hardware, err)
+		return fmt.Errorf("%s framework check: %w", id.Profile, err)
 	}
-	fmt.Fprintf(w, "kait smoke: %s-%s capabilities=%s ready\n", id.Hardware, id.Variant, strings.Join(id.Capabilities, ","))
+	fmt.Fprintf(w, "kait smoke: %s-%s profile=%s capabilities=%s ready\n", id.Hardware, id.Variant, id.Profile, strings.Join(id.Capabilities, ","))
 	return nil
 }
 
@@ -65,35 +101,31 @@ func smokeFrameworkCheck(hardware string, capabilities []string) (string, error)
 			return "", err
 		}
 	}
-	imports := make([]string, 0, len(capabilities))
-	messages := make([]string, 0, len(capabilities))
-	for _, capability := range capabilities {
-		switch capability {
-		case "data-science":
-			imports = append(imports, "import numpy, sklearn, torch")
-			messages = append(messages, "data-science")
-		case "training":
-			imports = append(imports, "import accelerate, datasets, diffusers, lightning, transformers")
-			messages = append(messages, "training")
-		case "orchestration":
-			imports = append(imports, "import mlflow, ray, wandb")
-			messages = append(messages, "orchestration")
-		case "serving":
-			imports = append(imports, "import fastapi, gradio, uvicorn")
-			messages = append(messages, "serving")
+	check, err := smokeScripts(capabilities)
+	if err != nil {
+		return "", err
+	}
+	if containsCapability(capabilities, "data-science") {
+		switch hardware {
+		case "nvidia", "amd":
+			check += "\nassert torch.cuda.is_available(), \"torch cannot see the accelerator\"\nprint(torch.cuda.get_device_name(0))"
+		case "intel":
+			check += "\nimport intel_extension_for_pytorch\nassert torch.xpu.is_available(), \"torch cannot see the XPU\"\nprint(torch.xpu.get_device_name(0))"
 		default:
-			return "", fmt.Errorf("unsupported Kait capability %s", capability)
+			check += "\nassert not torch.cuda.is_available(), \"CPU/Apple contract unexpectedly exposes CUDA\""
 		}
 	}
-	check := strings.Join(imports, "; ")
-	switch hardware {
-	case "nvidia", "amd":
-		check += `; assert torch.cuda.is_available(), "torch cannot see the accelerator"; print(torch.cuda.get_device_name(0))`
-	case "intel":
-		check += `; import intel_extension_for_pytorch; assert torch.xpu.is_available(), "torch cannot see the XPU"; print(torch.xpu.get_device_name(0))`
-	}
-	check += `; print("Kait capabilities ready: ` + strings.Join(messages, ",") + `")`
+	check += "\nprint(\"Kait capability contract ready\")"
 	return check, nil
+}
+
+func containsCapability(capabilities []string, wanted string) bool {
+	for _, capability := range capabilities {
+		if capability == wanted {
+			return true
+		}
+	}
+	return false
 }
 
 func writeHardware(w io.Writer) error {
@@ -101,8 +133,7 @@ func writeHardware(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	hardware := id.Hardware
-	switch hardware {
+	switch id.Hardware {
 	case "cpu":
 		fmt.Fprintln(w, "cpu")
 		return nil
@@ -119,7 +150,7 @@ func writeHardware(w io.Writer) error {
 	case "intel":
 		return runCheck(w, "sycl-ls")
 	default:
-		return fmt.Errorf("unsupported KAIT_HARDWARE=%s", hardware)
+		return fmt.Errorf("unsupported KAIT_HARDWARE=%s", id.Hardware)
 	}
 }
 

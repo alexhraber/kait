@@ -13,7 +13,8 @@ RUN test -n "${TARGETOS}" -a -n "${TARGETARCH}" \
 FROM ${BASE_IMAGE} AS runtime
 ARG BUILDKITE_AGENT_VERSION=3.123.1
 ARG KAIT_HARDWARE=cpu
-ARG KAIT_VARIANT=slim
+ARG KAIT_VARIANT=
+ARG KAIT_PROFILE=
 ARG KAIT_CAPABILITIES=
 ARG KAIT_PYTHON=python3
 ARG KAIT_EXTRA_PYTHON_PACKAGES=""
@@ -22,6 +23,7 @@ ARG TARGETARCH
 LABEL io.kait.identity="/etc/kait/identity.json" \
       io.kait.hardware="${KAIT_HARDWARE}" \
       io.kait.variant="${KAIT_VARIANT}" \
+      io.kait.profile="${KAIT_PROFILE}" \
       io.kait.capabilities="${KAIT_CAPABILITIES}"
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -31,6 +33,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     BUILDKITE_BUILD_PATH=/buildkite/builds \
     KAIT_HARDWARE=${KAIT_HARDWARE} \
     KAIT_VARIANT=${KAIT_VARIANT} \
+    KAIT_PROFILE=${KAIT_PROFILE} \
     KAIT_O11Y=none \
     PATH=/opt/kait/venv/bin:/buildkite/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     PYTHONUNBUFFERED=1
@@ -63,46 +66,26 @@ RUN mkdir -p /buildkite/bin /buildkite/builds /buildkite/hooks /etc/kait /opt/ka
     && install -m 0644 /tmp/buildkite-agent/extracted/buildkite-agent.cfg /buildkite/buildkite-agent.cfg \
     && rm -rf /tmp/buildkite-agent
 
+COPY --from=kait-build /out/kait /usr/local/bin/kait
 COPY requirements /opt/kait/requirements
 RUN set -eux; \
     "${KAIT_PYTHON}" -m venv /opt/kait/venv; \
     /opt/kait/venv/bin/pip install --no-cache-dir --upgrade pip; \
-    case "${KAIT_VARIANT}" in slim|full) ;; *) echo "unsupported KAIT_VARIANT: ${KAIT_VARIANT}" >&2; exit 1 ;; esac; \
-    effective_capabilities="${KAIT_CAPABILITIES}"; \
-    if [ -z "${effective_capabilities}" ]; then \
-      case "${KAIT_VARIANT}" in \
-        slim) effective_capabilities="data-science" ;; \
-        full) effective_capabilities="data-science,training,orchestration,serving" ;; \
-      esac; \
-    fi; \
-    case ",${effective_capabilities}," in *,data-science,*) ;; *) echo "KAIT_CAPABILITIES must include data-science" >&2; exit 1 ;; esac; \
-    requirements_files="slim.txt ${KAIT_HARDWARE}.txt"; \
-    identity_capabilities=""; \
-    old_ifs="${IFS}"; IFS=','; \
-    for capability in ${effective_capabilities}; do \
-      case "${capability}" in \
-        data-science) ;; \
-        training) requirements_files="${requirements_files} base.txt training.txt" ;; \
-        orchestration) requirements_files="${requirements_files} orchestration.txt" ;; \
-        serving) requirements_files="${requirements_files} serving.txt" ;; \
-        *) echo "unsupported KAIT_CAPABILITIES entry: ${capability}" >&2; exit 1 ;; \
-      esac; \
-      case ",${identity_capabilities}," in *,"${capability}",*) echo "duplicate KAIT_CAPABILITIES entry: ${capability}" >&2; exit 1 ;; esac; \
-      if [ -n "${identity_capabilities}" ]; then identity_capabilities="${identity_capabilities},"; fi; \
-      identity_capabilities="${identity_capabilities}\"${capability}\""; \
-    done; \
-    IFS="${old_ifs}"; \
-    for requirements_file in ${requirements_files}; do \
+    contract_args="--hardware ${KAIT_HARDWARE}"; \
+    if [ -n "${KAIT_PROFILE}" ]; then contract_args="${contract_args} --profile ${KAIT_PROFILE}"; fi; \
+    if [ -n "${KAIT_VARIANT}" ]; then contract_args="${contract_args} --variant ${KAIT_VARIANT}"; fi; \
+    if [ -n "${KAIT_CAPABILITIES}" ]; then contract_args="${contract_args} --capabilities ${KAIT_CAPABILITIES}"; fi; \
+    /usr/local/bin/kait contract ${contract_args} > /tmp/kait-contract.json; \
+    jq -e '.schema == 2 and (.hardware | length > 0) and (.profile | length > 0) and (.capabilities | length > 0)' /tmp/kait-contract.json >/dev/null; \
+    jq -r '.requirements[]' /tmp/kait-contract.json | while IFS= read -r requirements_file; do \
       test -f "/opt/kait/requirements/${requirements_file}" || { echo "missing requirements manifest: ${requirements_file}" >&2; exit 1; }; \
       /opt/kait/venv/bin/pip install --no-cache-dir -r "/opt/kait/requirements/${requirements_file}"; \
     done; \
     if [ -n "${KAIT_EXTRA_PYTHON_PACKAGES}" ]; then \
       /opt/kait/venv/bin/pip install --no-cache-dir ${KAIT_EXTRA_PYTHON_PACKAGES}; \
     fi; \
-    printf '{"schema":1,"hardware":"%s","variant":"%s","capabilities":[%s]}\n' \
-      "${KAIT_HARDWARE}" "${KAIT_VARIANT}" "${identity_capabilities}" > /etc/kait/identity.json
+    cp /tmp/kait-contract.json /etc/kait/identity.json
 
-COPY --from=kait-build /out/kait /usr/local/bin/kait
 RUN chmod +x /usr/local/bin/kait \
     && touch /buildkite/buildkite-agent.cfg
 

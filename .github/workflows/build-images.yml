@@ -16,159 +16,88 @@ permissions:
   contents: read
 
 jobs:
+  plan:
+    name: Resolve capability matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      active: ${{ steps.matrix.outputs.active }}
+      accelerators: ${{ steps.matrix.outputs.accelerators }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - id: matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "active=$(go run ./cmd/kait matrix --active-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
+          echo "accelerators=$(go run ./cmd/kait matrix --accelerators-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
+
   build:
-    name: Build ${{ matrix.hardware }}-${{ matrix.variant }}
+    name: Build ${{ matrix.hardware }}-${{ matrix.profile }}
+    needs: plan
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - hardware: cpu
-            variant: slim
-            runner: ubuntu-24.04
-            platform: linux/amd64
-            base_image: ubuntu:24.04
-            python_bin: python3
-            capabilities: data-science
-            smoke: true
-          - hardware: cpu
-            variant: full
-            runner: ubuntu-24.04
-            platform: linux/amd64
-            base_image: ubuntu:24.04
-            python_bin: python3
-            capabilities: data-science,training,orchestration,serving
-            smoke: true
-          - hardware: apple
-            variant: slim
-            runner: ubuntu-24.04-arm
-            platform: linux/arm64
-            base_image: ubuntu:24.04
-            python_bin: python3
-            capabilities: data-science
-            smoke: true
-          - hardware: apple
-            variant: full
-            runner: ubuntu-24.04-arm
-            platform: linux/arm64
-            base_image: ubuntu:24.04
-            python_bin: python3
-            capabilities: data-science,training,orchestration,serving
-            smoke: true
+      matrix: ${{ fromJSON(needs.plan.outputs.active) }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Validate bake graph
-        if: matrix.hardware == 'cpu' && matrix.variant == 'slim'
-        run: docker buildx bake --print
-      - name: Build and boot image contract
+      - name: Validate Bake graph
+        if: matrix.hardware == 'cpu' && matrix.profile == 'slim'
+        run: docker buildx bake --print cpu-slim
+      - name: Build image from the capability contract
         env:
-          HARDWARE: ${{ matrix.hardware }}
-          VARIANT: ${{ matrix.variant }}
-          PLATFORM: ${{ matrix.platform }}
-          BASE_IMAGE: ${{ matrix.base_image }}
-          PYTHON_BIN: ${{ matrix.python_bin }}
-          CAPABILITIES: ${{ matrix.capabilities }}
+          IMAGE: kait:ci-${{ matrix.hardware }}-${{ matrix.profile }}
         run: |
           set -euo pipefail
           docker buildx build \
             --load \
-            --platform "${PLATFORM}" \
-            --tag "kait:ci-${HARDWARE}-${VARIANT}" \
-            --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+            --platform "${{ matrix.platform }}" \
+            --tag "${IMAGE}" \
+            --build-arg BASE_IMAGE="${{ matrix.base_image }}" \
             --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
-            --build-arg KAIT_HARDWARE="${HARDWARE}" \
-            --build-arg KAIT_VARIANT="${VARIANT}" \
-            --build-arg KAIT_CAPABILITIES="${CAPABILITIES}" \
-            --build-arg KAIT_PYTHON="${PYTHON_BIN}" \
+            --build-arg KAIT_HARDWARE="${{ matrix.hardware }}" \
+            --build-arg KAIT_VARIANT="${{ matrix.variant }}" \
+            --build-arg KAIT_PROFILE="${{ matrix.profile }}" \
+            --build-arg KAIT_CAPABILITIES="${{ matrix.capabilities }}" \
+            --build-arg KAIT_PYTHON="${{ matrix.python_bin }}" \
             --provenance=false \
             --sbom=false \
             .
-          docker run --rm --platform "${PLATFORM}" "kait:ci-${HARDWARE}-${VARIANT}" doctor
-      - name: Run native framework smoke test
-        if: matrix.smoke
-        env:
-          HARDWARE: ${{ matrix.hardware }}
-          VARIANT: ${{ matrix.variant }}
-          PLATFORM: ${{ matrix.platform }}
-        run: docker run --rm --platform "${PLATFORM}" -e KAIT_HARDWARE="${HARDWARE}" -e KAIT_VARIANT="${VARIANT}" "kait:ci-${HARDWARE}-${VARIANT}" smoke
+          docker run --rm --platform "${{ matrix.platform }}" "${IMAGE}" doctor
+          docker run --rm --platform "${{ matrix.platform }}" "${IMAGE}" smoke
 
   build-accelerators:
-    name: Build inactive accelerator ${{ matrix.hardware }}-${{ matrix.variant }}
+    name: Build accelerator ${{ matrix.hardware }}-${{ matrix.profile }}
+    needs: plan
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_accelerators == true }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          # These labels are deliberately inactive until matching hosts are registered.
-          - hardware: nvidia
-            variant: slim
-            runner: kait-nvidia
-            platform: linux/amd64
-            base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
-            python_bin: python3
-            capabilities: data-science
-          - hardware: nvidia
-            variant: full
-            runner: kait-nvidia
-            platform: linux/amd64
-            base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
-            python_bin: python3
-            capabilities: data-science,training,orchestration,serving
-          - hardware: amd
-            variant: slim
-            runner: kait-amd
-            platform: linux/amd64
-            base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
-            python_bin: python3
-            capabilities: data-science
-          - hardware: amd
-            variant: full
-            runner: kait-amd
-            platform: linux/amd64
-            base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
-            python_bin: python3
-            capabilities: data-science,training,orchestration,serving
-          - hardware: intel
-            variant: slim
-            runner: kait-intel
-            platform: linux/amd64
-            base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
-            python_bin: python3.11
-            capabilities: data-science
-          - hardware: intel
-            variant: full
-            runner: kait-intel
-            platform: linux/amd64
-            base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
-            python_bin: python3.11
-            capabilities: data-science,training,orchestration,serving
+      matrix: ${{ fromJSON(needs.plan.outputs.accelerators) }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build and smoke inactive accelerator image
+      - name: Build and smoke matching accelerator image
         env:
-          HARDWARE: ${{ matrix.hardware }}
-          VARIANT: ${{ matrix.variant }}
-          PLATFORM: ${{ matrix.platform }}
-          BASE_IMAGE: ${{ matrix.base_image }}
-          PYTHON_BIN: ${{ matrix.python_bin }}
-          CAPABILITIES: ${{ matrix.capabilities }}
+          IMAGE: kait:ci-${{ matrix.hardware }}-${{ matrix.profile }}
         run: |
           set -euo pipefail
           docker buildx build \
             --load \
-            --platform "${PLATFORM}" \
-            --tag "kait:ci-${HARDWARE}-${VARIANT}" \
-            --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+            --platform "${{ matrix.platform }}" \
+            --tag "${IMAGE}" \
+            --build-arg BASE_IMAGE="${{ matrix.base_image }}" \
             --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
-            --build-arg KAIT_HARDWARE="${HARDWARE}" \
-            --build-arg KAIT_VARIANT="${VARIANT}" \
-            --build-arg KAIT_CAPABILITIES="${CAPABILITIES}" \
-            --build-arg KAIT_PYTHON="${PYTHON_BIN}" \
+            --build-arg KAIT_HARDWARE="${{ matrix.hardware }}" \
+            --build-arg KAIT_VARIANT="${{ matrix.variant }}" \
+            --build-arg KAIT_PROFILE="${{ matrix.profile }}" \
+            --build-arg KAIT_CAPABILITIES="${{ matrix.capabilities }}" \
+            --build-arg KAIT_PYTHON="${{ matrix.python_bin }}" \
             --provenance=false \
             --sbom=false \
             .
-          docker run --rm --platform "${PLATFORM}" "kait:ci-${HARDWARE}-${VARIANT}" doctor
-          docker run --rm --platform "${PLATFORM}" -e KAIT_HARDWARE="${HARDWARE}" -e KAIT_VARIANT="${VARIANT}" "kait:ci-${HARDWARE}-${VARIANT}" smoke
+          docker run --rm --platform "${{ matrix.platform }}" "${IMAGE}" doctor
+          docker run --rm --platform "${{ matrix.platform }}" "${IMAGE}" smoke

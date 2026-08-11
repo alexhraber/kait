@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "hardware_order": ["cpu", "apple", "nvidia", "amd", "intel"],
+  "profile_order": ["slim", "full", "data-science", "training", "orchestration", "serving"],
+  "hardware": {
+    "cpu": {
+      "platforms": ["linux/amd64", "linux/arm64"],
+      "python": "python3",
+      "base_image": "ubuntu:24.04",
+      "runner": "ubuntu-24.04",
+      "active": true,
+      "accelerator": "cpu",
+      "python_requirements": "cpu.txt",
+      "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
+    },
+    "apple": {
+      "platforms": ["linux/arm64"],
+      "python": "python3",
+      "base_image": "ubuntu:24.04",
+      "runner": "ubuntu-24.04-arm",
+      "active": true,
+      "accelerator": "cpu",
+      "python_requirements": "apple.txt",
+      "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
+    },
+    "nvidia": {
+      "platforms": ["linux/amd64"],
+      "python": "python3",
+      "base_image": "nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04",
+      "runner": "kait-nvidia",
+      "active": false,
+      "accelerator": "cuda",
+      "python_requirements": "nvidia.txt",
+      "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
+    },
+    "amd": {
+      "platforms": ["linux/amd64"],
+      "python": "python3",
+      "base_image": "rocm/dev-ubuntu-24.04:6.2.4-complete",
+      "runner": "kait-amd",
+      "active": false,
+      "accelerator": "rocm",
+      "python_requirements": "amd.txt",
+      "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
+    },
+    "intel": {
+      "platforms": ["linux/amd64"],
+      "python": "python3.11",
+      "base_image": "intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04",
+      "runner": "kait-intel",
+      "active": false,
+      "accelerator": "xpu",
+      "python_requirements": "intel.txt",
+      "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
+    }
+  },
+  "capabilities": {
+    "data-science": {
+      "requires": [],
+      "requirements": ["slim.txt"],
+      "hardware_requirements": true,
+      "summary": "NumPy, pandas, scikit-learn, Jupyter, and hardware-specific PyTorch",
+      "smoke": "import numpy as np\nimport pandas as pd\nimport sklearn\nimport jupyterlab\nimport torch\nassert int(np.array([1, 2]).sum()) == 3\nassert pd.DataFrame({'x': [1]}).shape == (1, 1)\nassert sklearn.__version__\nassert jupyterlab.__version__\nassert torch.__version__"
+    },
+    "training": {
+      "requires": ["data-science"],
+      "requirements": ["base.txt", "training.txt"],
+      "hardware_requirements": true,
+      "summary": "Hugging Face and Lightning training tooling",
+      "smoke": "from datasets import Dataset\nassert Dataset.from_dict({'x': [1]}).num_rows == 1\nfrom transformers import TrainingArguments\nTrainingArguments(output_dir='/tmp/kait-training-smoke', report_to=[])\nimport lightning as L\nclass KaitSmokeModule(L.LightningModule):\n    pass\nassert issubclass(KaitSmokeModule, L.LightningModule)"
+    },
+    "orchestration": {
+      "requires": [],
+      "requirements": ["orchestration.txt"],
+      "hardware_requirements": false,
+      "summary": "Ray execution with MLflow and Weights & Biases tooling",
+      "smoke": "import ray\nray.init(include_dashboard=False, num_cpus=1, ignore_reinit_error=True, logging_level=40)\n@ray.remote\ndef kait_smoke_task():\n    return 1\nassert ray.get(kait_smoke_task.remote()) == 1\nray.shutdown()\nimport mlflow\nmlflow.set_tracking_uri('sqlite:////tmp/kait-mlflow-smoke.db')\nmlflow.set_experiment('kait-smoke')\nrun = mlflow.start_run()\nmlflow.log_metric('smoke', 1.0)\nmlflow.end_run()\nimport wandb\nwandb_run = wandb.init(mode='disabled', project='kait-smoke')\nwandb_run.finish()"
+    },
+    "serving": {
+      "requires": [],
+      "requirements": ["serving.txt"],
+      "hardware_requirements": false,
+      "summary": "FastAPI, Gradio, and Uvicorn application interfaces",
+      "smoke": "from fastapi import FastAPI\napp = FastAPI()\n@app.get('/health')\ndef health():\n    return {'ok': True}\nimport gradio as gr\ndemo = gr.Interface(fn=lambda value: value, inputs='text', outputs='text')\nimport uvicorn\nconfig = uvicorn.Config(app, host='127.0.0.1', port=0)\nassert config.app is app"
+    }
+  },
+  "profiles": {
+    "slim": {"variant": "slim", "capabilities": ["data-science"]},
+    "full": {"variant": "full", "capabilities": ["data-science", "training", "orchestration", "serving"]},
+    "data-science": {"variant": "slim", "capabilities": ["data-science"]},
+    "training": {"variant": "full", "capabilities": ["data-science", "training"]},
+    "orchestration": {"variant": "full", "capabilities": ["orchestration"]},
+    "serving": {"variant": "full", "capabilities": ["serving"]}
+  }
+}

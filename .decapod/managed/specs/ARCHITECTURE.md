@@ -28,44 +28,43 @@ that dispatches and records jobs.
 - Runtime/languages: Go supervisor, Ubuntu-based Docker images, Python venv.
 - Hardware surfaces: Ubuntu CPU, Apple Silicon Linux arm64 CPU, CUDA/NVIDIA,
   ROCm/AMD, and Intel oneAPI.
-- Toolchain: Go/Buildkite in every image; `*-slim` adds NumPy, pandas,
-  scikit-learn, Jupyter, pytest, requests, and PyYAML; `*-full` adds the
-  broader data, Hugging Face, orchestration, and serving layers.
+- Toolchain: Go/Buildkite in every image; the embedded capability model resolves
+  the six profiles `slim`, `full`, `data-science`, `training`, `orchestration`,
+  and `serving` into ordered requirement manifests and smoke programs.
 - Product type: self-hosted Buildkite AI runtime.
 
 ## Capability Contract
 Kait keeps hardware and workload capability as separate contracts. The
-existing `slim` and `full` build variants select a small capability set rather
-than introducing a third image-matrix dimension: slim declares
-`data-science`, while full declares `data-science`, `training`,
-`orchestration`, and `serving`. Docker writes that identity to
-`/etc/kait/identity.json`; the Go supervisor validates runtime overrides,
-smoke-tests representative imports, and advertises one canonical
+authoritative `cmd/kait/capability-contract.json` model resolves the public
+profiles into dependency composition, compatibility variants, baked identity,
+smoke programs, and release matrix rows. Docker writes that identity to
+`/etc/kait/identity.json`; the Go supervisor refuses a missing or conflicting
+identity, smoke-tests representative programs, and advertises one canonical
 `kait.capability.<name>=true` Buildkite tag per declared capability. Pipeline
 selectors therefore consume an artifact-backed contract, while organizations
 can derive images from an immutable Kait base without rebuilding the common
 supervisor and hardware substrate.
 
 ## Architecture Map
-- `cmd/kait/`: Go supervisor split by concern — `main`, `config`, `run`,
-  `metrics`, `doctor`/`smoke`, `hardware`, `log`, `version` — plus unit tests.
+- `cmd/kait/`: Go supervisor split by concern — `main`, `config`, `contract`,
+  `run`, `metrics`, `doctor`/`smoke`, `hardware`, `log`, `version` — plus
+  capability contract tests.
 - `docs/architecture.md`: human-facing deep dive (supervisor layout, image
   matrix, deploy paths, observability model, failure/exit codes, release flow).
 - `Dockerfile` + `docker-bake.hcl`: shared image implementation and matrix.
-- `requirements/`: layered Python manifests (`slim` / hardware / full stack).
+- `requirements/`: leaf Python manifests selected by the embedded capability model.
 - `deploy/`: Docker launcher and Kubernetes one-shot Job template.
 - `examples/`: Buildkite agent-targeting snippets.
 - Root `README.md` + `CONTRIBUTING.md`: quick start and contributor entry;
   the README links to `docs/architecture.md` for the longer story.
 
-The image matrix uses Ubuntu/glibc for every target. Each target has `*-slim`
-and `*-full` package variants. **Published platforms (active release):** CPU
-images are `linux/amd64` (built on `ubuntu-24.04`); Apple images are
-`linux/arm64` (built on `ubuntu-24.04-arm`). NVIDIA, AMD, and Intel remain
-manual opt-ins and are `linux/amd64` contracts. Versioned tags are
-`<tag>-<hardware>-<variant>`; unversioned aliases (`cpu-slim`, …) track the
-latest successful release. A musl/Alpine image would be a separate dependency
-contract and is not treated as equivalent.
+The image matrix uses Ubuntu/glibc for every target. Each hardware target
+projects six public profiles. **Published platforms (active release):** CPU
+images are `linux/amd64` + `linux/arm64`; Apple images are `linux/arm64`.
+NVIDIA, AMD, and Intel remain manual opt-ins and are `linux/amd64` contracts.
+Versioned tags are `<tag>-<hardware>-<profile>`; unversioned profile aliases
+track the latest successful release. A musl/Alpine image would be a separate
+dependency contract and is not treated as equivalent.
 
 Image delivery is host-matrixed. Active CI builds and runs `kait smoke` on
 native CPU and arm64 hosts. Accelerator definitions and their
@@ -92,7 +91,8 @@ the workload changes; the execution model remains.
 
 ## Data Flows
 1. Docker or Kubernetes injects environment and device resources.
-2. Kait validates KAIT_HARDWARE, KAIT_VARIANT, KAIT_O11Y, and Buildkite credentials.
+2. Kait loads the mandatory baked identity and validates KAIT_HARDWARE,
+   KAIT_VARIANT, KAIT_PROFILE, KAIT_O11Y, and Buildkite credentials against it.
 3. Kait starts buildkite-agent start, which polls Buildkite and executes jobs.
 4. Metrics are scraped by Prometheus or forwarded to DogStatsD/OTel
    collectors; logs remain structured on stdout/stderr.
@@ -208,7 +208,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `b6d11da136f226514164fe45295784a398101fde9125eea090293ec174e43be7`
+- Repository signal fingerprint: `c70f67f5dedfa45dbe5c2c90971c52f165d80c3755cabac1982850ba12279dc0`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

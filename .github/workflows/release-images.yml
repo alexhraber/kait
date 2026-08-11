@@ -11,12 +11,12 @@ on:
         required: true
         type: string
       publish_stable:
-        description: Refresh the stable hardware aliases
+        description: Refresh stable profile aliases
         required: true
         default: false
         type: boolean
       enable_accelerators:
-        description: Publish inactive NVIDIA, AMD, and Intel images on matching hosts
+        description: Publish inactive NVIDIA, AMD, and Intel profiles on matching hosts
         required: true
         default: false
         type: boolean
@@ -26,45 +26,39 @@ permissions:
   packages: write
 
 jobs:
+  plan:
+    name: Resolve release capability matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      active: ${{ steps.matrix.outputs.active }}
+      accelerators: ${{ steps.matrix.outputs.accelerators }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - id: matrix
+        shell: bash
+        env:
+          ENABLE_ACCELERATORS: ${{ inputs.enable_accelerators }}
+        run: |
+          set -euo pipefail
+          echo "active=$(go run ./cmd/kait matrix --active-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
+          if [[ "${ENABLE_ACCELERATORS:-false}" == "true" ]]; then
+            echo "accelerators=$(go run ./cmd/kait matrix --accelerators-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
+          else
+            echo 'accelerators={"include":[]}' >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
-    name: Publish ${{ matrix.hardware }}-${{ matrix.variant }} image
+    name: Publish ${{ matrix.hardware }}-${{ matrix.profile }} image
+    needs: plan
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - hardware: cpu
-            variant: slim
-            runner: ubuntu-24.04
-            platforms: linux/amd64
-            base_image: ubuntu:24.04
-            python_bin: python3
-            capabilities: data-science
-          - hardware: cpu
-            variant: full
-            runner: ubuntu-24.04
-            platforms: linux/amd64
-            base_image: ubuntu:24.04
-            python_bin: python3
-            capabilities: data-science,training,orchestration,serving
-          - hardware: apple
-            variant: slim
-            runner: ubuntu-24.04-arm
-            platforms: linux/arm64
-            base_image: ubuntu:24.04
-            python_bin: python3
-            capabilities: data-science
-          - hardware: apple
-            variant: full
-            runner: ubuntu-24.04-arm
-            platforms: linux/arm64
-            base_image: ubuntu:24.04
-            python_bin: python3
-            capabilities: data-science,training,orchestration,serving
-
+      matrix: ${{ fromJSON(needs.plan.outputs.active) }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Set release metadata
         id: release
         env:
@@ -80,42 +74,26 @@ jobs:
           publish_stable="${INPUT_PUBLISH_STABLE:-true}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "publish_stable=$publish_stable" >> "$GITHUB_OUTPUT"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract image metadata
+      - uses: docker/metadata-action@v5
         id: meta
-        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/kait
           tags: |
-            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.variant }}
-            type=raw,value=${{ matrix.hardware }}-${{ matrix.variant }},enable=${{ steps.release.outputs.publish_stable == 'true' }}
-            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }},enable=${{ matrix.variant == 'slim' }}
-            type=raw,value=${{ matrix.hardware }},enable=${{ matrix.variant == 'slim' && steps.release.outputs.publish_stable == 'true' }}
-            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-data-science,enable=${{ matrix.variant == 'slim' }}
-            type=raw,value=${{ matrix.hardware }}-data-science,enable=${{ matrix.variant == 'slim' && steps.release.outputs.publish_stable == 'true' }}
-            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-training,enable=${{ matrix.variant == 'full' }}
-            type=raw,value=${{ matrix.hardware }}-training,enable=${{ matrix.variant == 'full' && steps.release.outputs.publish_stable == 'true' }}
-            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-orchestration,enable=${{ matrix.variant == 'full' }}
-            type=raw,value=${{ matrix.hardware }}-orchestration,enable=${{ matrix.variant == 'full' && steps.release.outputs.publish_stable == 'true' }}
-            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-serving,enable=${{ matrix.variant == 'full' }}
-            type=raw,value=${{ matrix.hardware }}-serving,enable=${{ matrix.variant == 'full' && steps.release.outputs.publish_stable == 'true' }}
-
-      - name: Build and push image
-        uses: docker/build-push-action@v6
+            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.profile }}
+            type=raw,value=${{ matrix.hardware }}-${{ matrix.profile }},enable=${{ steps.release.outputs.publish_stable == 'true' }}
+            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }},enable=${{ matrix.profile == 'slim' }}
+            type=raw,value=${{ matrix.hardware }},enable=${{ matrix.profile == 'slim' && steps.release.outputs.publish_stable == 'true' }}
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
-          platforms: ${{ matrix.platforms }}
+          platforms: ${{ join(matrix.platforms, ',') }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -126,87 +104,54 @@ jobs:
             BUILDKITE_AGENT_VERSION=3.123.1
             KAIT_HARDWARE=${{ matrix.hardware }}
             KAIT_VARIANT=${{ matrix.variant }}
+            KAIT_PROFILE=${{ matrix.profile }}
             KAIT_CAPABILITIES=${{ matrix.capabilities }}
             KAIT_PYTHON=${{ matrix.python_bin }}
-
-      - name: Smoke published image on the matching host
+      - name: Smoke published profile on its native runner
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
-          IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/kait
-          HARDWARE: ${{ matrix.hardware }}
-          VARIANT: ${{ matrix.variant }}
-          PLATFORM: ${{ matrix.platforms }}
-        shell: bash
+          IMAGE: ghcr.io/${{ github.repository_owner }}/kait:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.profile }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
-          version="${INPUT_VERSION:-${REF_NAME}}"
-          [[ "$version" == v* ]] || version="v$version"
-          image="${IMAGE_PREFIX}:${version}-${HARDWARE}-${VARIANT}"
-          docker pull --platform "${PLATFORM%%,*}" "$image"
-          KAIT_IMAGE="$image" \
-            KAIT_HARDWARE="$HARDWARE" \
-            KAIT_VARIANT="$VARIANT" \
-            KAIT_O11Y=none \
-            KAIT_CONTAINER_COMMAND=smoke \
-            ./deploy/docker/run.sh
+          docker pull --platform "${PLATFORM}" "${IMAGE}"
+          docker run --rm --platform "${PLATFORM}" "${IMAGE}" doctor
+          docker run --rm --platform "${PLATFORM}" "${IMAGE}" smoke
 
   verify:
-    name: Verify published manifests
-    needs: publish
+    name: Verify released ${{ matrix.hardware }}-${{ matrix.profile }} manifest
+    needs: [plan, publish]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: read
     strategy:
-      matrix:
-        include:
-          - hardware: cpu
-            variant: slim
-            platform: linux/amd64
-            capability: data-science
-          - hardware: apple
-            variant: slim
-            platform: linux/arm64
-            capability: data-science
-          - hardware: cpu
-            variant: full
-            platform: linux/amd64
-            capability: training
-          - hardware: apple
-            variant: full
-            platform: linux/arm64
-            capability: training
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.active) }}
     steps:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/setup-qemu-action@v3
-      - name: Log in to GHCR for verification
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Inspect versioned manifest
+      - name: Inspect and smoke immutable profile tag
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
           IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/kait
-          PLATFORM: ${{ matrix.platform }}
-          CAPABILITY: ${{ matrix.capability }}
-        shell: bash
         run: |
           set -euo pipefail
           version="${INPUT_VERSION:-${REF_NAME}}"
           [[ "$version" == v* ]] || version="v$version"
-          image="${IMAGE_PREFIX}:${version}-${{ matrix.hardware }}-${{ matrix.variant }}"
-          capability_image="${IMAGE_PREFIX}:${version}-${{ matrix.hardware }}-${CAPABILITY}"
+          image="${IMAGE_PREFIX}:${version}-${{ matrix.hardware }}-${{ matrix.profile }}"
           docker buildx imagetools inspect "$image"
-          docker buildx imagetools inspect "$capability_image"
-          docker pull --platform "${PLATFORM}" "$image"
-          docker run --rm --platform "${PLATFORM}" "$image" doctor
+          docker pull --platform "${{ matrix.platform }}" "$image"
+          docker run --rm --platform "${{ matrix.platform }}" "$image" doctor
 
   publish-accelerators:
-    name: Publish inactive accelerator ${{ matrix.hardware }}-${{ matrix.variant }}
+    name: Publish accelerator ${{ matrix.hardware }}-${{ matrix.profile }} image
+    needs: plan
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_accelerators == true }}
     runs-on: ${{ matrix.runner }}
     permissions:
@@ -214,51 +159,7 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          # These labels are deliberately inactive until matching hosts are registered.
-          - hardware: nvidia
-            variant: slim
-            runner: kait-nvidia
-            platforms: linux/amd64
-            base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
-            python_bin: python3
-            capabilities: data-science
-          - hardware: nvidia
-            variant: full
-            runner: kait-nvidia
-            platforms: linux/amd64
-            base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
-            python_bin: python3
-            capabilities: data-science,training,orchestration,serving
-          - hardware: amd
-            variant: slim
-            runner: kait-amd
-            platforms: linux/amd64
-            base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
-            python_bin: python3
-            capabilities: data-science
-          - hardware: amd
-            variant: full
-            runner: kait-amd
-            platforms: linux/amd64
-            base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
-            python_bin: python3
-            capabilities: data-science,training,orchestration,serving
-          - hardware: intel
-            variant: slim
-            runner: kait-intel
-            platforms: linux/amd64
-            base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
-            python_bin: python3.11
-            capabilities: data-science
-          - hardware: intel
-            variant: full
-            runner: kait-intel
-            platforms: linux/amd64
-            base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
-            python_bin: python3.11
-            capabilities: data-science,training,orchestration,serving
+      matrix: ${{ fromJSON(needs.plan.outputs.accelerators) }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -272,20 +173,18 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
-        shell: bash
         run: |
           set -euo pipefail
           version="${INPUT_VERSION:-${REF_NAME}}"
           [[ "$version" == v* ]] || version="v$version"
-          [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
-          platforms: ${{ matrix.platforms }}
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/kait:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.variant }}
+          tags: ghcr.io/${{ github.repository_owner }}/kait:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.profile }}
           provenance: true
           sbom: true
           build-args: |
@@ -293,31 +192,26 @@ jobs:
             BUILDKITE_AGENT_VERSION=3.123.1
             KAIT_HARDWARE=${{ matrix.hardware }}
             KAIT_VARIANT=${{ matrix.variant }}
+            KAIT_PROFILE=${{ matrix.profile }}
             KAIT_CAPABILITIES=${{ matrix.capabilities }}
             KAIT_PYTHON=${{ matrix.python_bin }}
-      - name: Smoke published inactive accelerator image
+      - name: Smoke published accelerator profile
         env:
-          IMAGE: ghcr.io/${{ github.repository_owner }}/kait:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.variant }}
-          HARDWARE: ${{ matrix.hardware }}
-          VARIANT: ${{ matrix.variant }}
+          IMAGE: ghcr.io/${{ github.repository_owner }}/kait:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.profile }}
         run: |
           set -euo pipefail
           docker pull --platform linux/amd64 "$IMAGE"
-          KAIT_IMAGE="$IMAGE" KAIT_HARDWARE="$HARDWARE" KAIT_VARIANT="$VARIANT" KAIT_O11Y=none \
-            KAIT_CONTAINER_COMMAND=smoke ./deploy/docker/run.sh
+          docker run --rm --platform linux/amd64 "$IMAGE" doctor
+          docker run --rm --platform linux/amd64 "$IMAGE" smoke
 
   github-release:
-    # Release Please already creates the GitHub Release for semantic tags.
-    # Do not fail the matrix after images publish: annotate with GHCR pull lines
-    # (works for tag push and workflow_dispatch). Never use `gh release edit
-    # --generate-notes` — that flag is create-only and breaks re-runs.
-    name: Annotate GitHub release with image tags
+    name: Annotate GitHub release with profile images
     needs: verify
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - name: Point release notes at published GHCR tags
+      - name: Point release notes at published GHCR profiles
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_VERSION: ${{ inputs.version }}
@@ -329,46 +223,22 @@ jobs:
           version="${INPUT_VERSION:-${REF_NAME}}"
           [[ "$version" == v* ]] || version="v$version"
           image="ghcr.io/${OWNER}/kait"
-          section_file=$(mktemp)
-          cat >"$section_file" <<EOF
+          section=$(cat <<EOF
 
-          ### Container images
+          ### Container profiles
 
-          Published to \`${image}\` (provenance + SBOM on each tag):
+          Published to \`${image}\` with provenance and SBOM:
 
-          | Tag | Use |
-          | --- | --- |
-          | \`${image}:${version}-cpu-slim\` | CPU slim (\`linux/amd64\`) |
-          | \`${image}:${version}-cpu-full\` | CPU full (\`linux/amd64\`) |
-          | \`${image}:${version}-apple-slim\` | Apple Silicon slim (\`linux/arm64\`) |
-          | \`${image}:${version}-apple-full\` | Apple Silicon full (\`linux/arm64\`) |
-          | \`${image}:${version}-<hardware>-data-science\` | Capability alias for the slim contract |
-          | \`${image}:${version}-<hardware>-training\` / \`-serving\` / \`-orchestration\` | Capability aliases for the full contract |
-          | \`${image}:cpu-slim\` / \`cpu-full\` / \`apple-slim\` / \`apple-full\` | Stable aliases (latest release) |
-
-          \`\`\`bash
-          docker pull ${image}:${version}-cpu-slim
-          \`\`\`
+          - \`${image}:${version}-<hardware>-slim\` and \`-full\` compatibility profiles
+          - \`${image}:${version}-<hardware>-data-science\`
+          - \`${image}:${version}-<hardware>-training\`
+          - \`${image}:${version}-<hardware>-orchestration\`
+          - \`${image}:${version}-<hardware>-serving\`
           EOF
-          # Drop the accidental leading indentation from the heredoc body.
-          section=$(sed 's/^          //' "$section_file")
-
+          )
           if gh release view "$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             body=$(gh release view "$version" --repo "$GITHUB_REPOSITORY" --json body -q .body)
-            if [[ "$body" == *"### Container images"* ]]; then
-              echo "Release $version already documents container images"
-              exit 0
+            if [[ "$body" != *"### Container profiles"* ]]; then
+              gh release edit "$version" --repo "$GITHUB_REPOSITORY" --notes "${body}${section}"
             fi
-            notes=$(mktemp)
-            printf '%s\n%s\n' "$body" "$section" >"$notes"
-            gh release edit "$version" --repo "$GITHUB_REPOSITORY" \
-              --title "Kait $version" \
-              --notes-file "$notes"
-          else
-            notes=$(mktemp)
-            printf 'Kait %s\n%s\n' "$version" "$section" >"$notes"
-            gh release create "$version" --repo "$GITHUB_REPOSITORY" \
-              --title "Kait $version" \
-              --notes-file "$notes" \
-              --verify-tag
           fi

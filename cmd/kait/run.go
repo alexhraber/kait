@@ -98,7 +98,11 @@ func buildAgentArgs(cfg config) ([]string, error) {
 			Schema:       1,
 			Hardware:     cfg.hardware,
 			Variant:      cfg.variant,
+			Profile:      cfg.profile,
 			Capabilities: cfg.capabilities,
+		}
+		if id.Profile == "" {
+			id.Profile = profileForVariant(id.Variant)
 		}
 		if len(id.Capabilities) == 0 {
 			id.Capabilities = capabilitiesForVariant(id.Variant)

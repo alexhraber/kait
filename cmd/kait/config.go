@@ -11,6 +11,7 @@ type config struct {
 	identity       identity
 	hardware       string
 	variant        string
+	profile        string
 	capabilities   []string
 	o11y           string
 	runMode        string
@@ -30,6 +31,7 @@ func loadConfig() (config, error) {
 		identity:       id,
 		hardware:       id.Hardware,
 		variant:        id.Variant,
+		profile:        id.Profile,
 		capabilities:   id.Capabilities,
 		o11y:           lowerEnv("KAIT_O11Y", "none"),
 		runMode:        lowerEnv("KAIT_RUN_MODE", "agent"),
@@ -74,24 +76,6 @@ func loadConfig() (config, error) {
 		cfg.metricsAddr = ":9090"
 	}
 	return cfg, nil
-}
-
-func validateHardware(hardware string) error {
-	switch hardware {
-	case "cpu", "apple", "nvidia", "amd", "intel":
-		return nil
-	default:
-		return fmt.Errorf("KAIT_HARDWARE must be one of cpu, apple, nvidia, amd, intel (got %q)", hardware)
-	}
-}
-
-func validateVariant(variant string) error {
-	switch variant {
-	case "slim", "full":
-		return nil
-	default:
-		return fmt.Errorf("KAIT_VARIANT must be one of slim, full (got %q)", variant)
-	}
 }
 
 func lowerEnv(name, fallback string) string {

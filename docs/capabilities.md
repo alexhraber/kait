@@ -6,70 +6,86 @@ description: The workload and hardware capability contract exposed by Kait image
 
 # Kait capability contract
 
-Kait's hardware names describe where an image can run. Its capability names
-describe the work the image is prepared to perform. They are separate
-contracts:
+`cmd/kait/capability-contract.json` is Kait's single capability model. The
+embedded Go supervisor, Dockerfile, smoke checks, Buildkite tags, and CI/release
+matrix all consume the same definitions. A package appearing in a manifest is
+not sufficient: the profile must also have a baked identity, a runtime check,
+and a schedulable tag.
 
-```text
-image build → baked identity → supervisor validation → Buildkite tags → pipeline selector
-       └────────────── requirements and smoke checks ────────────────┘
-```
+## Official profiles and capabilities
 
-## Current capabilities
+The public image profiles are `slim`, `full`, and the individual workload
+profiles `data-science`, `training`, `orchestration`, and `serving`.
 
-The first contract is intentionally the set already represented by the
-repository's requirement layers:
-
-| Capability | Declared by | Representative proof |
+| Profile | Baked workload capabilities | Runtime contract |
 | --- | --- | --- |
-| `data-science` | Every official image | NumPy, scikit-learn, and PyTorch imports; selected hardware check |
-| `training` | Full images | Accelerate, datasets, Diffusers, Lightning, and Transformers imports |
-| `orchestration` | Full images | MLflow, Ray, and W&B imports |
-| `serving` | Full images | FastAPI, Gradio, and Uvicorn imports |
+| `slim` | `data-science` | Compatibility profile for the compact data-science environment. |
+| `full` | all four | Compatibility profile composing the complete AI/ML environment. |
+| `data-science` | `data-science` | NumPy, pandas, scikit-learn, Jupyter, and hardware-specific PyTorch. |
+| `training` | `data-science`, `training` | Data-science foundation plus Hugging Face and Lightning tooling. |
+| `orchestration` | `orchestration` | Ray execution with MLflow and Weights & Biases tooling. |
+| `serving` | `serving` | FastAPI, Gradio, and Uvicorn application interfaces. |
 
-These are strong floors, not promises that a model is downloaded, a cluster is
-available, or a vendor-specific serving stack is installed. DeepSpeed,
-bitsandbytes, FlashAttention, vLLM, s3fs, and similar compatibility-sensitive
-packages remain downstream choices.
+`training` intentionally composes `data-science`. `orchestration` and `serving`
+remain independent so their selectors convey meaningful, smaller environments;
+`full` composes all four. The profile is an image identity field, while the
+workload capabilities are the scheduler-facing contract.
 
-## Image identity
+## Hardware dimension
 
-The Docker build writes `/etc/kait/identity.json` with:
+Hardware remains separate from workload capability:
+
+| Hardware | Runtime contract | Current build/release status |
+| --- | --- | --- |
+| `cpu` | Ubuntu 24.04, CPU PyTorch, amd64/arm64 | Active |
+| `apple` | Ubuntu arm64 CPU execution; no Metal passthrough claim | Active |
+| `nvidia` | CUDA 12.6.3 and CUDA PyTorch | Explicit opt-in; matching host required for accelerator smoke |
+| `amd` | ROCm 6.2.4 and ROCm PyTorch | Explicit opt-in; matching host required for accelerator smoke |
+| `intel` | oneAPI Base Toolkit and XPU PyTorch | Explicit opt-in; matching host required for accelerator smoke |
+
+The model validates every advertised profile/hardware pair structurally. It
+does not turn a missing physical accelerator into a passing hardware result:
+`kait doctor` reports the host evidence and `kait smoke` fails when a profile
+that includes data-science cannot see its required accelerator.
+
+## Baked image identity
+
+Every official image contains `/etc/kait/identity.json`, produced by the
+embedded contract resolver during the Docker build:
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "hardware": "cpu",
   "variant": "full",
-  "capabilities": ["data-science", "training", "orchestration", "serving"]
+  "profile": "training",
+  "capabilities": ["data-science", "training"],
+  "requirements": ["cpu.txt", "slim.txt", "base.txt", "training.txt"]
 }
 ```
 
-The identity is derived from build arguments and is not selected by a pipeline
-or changed by an ordinary runtime environment override. `KAIT_HARDWARE`,
-`KAIT_VARIANT`, and, when supplied, `KAIT_CAPABILITIES` must agree with the
-baked file. A mismatch fails closed before the Buildkite agent starts.
-
-`kait doctor` reports the identity and detected device commands. `kait smoke`
-executes representative imports for every declared capability and performs the
-accelerator check for NVIDIA, AMD, or Intel images. CPU and Apple images do not
-claim Apple Metal passthrough; Apple is a Linux/arm64 CPU contract here.
+The supervisor refuses to start without that baked file. `KAIT_HARDWARE`,
+`KAIT_VARIANT`, `KAIT_PROFILE`, and `KAIT_CAPABILITIES` may assert or constrain
+the identity, but cannot create or replace it. Conflicts fail closed before
+the Buildkite agent starts. The resolver also checks that the manifest list
+and profile composition agree, preventing an image from claiming packages it
+did not install.
 
 ## Buildkite targeting
 
-The supervisor advertises one boolean tag for each declared capability:
+The agent tags derive only from the validated identity:
 
 ```text
 kait=true
-kait.hardware=cpu
+kait.hardware=nvidia
 kait.variant=full
+kait.profile=training
 kait.capability.data-science=true
 kait.capability.training=true
-kait.capability.orchestration=true
-kait.capability.serving=true
 ```
 
-A pipeline requests the capability it needs with ordinary Buildkite matching:
+Pipelines select ordinary Buildkite tags without knowing image names or host
+names:
 
 ```yaml
 steps:
@@ -77,35 +93,45 @@ steps:
     command: "python train.py"
     agents:
       queue: ai
-      kait.hardware: cpu
+      kait.hardware: nvidia
       kait.capability.training: "true"
 ```
 
-There is no Kait-specific pipeline parser or scheduler. `kait.*` is a
-reserved tag namespace produced by the image identity. User-supplied custom
-tags are still supported, but an attempt to replace a canonical Kait tag is a
-configuration error.
+`BUILDKITE_AGENT_TAGS` can add organization-specific tags, but the reserved
+`kait` namespace cannot be overridden. Dynamic pipeline uploads use the same
+selectors because Kait does not assume that the execution graph was known at
+image-build time.
 
-## Compatibility and future scope
+## Diagnostics and proof
 
-`slim` and `full` remain stable image and Bake names. They are compatibility
-names for the current package footprints, not the preferred workload selector.
-The current full artifact intentionally exposes all four supported capability
-tags; this avoids multiplying the release matrix while preserving a coherent
-AI/ML floor.
+`kait doctor` reports the image version, profile, baked capabilities, the
+available capability checks, expected hardware, detected hardware evidence,
+and whether the host satisfies the image's hardware expectation.
 
-Focused `training` or `serving` artifacts can be added later by reusing the
-existing capability composition and identity contract. They should only be
-introduced when their smaller dependency sets and release/CI proof are worth a
-new artifact. Agentic execution, inference-specific servers, and distributed
-training are deferred until Kait has dependencies and tests that justify
-those stronger claims.
+`kait smoke` runs the representative checks encoded in the capability model:
 
-## Downstream derivation
+- data-science imports and uses NumPy, pandas, scikit-learn, Jupyter, and PyTorch;
+- training constructs a Hugging Face Dataset and TrainingArguments and checks a Lightning module;
+- orchestration runs a bounded local Ray task, a local MLflow metric, and disabled-mode W&B;
+- serving constructs a FastAPI route, Gradio interface, and Uvicorn configuration.
 
-Organizations can inherit from an immutable versioned image and add internal
-packages, certificates, CLIs, model libraries, security tooling, or
-configuration with ordinary Docker. The inherited identity remains the common
-Kait contract. If the derived image replaces a package covered by a
-capability, the organization owns the new validation and should not reuse the
-official capability claim without re-running the smoke checks.
+No model download, credential, remote MLflow service, W&B login, or external
+experiment is required.
+
+## Direct use and derivation
+
+Use an immutable profile/hardware image directly as a self-hosted Buildkite
+worker, or derive from one:
+
+```dockerfile
+FROM ghcr.io/alexhraber/kait:<immutable-release>-cpu-training
+
+COPY internal-certificates/ /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+RUN pip install --no-cache-dir internal-model-tools
+```
+
+The inherited identity remains understandable after derivation. If a
+downstream image changes dependencies underpinning an advertised capability,
+its owner must rerun the relevant doctor/smoke checks and own the resulting
+compatibility surface rather than silently retaining an invalid claim.

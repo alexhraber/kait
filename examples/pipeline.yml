@@ -1,39 +1,47 @@
 env:
   KAIT_O11Y: prometheus
 
+# Kait supplies the execution surfaces; Buildkite owns the graph, ordering,
+# dynamic uploads, artifacts, and retries.
 steps:
-  - label: ":mag: CPU unit tests"
-    command: "kait smoke"
+  - label: ":bar_chart: prepare data"
+    key: "prepare-data"
+    command: "python prepare.py"
     agents:
       queue: ai
       kait: "true"
       kait.hardware: cpu
-      kait.variant: slim
       kait.capability.data-science: "true"
 
-  - label: ":brain: CPU training environment"
+  - label: ":brain: train"
+    key: "train"
     command: "python train.py"
+    depends_on: "prepare-data"
+    agents:
+      queue: ai
+      kait: "true"
+      kait.hardware: nvidia
+      kait.capability.training: "true"
+
+  - label: ":bar_chart: record experiment"
+    key: "record"
+    command: "python record.py"
+    depends_on: "train"
     agents:
       queue: ai
       kait: "true"
       kait.hardware: cpu
-      kait.capability.training: "true"
+      kait.capability.orchestration: "true"
 
-  - label: ":apple: Apple Silicon serving environment"
-    command: "kait smoke"
+  - label: ":satellite: serve"
+    command: "python serve.py"
+    depends_on: "record"
     agents:
       queue: ai
       kait: "true"
-      kait.hardware: apple
-      kait.variant: full
+      kait.hardware: cpu
       kait.capability.serving: "true"
 
-  # Accelerator hosts are manual opt-in (inactive in default CI/release):
-  # - label: ":cuda: NVIDIA inference"
-  #   command: "kait smoke"
-  #   agents:
-  #     queue: ai
-  #     kait: "true"
-  #     kait.hardware: nvidia
-  #     kait.variant: slim
-  #     kait.capability.data-science: "true"
+# A preceding Buildkite job may upload a further pipeline whose jobs use these
+# same selectors. The graph can be materialized dynamically without Kait
+# knowing the graph or the eventual job count at image-build time.

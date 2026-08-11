@@ -34,9 +34,9 @@ KAIT_IMAGE=ghcr.io/alexhraber/kait:cpu-slim \
   ./deploy/docker/run.sh
 ```
 
-For a training or serving job, use the full environment and select the
-capability in the pipeline. The worker advertises the capabilities baked into
-the image; the pipeline does not install them at job start.
+For a training, orchestration, or serving job, choose the matching workload
+profile. The worker advertises the capabilities baked into that image; the
+pipeline does not install them at job start.
 
 Pin a release for production:
 
@@ -55,32 +55,35 @@ Registry: [`ghcr.io/alexhraber/kait`](https://github.com/alexhraber/kait/pkgs/co
 
 | Tag | Platform (published) | Footprint |
 | --- | --- | --- |
-| `cpu-slim` / `cpu-full` | `linux/amd64` | Agent + CPU PyTorch; data-science or all supported layers |
-| `apple-slim` / `apple-full` | `linux/arm64` | Same stack for Apple Silicon hosts |
-| `vX.Y.Z-<hardware>-<variant>` | as above | Immutable release tags |
+| `<hardware>-slim` / `<hardware>-full` | hardware contract | Compatibility profiles |
+| `<hardware>-data-science` | hardware contract | NumPy, pandas, scikit-learn, Jupyter, and hardware-specific PyTorch |
+| `<hardware>-training` | hardware contract | Data-science plus Hugging Face and Lightning |
+| `<hardware>-orchestration` | hardware contract | Ray, MLflow, and W&B |
+| `<hardware>-serving` | hardware contract | FastAPI, Gradio, and Uvicorn |
+| `vX.Y.Z-<hardware>-<profile>` | hardware contract | Immutable release tags |
 
 `slim` is the compact data-science stack. `full` adds Hugging Face training,
 Ray/MLflow/W&B, and FastAPI/Gradio serving.
 
-The current capability set is deliberately small:
+The public capability set is deliberately small:
 
 | Capability | Available in | Contract |
 | --- | --- | --- |
-| `data-science` | slim and full | NumPy, pandas, scikit-learn, Jupyter, and hardware-specific PyTorch |
-| `training` | full | Hugging Face, Lightning, and model-training frameworks |
-| `orchestration` | full | Ray plus MLflow and W&B |
-| `serving` | full | FastAPI, Gradio, and Uvicorn |
+| `data-science` | `slim`, `full`, `data-science`, `training` | NumPy, pandas, scikit-learn, Jupyter, and hardware-specific PyTorch |
+| `training` | `full`, `training` | Hugging Face and Lightning training tooling; composes data-science |
+| `orchestration` | `full`, `orchestration` | Ray plus MLflow and W&B |
+| `serving` | `full`, `serving` | FastAPI, Gradio, and Uvicorn |
 
 Every official image records this set in `/etc/kait/identity.json`, exposes it
 through `kait doctor`, and advertises it to Buildkite as
 `kait.capability.<name>=true`. `slim` and `full` remain compatibility names;
 they describe package footprints, while capabilities describe usable work.
 
-Versioned tags: `v0.2.1-cpu-slim`, `v0.2.1-apple-full`, …. Unversioned aliases
-(`cpu-slim`, …) track the latest successful release.
-Capability aliases such as `cpu-training` and `cpu-serving` point at the
-corresponding full artifact; they improve discoverability without creating
-additional images or a new matrix dimension.
+Versioned tags use the same six profiles, for example
+`v0.2.1-cpu-training` and `v0.2.1-apple-serving`. Unversioned profile aliases
+track the latest successful release. `slim` and `full` remain compatibility
+profiles, while workload-specific tags are real images with their own baked
+profile identity and smoke proof.
 
 NVIDIA / AMD / Intel bake targets exist for deliberate host testing but are
 **inactive** in automatic CI/release. Opt in with `make build-all-accelerators`
@@ -88,21 +91,24 @@ or the image workflow’s accelerator input.
 
 ```bash
 make build-plan   # print bake graph (Docker Buildx)
-make build-slim   # cpu + apple slim
-make build-full   # cpu + apple full
+make build-slim   # cpu + apple slim compatibility profiles
+make build-full   # cpu + apple full compatibility profiles
+make build-profiles # all six active CPU/Apple profiles
 ```
 
 ## Runtime
 
-Kait is a small Go supervisor (`cmd/kait`) that validates hardware/variant/o11y
-settings, starts `buildkite-agent start` (or a diagnostic command), exposes
-health/metrics when enabled, and exits with the child status.
+Kait is a small Go supervisor (`cmd/kait`) that validates the baked
+hardware/profile/capability contract, starts `buildkite-agent start` (or a
+diagnostic command), exposes health/metrics when enabled, and exits with the
+child status.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `BUILDKITE_AGENT_TOKEN` | — | Cluster agent token (or use `…_TOKEN_FILE`) |
 | `KAIT_HARDWARE` | `cpu` | `cpu` · `apple` · `nvidia` · `amd` · `intel` |
 | `KAIT_VARIANT` | `slim` | `slim` · `full` |
+| `KAIT_PROFILE` | image profile | `slim` · `full` · `data-science` · `training` · `orchestration` · `serving` |
 | `KAIT_O11Y` | `none` | `none` · `prometheus` · `datadog` · `splunk` |
 | `KAIT_RUN_MODE` | `agent` | `agent` or `command` (+ `KAIT_COMMAND`) |
 | `BUILDKITE_AGENT_QUEUE` / `TAGS` | — | Queue and capability targeting |
@@ -113,10 +119,12 @@ kait smoke     # framework + device check (used by CI)
 kait hardware  # accelerator CLI output
 ```
 
-`kait doctor` reports the baked identity and detected devices. `kait smoke`
-validates representative imports for each declared capability and performs
-the hardware check when an accelerator is expected. Runtime attempts to
-override the baked hardware, variant, or capability set fail closed.
+`kait doctor` reports the baked identity, available capability checks, expected
+hardware, detected devices, and whether the host satisfies the hardware
+contract. `kait smoke` performs representative bounded programs for every
+declared capability and validates accelerator access when the profile includes
+the PyTorch data-science contract. A missing baked identity or runtime attempt
+to override it fails closed.
 
 Deeper layout: [docs/architecture.md](docs/architecture.md) and the
 [capability contract](docs/capabilities.md).
@@ -151,7 +159,7 @@ cannot silently contradict the image identity.
 | Layer | Installed when | Contents |
 | --- | --- | --- |
 | `slim.txt` + `<hardware>.txt` | `data-science` | NumPy/pandas/sklearn/Jupyter + hardware PyTorch |
-| `base.txt` + `training.txt` | `training` | Hugging Face and Lightning training stack |
+| `base.txt` + `training.txt` | `training` | Hugging Face and Lightning training stack, composed on data-science |
 | `orchestration.txt` | `orchestration` | Ray/MLflow/W&B |
 | `serving.txt` | `serving` | FastAPI/Gradio/Uvicorn |
 
@@ -165,7 +173,7 @@ Kait is also a base layer. Pin an immutable artifact, then add only the
 organization's delta:
 
 ```dockerfile
-FROM ghcr.io/alexhraber/kait:v0.2.2-cpu-full
+FROM ghcr.io/alexhraber/kait:v0.2.1-cpu-full
 
 COPY internal-requirements.txt /tmp/
 RUN /opt/kait/venv/bin/pip install --no-cache-dir -r /tmp/internal-requirements.txt
@@ -203,7 +211,7 @@ Release Please opens a release PR from `main`. Merging it:
 
 1. Creates the semver tag and GitHub release
 2. Dispatches `release-images.yml` against that tag (`actions: write` required)
-3. Publishes active CPU/Apple slim+full images to GHCR with provenance and SBOM
+3. Publishes all six active CPU/Apple profiles to GHCR with provenance and SBOM
 4. Annotates the GitHub release with pull commands
 
 When a merged change has no conventional release unit, the same workflow opens
