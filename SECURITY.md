@@ -15,7 +15,7 @@ floating aliases).
 Please **do not** open a public GitHub issue for security-sensitive reports.
 
 Email the maintainer listed in the GitHub profile for
-[alexhraber/kaite](https://github.com/alexhraber/kaite), or use GitHub’s
+[alexhraber/kait](https://github.com/alexhraber/kait), or use GitHub’s
 **Private vulnerability reporting** on this repository if enabled.
 
 Include:

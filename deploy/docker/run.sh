@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ -z "${KAITE_CONTAINER_COMMAND:-}" && "${KAITE_RUN_MODE:-agent}" == "agent" && -z "${BUILDKITE_AGENT_TOKEN:-}" && -z "${BUILDKITE_AGENT_TOKEN_FILE:-}" ]]; then
+if [[ -z "${KAIT_CONTAINER_COMMAND:-}" && "${KAIT_RUN_MODE:-agent}" == "agent" && -z "${BUILDKITE_AGENT_TOKEN:-}" && -z "${BUILDKITE_AGENT_TOKEN_FILE:-}" ]]; then
   echo "Set BUILDKITE_AGENT_TOKEN or BUILDKITE_AGENT_TOKEN_FILE" >&2
   exit 2
 fi
-hardware="${KAITE_HARDWARE:-cpu}"
-variant="${KAITE_VARIANT:-slim}"
-o11y="${KAITE_O11Y:-none}"
+hardware="${KAIT_HARDWARE:-cpu}"
+variant="${KAIT_VARIANT:-slim}"
+o11y="${KAIT_O11Y:-none}"
 case "${variant}" in
   slim|full) ;;
-  *) echo "unsupported KAITE_VARIANT=${variant}" >&2; exit 2 ;;
+  *) echo "unsupported KAIT_VARIANT=${variant}" >&2; exit 2 ;;
 esac
-image="${KAITE_IMAGE:-ghcr.io/alexhraber/kaite:${hardware}-${variant}}"
+image="${KAIT_IMAGE:-ghcr.io/alexhraber/kait:${hardware}-${variant}}"
 
 args=(
   --rm
   --init
-  --name "${KAITE_CONTAINER_NAME:-kaite-agent}"
-  --publish "${KAITE_METRICS_PORT:-9090}:9090"
-  --env "KAITE_HARDWARE=${hardware}"
-  --env "KAITE_VARIANT=${variant}"
-  --env "KAITE_O11Y=${o11y}"
-  --env "KAITE_METRICS_ADDR=${KAITE_METRICS_ADDR:-0.0.0.0:9090}"
-  --env "OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-kaite}"
+  --name "${KAIT_CONTAINER_NAME:-kait-agent}"
+  --publish "${KAIT_METRICS_PORT:-9090}:9090"
+  --env "KAIT_HARDWARE=${hardware}"
+  --env "KAIT_VARIANT=${variant}"
+  --env "KAIT_O11Y=${o11y}"
+  --env "KAIT_METRICS_ADDR=${KAIT_METRICS_ADDR:-0.0.0.0:9090}"
+  --env "OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-kait}"
 )
 
 forward_env() {
@@ -50,13 +50,13 @@ for name in \
   BUILDKITE_AGENT_HOOKS_PATH \
   BUILDKITE_WRITE_JOB_LOGS_TO_STDOUT \
   BUILDKITE_KUBERNETES_EXEC \
-  KAITE_RUN_MODE \
-  KAITE_COMMAND \
-  KAITE_CAPABILITIES \
+  KAIT_RUN_MODE \
+  KAIT_COMMAND \
+  KAIT_CAPABILITIES \
   DD_AGENT_HOST \
   DD_DOGSTATSD_PORT \
-  KAITE_DD_AGENT_HOST \
-  KAITE_DD_DOGSTATSD_PORT \
+  KAIT_DD_AGENT_HOST \
+  KAIT_DD_DOGSTATSD_PORT \
   OTEL_EXPORTER_OTLP_ENDPOINT \
   OTEL_EXPORTER_OTLP_HEADERS \
   OTEL_EXPORTER_OTLP_PROTOCOL \
@@ -69,16 +69,16 @@ if [[ -n "${BUILDKITE_AGENT_TOKEN_FILE:-}" ]]; then
 fi
 
 command=()
-if [[ -n "${KAITE_CONTAINER_COMMAND:-}" ]]; then
-  command+=("${KAITE_CONTAINER_COMMAND}")
+if [[ -n "${KAIT_CONTAINER_COMMAND:-}" ]]; then
+  command+=("${KAIT_CONTAINER_COMMAND}")
 fi
 
 case "${hardware}" in
-  nvidia) args+=(--gpus "${KAITE_GPU_DEVICES:-all}") ;;
+  nvidia) args+=(--gpus "${KAIT_GPU_DEVICES:-all}") ;;
   amd) args+=(--device /dev/kfd --device /dev/dri --group-add video) ;;
   intel) args+=(--device /dev/dri --group-add video) ;;
   cpu|apple) ;;
-  *) echo "unsupported KAITE_HARDWARE=${hardware}" >&2; exit 2 ;;
+  *) echo "unsupported KAIT_HARDWARE=${hardware}" >&2; exit 2 ;;
 esac
 
 exec docker run "${args[@]}" "${image}" "${command[@]}"

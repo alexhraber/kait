@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for looking at Kaite. Small, focused changes land fastest.
+Thanks for looking at Kait. Small, focused changes land fastest.
 
 ## Setup
 
@@ -22,7 +22,7 @@ make build-cpu    # local cpu-slim bake
 
 | Path | Role |
 | --- | --- |
-| `cmd/kaite/` | Go supervisor (config, process lifecycle, metrics, doctor/smoke) |
+| `cmd/kait/` | Go supervisor (config, process lifecycle, metrics, doctor/smoke) |
 | `docs/architecture.md` | System layout, image matrix, deploy and failure model |
 | `Dockerfile` + `docker-bake.hcl` | Image matrix and baked capability identity |
 | `requirements/` | Python layer manifests |
@@ -40,10 +40,10 @@ to pull something in.
 - If you change runtime behavior, env contracts, or image tags, update
   `README.md` (and `requirements/README.md` or deploy docs when relevant).
 - Capability changes must also update the identity composition in `Dockerfile`,
-  representative checks in `cmd/kaite/doctor.go`, and
-  `examples/pipeline.yml`. Keep `kaite.*` agent tags canonical: custom tags may
+  representative checks in `cmd/kait/doctor.go`, and
+  `examples/pipeline.yml`. Keep `kait.*` agent tags canonical: custom tags may
   add routing metadata but must not replace image hardware or capabilities.
-- Bump the `version` constant in `cmd/kaite/version.go` only when shipping a
+- Bump the `version` constant in `cmd/kait/version.go` only when shipping a
   release that should surface a new supervisor identity; Release Please owns
   the package changelog and git tags.
 
@@ -95,9 +95,9 @@ pull commands. It does not recreate the release (Release Please owns that).
 ### Public package pulls
 
 The GitHub Container Registry package is independent of repo visibility. For
-anonymous `docker pull ghcr.io/alexhraber/kaite:…` on a public project, set the
+anonymous `docker pull ghcr.io/alexhraber/kait:…` on a public project, set the
 package to **Public** under
-[package settings](https://github.com/users/alexhraber/packages/container/package/kaite/settings).
+[package settings](https://github.com/users/alexhraber/packages/container/package/kait/settings).
 
 Accelerator images (NVIDIA/AMD/Intel) stay manual opt-in until matching runners
 exist. Do not re-enable them on the default CI path without host capacity.
