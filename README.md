@@ -115,6 +115,9 @@ override the baked hardware, variant, or capability set fail closed.
 Deeper layout: [docs/architecture.md](docs/architecture.md) and the
 [capability contract](docs/capabilities.md).
 
+Read the [Kaite documentation site](https://alexhraber.github.io/kaite/) for
+the execution-substrate perspective, capability contract, and architecture.
+
 ## Deploy
 
 - **Docker:** [`deploy/docker/run.sh`](deploy/docker/run.sh) — local agent launch.

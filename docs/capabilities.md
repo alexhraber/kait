@@ -1,3 +1,9 @@
+---
+layout: default
+title: Capability contract
+description: The workload and hardware capability contract exposed by Kaite images.
+---
+
 # Kaite capability contract
 
 Kaite's hardware names describe where an image can run. Its capability names

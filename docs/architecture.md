@@ -1,10 +1,16 @@
+---
+layout: default
+title: Architecture
+description: Kaite supervisor, image, deployment, and release architecture.
+---
+
 # Architecture
 
 Kaite is a **thin Go supervisor** packaged into **hardware-specific Linux
 images**. Buildkite remains the orchestrator; Kaite owns process lifecycle,
 image/runtime identity validation, health/metrics, and diagnostic subcommands.
 
-If you only need to run an agent, start with the [root README](../README.md).
+If you only need to run an agent, start with the [root README](https://github.com/alexhraber/kaite#readme).
 This document is the deeper layout for contributors and operators who want to
 know how the pieces fit.
 
@@ -277,8 +283,8 @@ via `make build-*` (requires Docker Buildx; Podman-only hosts may lack bake).
 
 ## Related docs
 
-- [README](../README.md) — quick start and env table
-- [Capability contract](capabilities.md) — identity, Buildkite selectors, and derivation semantics
-- [CONTRIBUTING](../CONTRIBUTING.md) — local build and PR expectations
-- [requirements/README](../requirements/README.md) — Python layer details
-- [deploy/kubernetes/README](../deploy/kubernetes/README.md) — cluster Job notes
+- [README](https://github.com/alexhraber/kaite#readme) — quick start and env table
+- [Capability contract]({{ '/capabilities/' | relative_url }}) — identity, Buildkite selectors, and derivation semantics
+- [CONTRIBUTING](https://github.com/alexhraber/kaite/blob/main/CONTRIBUTING.md) — local build and PR expectations
+- [requirements/README](https://github.com/alexhraber/kaite/blob/main/requirements/README.md) — Python layer details
+- [deploy/kubernetes/README](https://github.com/alexhraber/kaite/blob/main/deploy/kubernetes/README.md) — cluster Job notes
