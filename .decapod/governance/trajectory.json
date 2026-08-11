@@ -21,6 +21,7 @@
     ".decapod/governance/trajectory.json",
     ".decapod/governance/validation.json",
     ".github/workflows/build-images.yml",
+    ".github/workflows/decapod-validate.yml",
     "cmd/kait/capability-contract.json",
     "cmd/kait/contract.go"
   ],
@@ -38,7 +39,15 @@
       "status": "passed"
     },
     {
+      "name": "PR #23 Decapod validation 31543320270",
+      "status": "passed"
+    },
+    {
       "name": "PR #23 active image builds and smokes",
+      "status": "passed"
+    },
+    {
+      "name": "PR #23 post-governance image build 31543320227",
       "status": "passed"
     },
     {
@@ -59,6 +68,8 @@
     }
   ],
   "evidence": [
+    "Accelerator matrix remained explicitly skipped because matching physical hardware is opt-in",
+    "All 12 active CPU/Apple profile builds and smoke checks passed on the governance-updated PR tip",
     "Local CPU data-science and serving doctor/smoke checks passed",
     "Local CPU orchestration smoke passed Ray local execution, SQLite MLflow, and W&B-disabled validation",
     "PR #23 completed all 12 active CPU/Apple image builds and smoke checks",
@@ -68,7 +79,7 @@
   "unresolved_assumptions": [
     "NVIDIA, AMD, and Intel physical accelerator smoke remains host-dependent and is opt-in in CI"
   ],
-  "completion_claim": "Capability-oriented execution contracts are implemented and validated for active CPU/Apple profiles; inactive accelerator proof remains host-dependent.",
+  "completion_claim": "PR #23 contains the complete capability execution-contract implementation, current governance bundle, and passing active image validation; physical accelerator proof remains host-dependent.",
   "proof_status": "passed",
   "verdicts": {
     "intent_alignment": "supported",
@@ -76,7 +87,7 @@
     "shortcut_risk": "supported",
     "completion_proof": "supported"
   },
-  "artifact_hash": "sha256:4410c9e625d2e4905620f6ee528ae4bacea3b073a968d4e5824864275afc4bba",
+  "artifact_hash": "sha256:c68b892510b51c1cb8915e6757659d2cd4aad1f08be87bddcb25d0e550cebbff",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
@@ -122,6 +133,27 @@
       {
         "sequence": 5,
         "event_id": "event:5",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:kait-execution-substrate-2026-08-11-cicd"
+      },
+      {
+        "sequence": 6,
+        "event_id": "event:6",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:kait-execution-substrate-2026-08-11-cicd"
+      },
+      {
+        "sequence": 7,
+        "event_id": "event:7",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:kait-execution-substrate-2026-08-11-cicd"
+      },
+      {
+        "sequence": 8,
+        "event_id": "event:8",
         "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
         "kind": "trajectory_step_recorded",
         "detail": "trajectory:kait-execution-substrate-2026-08-11-cicd"
@@ -181,12 +213,68 @@
             ],
             "validation_findings": [],
             "custody_event_id": "event:5"
+          },
+          {
+            "sequence": 6,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              "Repository-wide execution-substrate implementation and PR governance artifacts"
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_032a774c37db8933 completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:6"
+          },
+          {
+            "sequence": 7,
+            "action": "validation",
+            "scope": [
+              "Repository-wide execution-substrate implementation and PR governance artifacts"
+            ],
+            "observations": [
+              ".github/workflows/build-images.yml",
+              ".github/workflows/decapod-validate.yml",
+              ".decapod/governance/trajectory.json",
+              "All 12 active CPU/Apple profile builds and smoke checks passed on the governance-updated PR tip",
+              "Accelerator matrix remained explicitly skipped because matching physical hardware is opt-in"
+            ],
+            "proof_refs": [
+              "PR #23 post-governance image build 31543320227",
+              "PR #23 Decapod validation 31543320270"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:7"
+          },
+          {
+            "sequence": 8,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              "Repository-wide execution-substrate implementation and PR governance artifacts"
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_032a774c37db8933 completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:8"
           }
         ]
       }
     },
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 5
+    "next_sequence": 8
   }
 }
