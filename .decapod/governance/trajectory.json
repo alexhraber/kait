@@ -88,7 +88,7 @@
     "shortcut_risk": "supported",
     "completion_proof": "caution"
   },
-  "artifact_hash": "sha256:579afc04e0d796cff158c686beebcd3bc8608445c57cde3fb49d18370e4c4cbb",
+  "artifact_hash": "sha256:8980f6488fa272de22fdcc617448a214034755b28d92ed6fde36ad8f617e4b56",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
@@ -134,6 +134,13 @@
       {
         "sequence": 5,
         "event_id": "event:5",
+        "intent_id": "intent:kait-rename-20260811",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:kait-rename-20260811"
+      },
+      {
+        "sequence": 6,
+        "event_id": "event:6",
         "intent_id": "intent:kait-rename-20260811",
         "kind": "trajectory_step_recorded",
         "detail": "trajectory:kait-rename-20260811"
@@ -201,12 +208,30 @@
             ],
             "validation_findings": [],
             "custody_event_id": "event:5"
+          },
+          {
+            "sequence": 6,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              "Repository source, Docker/Bake/release/CI/docs/deployment surfaces, current Decapod project metadata and active todo projections."
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_2c0c9ac4d1e8453e completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:6"
           }
         ]
       }
     },
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 5
+    "next_sequence": 6
   }
 }
