@@ -10,6 +10,8 @@ Self-hosted [Buildkite](https://buildkite.com) agents with a batteries-included
 AI/ML runtime. One image ships the agent, a pinned Python toolchain, hardware
 contracts, and lightweight observability.
 
+Pronounced “kite” — the ai is just a harder i.
+
 ## Quick start
 
 ```bash
