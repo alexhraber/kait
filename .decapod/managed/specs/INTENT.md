@@ -36,6 +36,8 @@ Key operating facts:
   versioned tags. After images publish, the workflow **annotates** the existing
   GitHub Release with GHCR pull lines — it must not recreate the release or
   call `gh release edit --generate-notes` (create-only; breaks re-runs).
+  A release PR is opened only for user-facing conventional commits (`feat` /
+  `fix` / `perf`); a squash titled `chore:` does not open one.
 - **Version lockstep:** `cmd/kaite` `version` constant tracks the released
   package version (currently **0.2.1**) so doctor/smoke/Prometheus match the tag.
 - **Package visibility:** GHCR package visibility is independent of repo

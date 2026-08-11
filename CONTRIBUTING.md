@@ -51,6 +51,26 @@ to pull something in.
    not re-trigger `on: push` tags created with `GITHUB_TOKEN`).
 4. Image CI builds active CPU/Apple slim+full tags to GHCR with provenance/SBOM.
 
+### What opens a release PR
+
+Release Please only bumps versions for **user-facing conventional commits**
+since the last tag:
+
+| Commit type | Effect |
+| --- | --- |
+| `feat:` / `feat(scope):` | minor (or major with `!` / `BREAKING CHANGE`) |
+| `fix:` / `fix(scope):` | patch |
+| `perf:` | patch |
+| `chore:`, `docs:`, `ci:`, `build:`, `test:`, `refactor:` | **no release** |
+
+Squash-merge **titles** are what Release Please parses. A PR full of `fix:`
+commits that is squashed as `chore: …` will **not** open a release PR (this
+happened after #13). Prefer a `fix:` / `feat:` squash title when the change
+should ship as a versioned release.
+
+After a merge that should have released but did not, either land a follow-up
+`fix:`/`feat:` commit or re-title future squash merges intentionally.
+
 Repository settings:
 
 - Enable “Allow GitHub Actions to create and approve pull requests”.
