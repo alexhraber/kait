@@ -58,13 +58,23 @@ per hardware target).
 5. The tagged image workflow builds active `*-slim` and `*-full` targets on
    native hosts, runs the container smoke contract for each variant, and
    publishes versioned and stable GHCR tags.
-6. Image scanning and signing remain promotion requirements before production use.
+6. After verify succeeds, the workflow annotates the existing GitHub Release
+   with GHCR pull commands (`gh release edit --notes-file`, never
+   `--generate-notes`). Re-runs are idempotent when the section already exists.
+7. Image scanning and signing remain promotion requirements before production
+   use. Operator docs (README, SECURITY.md) state that GHCR package Public
+   visibility is required for anonymous pulls and is independent of repo
+   visibility.
 
 The release graph is proven by checking both workflow definitions: Release
 Please owns the main-to-release-PR and release-PR-to-tag transitions, while
-`release-images.yml` owns the immutable tagged build, smoke, and GHCR boundary.
-The explicit dispatch is required because GitHub does not recursively trigger
-workflows from resources created with `GITHUB_TOKEN`.
+`release-images.yml` owns the immutable tagged build, smoke, GHCR boundary, and
+release annotation. The explicit dispatch is required because GitHub does not
+recursively trigger workflows from resources created with `GITHUB_TOKEN`.
+
+Supervisor version proof: `cmd/kaite` `version` constant and unit tests must
+match the released package version so doctor/smoke/Prometheus labels are not
+stale relative to the GitHub/GHCR tag.
 
 The dependency proof must show that the hardware manifest is installed before
 the shared AI/ML layers, that the active CPU and Apple manifests resolve Linux
@@ -83,6 +93,13 @@ matching inactive host jobs are deliberately enabled.
 
 - Repository signal fingerprint: `dff6fa2af071e116fb753ac55f5d10dd10bba726a15e2018e567c80dba7ffd30`
 - Significant implementation surfaces: `.github/` (3 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files)
+- Refreshed from the current codebase by `decapod specs.refresh`
+<!-- decapod:codebase-attestation:end -->
+
+## Codebase Attestation
+
+- Repository signal fingerprint: `c26fd3e39755202a0870c2ba78cc44f5f53bbdae45cc614ec6a8311547f5b2db`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
 
@@ -153,7 +170,7 @@ matching inactive host jobs are deliberately enabled.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `c26fd3e39755202a0870c2ba78cc44f5f53bbdae45cc614ec6a8311547f5b2db`
+- Repository signal fingerprint: `59cfc539463405fb93e9865fc3c8422ec148931719703b16798449b6560ce4e0`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

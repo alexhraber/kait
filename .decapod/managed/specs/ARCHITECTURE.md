@@ -46,11 +46,13 @@ that dispatches and records jobs.
   the README links to `docs/architecture.md` for the longer story.
 
 The image matrix uses Ubuntu/glibc for every target. Each target has `*-slim`
-and `*-full` package variants. CPU publishes linux/amd64 and linux/arm64;
-Apple is an explicit linux/arm64 CPU target. NVIDIA, AMD, and Intel publish
-linux/amd64 because their pinned vendor bases and framework wheels are amd64
-contracts. Versioned tags are `<tag>-<hardware>-<variant>`. A musl/Alpine
-image would be a separate dependency contract and is not treated as equivalent.
+and `*-full` package variants. **Published platforms (active release):** CPU
+images are `linux/amd64` (built on `ubuntu-24.04`); Apple images are
+`linux/arm64` (built on `ubuntu-24.04-arm`). NVIDIA, AMD, and Intel remain
+manual opt-ins and are `linux/amd64` contracts. Versioned tags are
+`<tag>-<hardware>-<variant>`; unversioned aliases (`cpu-slim`, …) track the
+latest successful release. A musl/Alpine image would be a separate dependency
+contract and is not treated as equivalent.
 
 Image delivery is host-matrixed. Active CI builds and runs `kaite smoke` on
 native CPU and arm64 hosts. Accelerator definitions and their
@@ -182,7 +184,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `c26fd3e39755202a0870c2ba78cc44f5f53bbdae45cc614ec6a8311547f5b2db`
+- Repository signal fingerprint: `59cfc539463405fb93e9865fc3c8422ec148931719703b16798449b6560ce4e0`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
