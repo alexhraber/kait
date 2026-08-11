@@ -74,12 +74,12 @@ func shutdownServer(server *http.Server) {
 func (m *metrics) prometheus() string {
 	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",variant=\"" + prometheusLabel(m.variant) + "\",capabilities=\"" + prometheusLabel(m.capabilities) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
 	var b strings.Builder
-	fmt.Fprintf(&b, "# HELP kaite_info Kaite runtime build and configuration information.\n# TYPE kaite_info gauge\nkaite_info{version=\"%s\",%s} 1\n", version, labels)
-	fmt.Fprintf(&b, "# HELP kaite_agent_starts_total Number of child process starts.\n# TYPE kaite_agent_starts_total counter\nkaite_agent_starts_total{%s} %d\n", labels, m.starts.Load())
-	fmt.Fprintf(&b, "# HELP kaite_agent_exits_total Number of child process exits.\n# TYPE kaite_agent_exits_total counter\nkaite_agent_exits_total{%s} %d\n", labels, m.exits.Load())
-	fmt.Fprintf(&b, "# HELP kaite_agent_running Whether the child process is running.\n# TYPE kaite_agent_running gauge\nkaite_agent_running{%s} %d\n", labels, m.running.Load())
-	fmt.Fprintf(&b, "# HELP kaite_agent_last_exit_code Last child process exit code.\n# TYPE kaite_agent_last_exit_code gauge\nkaite_agent_last_exit_code{%s} %d\n", labels, m.lastExit.Load())
-	fmt.Fprintf(&b, "# HELP process_start_time_seconds Unix time when the Kaite runtime started.\n# TYPE process_start_time_seconds gauge\nprocess_start_time_seconds %.3f\n", float64(m.startTime.UnixNano())/1e9)
+	fmt.Fprintf(&b, "# HELP kait_info Kait runtime build and configuration information.\n# TYPE kait_info gauge\nkait_info{version=\"%s\",%s} 1\n", version, labels)
+	fmt.Fprintf(&b, "# HELP kait_agent_starts_total Number of child process starts.\n# TYPE kait_agent_starts_total counter\nkait_agent_starts_total{%s} %d\n", labels, m.starts.Load())
+	fmt.Fprintf(&b, "# HELP kait_agent_exits_total Number of child process exits.\n# TYPE kait_agent_exits_total counter\nkait_agent_exits_total{%s} %d\n", labels, m.exits.Load())
+	fmt.Fprintf(&b, "# HELP kait_agent_running Whether the child process is running.\n# TYPE kait_agent_running gauge\nkait_agent_running{%s} %d\n", labels, m.running.Load())
+	fmt.Fprintf(&b, "# HELP kait_agent_last_exit_code Last child process exit code.\n# TYPE kait_agent_last_exit_code gauge\nkait_agent_last_exit_code{%s} %d\n", labels, m.lastExit.Load())
+	fmt.Fprintf(&b, "# HELP process_start_time_seconds Unix time when the Kait runtime started.\n# TYPE process_start_time_seconds gauge\nprocess_start_time_seconds %.3f\n", float64(m.startTime.UnixNano())/1e9)
 	return b.String()
 }
 
@@ -87,13 +87,13 @@ func newDogStatsD(cfg config) (*dogStatsD, error) {
 	if cfg.o11y != "datadog" {
 		return nil, nil
 	}
-	host := envOr("KAITE_DD_AGENT_HOST", envOr("DD_AGENT_HOST", "127.0.0.1"))
-	port := envOr("KAITE_DD_DOGSTATSD_PORT", envOr("DD_DOGSTATSD_PORT", "8125"))
+	host := envOr("KAIT_DD_AGENT_HOST", envOr("DD_AGENT_HOST", "127.0.0.1"))
+	port := envOr("KAIT_DD_DOGSTATSD_PORT", envOr("DD_DOGSTATSD_PORT", "8125"))
 	conn, err := net.Dial("udp", net.JoinHostPort(host, port))
 	if err != nil {
 		return nil, err
 	}
-	tags := "kaite_hardware:" + cfg.hardware + ",kaite_variant:" + cfg.variant + ",kaite_o11y:datadog"
+	tags := "kait_hardware:" + cfg.hardware + ",kait_variant:" + cfg.variant + ",kait_o11y:datadog"
 	return &dogStatsD{conn: conn, tags: tags}, nil
 }
 

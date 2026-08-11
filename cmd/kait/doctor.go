@@ -32,9 +32,9 @@ func writeDoctor(w io.Writer) error {
 }
 
 func writeSmoke(w io.Writer) error {
-	configuredHardware := lowerEnv("KAITE_HARDWARE", "cpu")
+	configuredHardware := lowerEnv("KAIT_HARDWARE", "cpu")
 	if err := validateHardware(configuredHardware); err != nil {
-		return fmt.Errorf("unsupported KAITE_HARDWARE=%s", configuredHardware)
+		return fmt.Errorf("unsupported KAIT_HARDWARE=%s", configuredHardware)
 	}
 	id, err := loadRuntimeIdentity()
 	if err != nil {
@@ -52,7 +52,7 @@ func writeSmoke(w io.Writer) error {
 	if err := runCheck(w, "python", "-c", frameworkCheck); err != nil {
 		return fmt.Errorf("%s framework check: %w", id.Hardware, err)
 	}
-	fmt.Fprintf(w, "kaite smoke: %s-%s capabilities=%s ready\n", id.Hardware, id.Variant, strings.Join(id.Capabilities, ","))
+	fmt.Fprintf(w, "kait smoke: %s-%s capabilities=%s ready\n", id.Hardware, id.Variant, strings.Join(id.Capabilities, ","))
 	return nil
 }
 
@@ -82,7 +82,7 @@ func smokeFrameworkCheck(hardware string, capabilities []string) (string, error)
 			imports = append(imports, "import fastapi, gradio, uvicorn")
 			messages = append(messages, "serving")
 		default:
-			return "", fmt.Errorf("unsupported Kaite capability %s", capability)
+			return "", fmt.Errorf("unsupported Kait capability %s", capability)
 		}
 	}
 	check := strings.Join(imports, "; ")
@@ -92,7 +92,7 @@ func smokeFrameworkCheck(hardware string, capabilities []string) (string, error)
 	case "intel":
 		check += `; import intel_extension_for_pytorch; assert torch.xpu.is_available(), "torch cannot see the XPU"; print(torch.xpu.get_device_name(0))`
 	}
-	check += `; print("Kaite capabilities ready: ` + strings.Join(messages, ",") + `")`
+	check += `; print("Kait capabilities ready: ` + strings.Join(messages, ",") + `")`
 	return check, nil
 }
 
@@ -119,7 +119,7 @@ func writeHardware(w io.Writer) error {
 	case "intel":
 		return runCheck(w, "sycl-ls")
 	default:
-		return fmt.Errorf("unsupported KAITE_HARDWARE=%s", hardware)
+		return fmt.Errorf("unsupported KAIT_HARDWARE=%s", hardware)
 	}
 }
 

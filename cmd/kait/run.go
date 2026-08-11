@@ -44,8 +44,8 @@ func run(ctx context.Context, cfg config, stats *metrics, dog *dogStatsD) int {
 	stats.starts.Add(1)
 	stats.running.Store(1)
 	if dog != nil {
-		dog.gauge("kaite.agent.running", 1)
-		dog.count("kaite.agent.starts", 1)
+		dog.gauge("kait.agent.running", 1)
+		dog.count("kait.agent.starts", 1)
 	}
 
 	done := make(chan error, 1)
@@ -80,8 +80,8 @@ func finishProcess(err error, stats *metrics, dog *dogStatsD) int {
 	}
 	stats.lastExit.Store(int64(code))
 	if dog != nil {
-		dog.gauge("kaite.agent.running", 0)
-		dog.count("kaite.agent.exits", 1)
+		dog.gauge("kait.agent.running", 0)
+		dog.count("kait.agent.exits", 1)
 	}
 	logEvent("info", "runtime_stopped", map[string]string{"exit_code": strconv.Itoa(code)})
 	return code
