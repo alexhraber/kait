@@ -4,10 +4,10 @@ Every image installs `slim.txt` plus the selected hardware manifest
 (`cpu.txt`, `apple.txt`, …). Full images then layer on `base.txt`,
 `training.txt`, `orchestration.txt`, and `serving.txt`.
 
-These layers are also Kaite's initial capability contract. Slim images declare
+These layers are also Kait's initial capability contract. Slim images declare
 `data-science`; full images declare `data-science`, `training`,
 `orchestration`, and `serving`. The image writes that declaration to
-`/etc/kaite/identity.json`, and the supervisor smoke test imports representative
+`/etc/kait/identity.json`, and the supervisor smoke test imports representative
 packages for every declared capability.
 
 Hardware manifests install first so the chosen PyTorch wheel (CPU, CUDA,
@@ -38,4 +38,4 @@ accelerator packages remain explicit opt-ins.
 
 Packages that need a custom kernel or cloud client (DeepSpeed, bitsandbytes,
 FlashAttention, vLLM, s3fs, …) are **not** defaults. Pass them at image build
-time with `KAITE_EXTRA_PYTHON_PACKAGES`.
+time with `KAIT_EXTRA_PYTHON_PACKAGES`.
