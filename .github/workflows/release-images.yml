@@ -1,4 +1,4 @@
-name: Release Kaite images
+name: Release Kait images
 
 on:
   push:
@@ -95,7 +95,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/kaite
+          images: ghcr.io/${{ github.repository_owner }}/kait
           tags: |
             type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.variant }}
             type=raw,value=${{ matrix.hardware }}-${{ matrix.variant }},enable=${{ steps.release.outputs.publish_stable == 'true' }}
@@ -124,16 +124,16 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ matrix.base_image }}
             BUILDKITE_AGENT_VERSION=3.123.1
-            KAITE_HARDWARE=${{ matrix.hardware }}
-            KAITE_VARIANT=${{ matrix.variant }}
-            KAITE_CAPABILITIES=${{ matrix.capabilities }}
-            KAITE_PYTHON=${{ matrix.python_bin }}
+            KAIT_HARDWARE=${{ matrix.hardware }}
+            KAIT_VARIANT=${{ matrix.variant }}
+            KAIT_CAPABILITIES=${{ matrix.capabilities }}
+            KAIT_PYTHON=${{ matrix.python_bin }}
 
       - name: Smoke published image on the matching host
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
-          IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/kaite
+          IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/kait
           HARDWARE: ${{ matrix.hardware }}
           VARIANT: ${{ matrix.variant }}
           PLATFORM: ${{ matrix.platforms }}
@@ -144,11 +144,11 @@ jobs:
           [[ "$version" == v* ]] || version="v$version"
           image="${IMAGE_PREFIX}:${version}-${HARDWARE}-${VARIANT}"
           docker pull --platform "${PLATFORM%%,*}" "$image"
-          KAITE_IMAGE="$image" \
-            KAITE_HARDWARE="$HARDWARE" \
-            KAITE_VARIANT="$VARIANT" \
-            KAITE_O11Y=none \
-            KAITE_CONTAINER_COMMAND=smoke \
+          KAIT_IMAGE="$image" \
+            KAIT_HARDWARE="$HARDWARE" \
+            KAIT_VARIANT="$VARIANT" \
+            KAIT_O11Y=none \
+            KAIT_CONTAINER_COMMAND=smoke \
             ./deploy/docker/run.sh
 
   verify:
@@ -190,7 +190,7 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
-          IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/kaite
+          IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/kait
           PLATFORM: ${{ matrix.platform }}
           CAPABILITY: ${{ matrix.capability }}
         shell: bash
@@ -219,42 +219,42 @@ jobs:
           # These labels are deliberately inactive until matching hosts are registered.
           - hardware: nvidia
             variant: slim
-            runner: kaite-nvidia
+            runner: kait-nvidia
             platforms: linux/amd64
             base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
             python_bin: python3
             capabilities: data-science
           - hardware: nvidia
             variant: full
-            runner: kaite-nvidia
+            runner: kait-nvidia
             platforms: linux/amd64
             base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
             python_bin: python3
             capabilities: data-science,training,orchestration,serving
           - hardware: amd
             variant: slim
-            runner: kaite-amd
+            runner: kait-amd
             platforms: linux/amd64
             base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
             python_bin: python3
             capabilities: data-science
           - hardware: amd
             variant: full
-            runner: kaite-amd
+            runner: kait-amd
             platforms: linux/amd64
             base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
             python_bin: python3
             capabilities: data-science,training,orchestration,serving
           - hardware: intel
             variant: slim
-            runner: kaite-intel
+            runner: kait-intel
             platforms: linux/amd64
             base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
             python_bin: python3.11
             capabilities: data-science
           - hardware: intel
             variant: full
-            runner: kaite-intel
+            runner: kait-intel
             platforms: linux/amd64
             base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
             python_bin: python3.11
@@ -285,26 +285,26 @@ jobs:
           file: Dockerfile
           platforms: ${{ matrix.platforms }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/kaite:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.variant }}
+          tags: ghcr.io/${{ github.repository_owner }}/kait:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.variant }}
           provenance: true
           sbom: true
           build-args: |
             BASE_IMAGE=${{ matrix.base_image }}
             BUILDKITE_AGENT_VERSION=3.123.1
-            KAITE_HARDWARE=${{ matrix.hardware }}
-            KAITE_VARIANT=${{ matrix.variant }}
-            KAITE_CAPABILITIES=${{ matrix.capabilities }}
-            KAITE_PYTHON=${{ matrix.python_bin }}
+            KAIT_HARDWARE=${{ matrix.hardware }}
+            KAIT_VARIANT=${{ matrix.variant }}
+            KAIT_CAPABILITIES=${{ matrix.capabilities }}
+            KAIT_PYTHON=${{ matrix.python_bin }}
       - name: Smoke published inactive accelerator image
         env:
-          IMAGE: ghcr.io/${{ github.repository_owner }}/kaite:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.variant }}
+          IMAGE: ghcr.io/${{ github.repository_owner }}/kait:${{ steps.release.outputs.version }}-${{ matrix.hardware }}-${{ matrix.variant }}
           HARDWARE: ${{ matrix.hardware }}
           VARIANT: ${{ matrix.variant }}
         run: |
           set -euo pipefail
           docker pull --platform linux/amd64 "$IMAGE"
-          KAITE_IMAGE="$IMAGE" KAITE_HARDWARE="$HARDWARE" KAITE_VARIANT="$VARIANT" KAITE_O11Y=none \
-            KAITE_CONTAINER_COMMAND=smoke ./deploy/docker/run.sh
+          KAIT_IMAGE="$IMAGE" KAIT_HARDWARE="$HARDWARE" KAIT_VARIANT="$VARIANT" KAIT_O11Y=none \
+            KAIT_CONTAINER_COMMAND=smoke ./deploy/docker/run.sh
 
   github-release:
     # Release Please already creates the GitHub Release for semantic tags.
@@ -328,7 +328,7 @@ jobs:
           set -euo pipefail
           version="${INPUT_VERSION:-${REF_NAME}}"
           [[ "$version" == v* ]] || version="v$version"
-          image="ghcr.io/${OWNER}/kaite"
+          image="ghcr.io/${OWNER}/kait"
           section_file=$(mktemp)
           cat >"$section_file" <<EOF
 
@@ -362,13 +362,13 @@ jobs:
             notes=$(mktemp)
             printf '%s\n%s\n' "$body" "$section" >"$notes"
             gh release edit "$version" --repo "$GITHUB_REPOSITORY" \
-              --title "Kaite $version" \
+              --title "Kait $version" \
               --notes-file "$notes"
           else
             notes=$(mktemp)
-            printf 'Kaite %s\n%s\n' "$version" "$section" >"$notes"
+            printf 'Kait %s\n%s\n' "$version" "$section" >"$notes"
             gh release create "$version" --repo "$GITHUB_REPOSITORY" \
-              --title "Kaite $version" \
+              --title "Kait $version" \
               --notes-file "$notes" \
               --verify-tag
           fi

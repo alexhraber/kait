@@ -1,4 +1,4 @@
-name: Validate Kaite images
+name: Validate Kait images
 
 on:
   pull_request:
@@ -74,24 +74,24 @@ jobs:
           docker buildx build \
             --load \
             --platform "${PLATFORM}" \
-            --tag "kaite:ci-${HARDWARE}-${VARIANT}" \
+            --tag "kait:ci-${HARDWARE}-${VARIANT}" \
             --build-arg BASE_IMAGE="${BASE_IMAGE}" \
             --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
-            --build-arg KAITE_HARDWARE="${HARDWARE}" \
-            --build-arg KAITE_VARIANT="${VARIANT}" \
-            --build-arg KAITE_CAPABILITIES="${CAPABILITIES}" \
-            --build-arg KAITE_PYTHON="${PYTHON_BIN}" \
+            --build-arg KAIT_HARDWARE="${HARDWARE}" \
+            --build-arg KAIT_VARIANT="${VARIANT}" \
+            --build-arg KAIT_CAPABILITIES="${CAPABILITIES}" \
+            --build-arg KAIT_PYTHON="${PYTHON_BIN}" \
             --provenance=false \
             --sbom=false \
             .
-          docker run --rm --platform "${PLATFORM}" "kaite:ci-${HARDWARE}-${VARIANT}" doctor
+          docker run --rm --platform "${PLATFORM}" "kait:ci-${HARDWARE}-${VARIANT}" doctor
       - name: Run native framework smoke test
         if: matrix.smoke
         env:
           HARDWARE: ${{ matrix.hardware }}
           VARIANT: ${{ matrix.variant }}
           PLATFORM: ${{ matrix.platform }}
-        run: docker run --rm --platform "${PLATFORM}" -e KAITE_HARDWARE="${HARDWARE}" -e KAITE_VARIANT="${VARIANT}" "kaite:ci-${HARDWARE}-${VARIANT}" smoke
+        run: docker run --rm --platform "${PLATFORM}" -e KAIT_HARDWARE="${HARDWARE}" -e KAIT_VARIANT="${VARIANT}" "kait:ci-${HARDWARE}-${VARIANT}" smoke
 
   build-accelerators:
     name: Build inactive accelerator ${{ matrix.hardware }}-${{ matrix.variant }}
@@ -104,42 +104,42 @@ jobs:
           # These labels are deliberately inactive until matching hosts are registered.
           - hardware: nvidia
             variant: slim
-            runner: kaite-nvidia
+            runner: kait-nvidia
             platform: linux/amd64
             base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
             python_bin: python3
             capabilities: data-science
           - hardware: nvidia
             variant: full
-            runner: kaite-nvidia
+            runner: kait-nvidia
             platform: linux/amd64
             base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
             python_bin: python3
             capabilities: data-science,training,orchestration,serving
           - hardware: amd
             variant: slim
-            runner: kaite-amd
+            runner: kait-amd
             platform: linux/amd64
             base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
             python_bin: python3
             capabilities: data-science
           - hardware: amd
             variant: full
-            runner: kaite-amd
+            runner: kait-amd
             platform: linux/amd64
             base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
             python_bin: python3
             capabilities: data-science,training,orchestration,serving
           - hardware: intel
             variant: slim
-            runner: kaite-intel
+            runner: kait-intel
             platform: linux/amd64
             base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
             python_bin: python3.11
             capabilities: data-science
           - hardware: intel
             variant: full
-            runner: kaite-intel
+            runner: kait-intel
             platform: linux/amd64
             base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
             python_bin: python3.11
@@ -160,15 +160,15 @@ jobs:
           docker buildx build \
             --load \
             --platform "${PLATFORM}" \
-            --tag "kaite:ci-${HARDWARE}-${VARIANT}" \
+            --tag "kait:ci-${HARDWARE}-${VARIANT}" \
             --build-arg BASE_IMAGE="${BASE_IMAGE}" \
             --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
-            --build-arg KAITE_HARDWARE="${HARDWARE}" \
-            --build-arg KAITE_VARIANT="${VARIANT}" \
-            --build-arg KAITE_CAPABILITIES="${CAPABILITIES}" \
-            --build-arg KAITE_PYTHON="${PYTHON_BIN}" \
+            --build-arg KAIT_HARDWARE="${HARDWARE}" \
+            --build-arg KAIT_VARIANT="${VARIANT}" \
+            --build-arg KAIT_CAPABILITIES="${CAPABILITIES}" \
+            --build-arg KAIT_PYTHON="${PYTHON_BIN}" \
             --provenance=false \
             --sbom=false \
             .
-          docker run --rm --platform "${PLATFORM}" "kaite:ci-${HARDWARE}-${VARIANT}" doctor
-          docker run --rm --platform "${PLATFORM}" -e KAITE_HARDWARE="${HARDWARE}" -e KAITE_VARIANT="${VARIANT}" "kaite:ci-${HARDWARE}-${VARIANT}" smoke
+          docker run --rm --platform "${PLATFORM}" "kait:ci-${HARDWARE}-${VARIANT}" doctor
+          docker run --rm --platform "${PLATFORM}" -e KAIT_HARDWARE="${HARDWARE}" -e KAIT_VARIANT="${VARIANT}" "kait:ci-${HARDWARE}-${VARIANT}" smoke

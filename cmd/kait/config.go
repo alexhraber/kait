@@ -31,13 +31,13 @@ func loadConfig() (config, error) {
 		hardware:       id.Hardware,
 		variant:        id.Variant,
 		capabilities:   id.Capabilities,
-		o11y:           lowerEnv("KAITE_O11Y", "none"),
-		runMode:        lowerEnv("KAITE_RUN_MODE", "agent"),
-		metricsAddr:    os.Getenv("KAITE_METRICS_ADDR"),
+		o11y:           lowerEnv("KAIT_O11Y", "none"),
+		runMode:        lowerEnv("KAIT_RUN_MODE", "agent"),
+		metricsAddr:    os.Getenv("KAIT_METRICS_ADDR"),
 		buildkiteBin:   envOr("BUILDKITE_AGENT_BIN", "/buildkite/bin/buildkite-agent"),
 		buildkiteToken: os.Getenv("BUILDKITE_AGENT_TOKEN"),
 		tokenFile:      os.Getenv("BUILDKITE_AGENT_TOKEN_FILE"),
-		command:        os.Getenv("KAITE_COMMAND"),
+		command:        os.Getenv("KAIT_COMMAND"),
 	}
 	if err := validateHardware(cfg.hardware); err != nil {
 		return config{}, err
@@ -48,7 +48,7 @@ func loadConfig() (config, error) {
 	switch cfg.o11y {
 	case "none", "prometheus", "datadog", "splunk":
 	default:
-		return config{}, fmt.Errorf("KAITE_O11Y must be one of none, prometheus, datadog, splunk (got %q)", cfg.o11y)
+		return config{}, fmt.Errorf("KAIT_O11Y must be one of none, prometheus, datadog, splunk (got %q)", cfg.o11y)
 	}
 	switch cfg.runMode {
 	case "agent":
@@ -65,10 +65,10 @@ func loadConfig() (config, error) {
 		}
 	case "command":
 		if cfg.command == "" {
-			return config{}, errors.New("KAITE_COMMAND is required in command mode")
+			return config{}, errors.New("KAIT_COMMAND is required in command mode")
 		}
 	default:
-		return config{}, fmt.Errorf("KAITE_RUN_MODE must be agent or command (got %q)", cfg.runMode)
+		return config{}, fmt.Errorf("KAIT_RUN_MODE must be agent or command (got %q)", cfg.runMode)
 	}
 	if cfg.metricsAddr == "" && cfg.o11y != "none" {
 		cfg.metricsAddr = ":9090"
@@ -81,7 +81,7 @@ func validateHardware(hardware string) error {
 	case "cpu", "apple", "nvidia", "amd", "intel":
 		return nil
 	default:
-		return fmt.Errorf("KAITE_HARDWARE must be one of cpu, apple, nvidia, amd, intel (got %q)", hardware)
+		return fmt.Errorf("KAIT_HARDWARE must be one of cpu, apple, nvidia, amd, intel (got %q)", hardware)
 	}
 }
 
@@ -90,7 +90,7 @@ func validateVariant(variant string) error {
 	case "slim", "full":
 		return nil
 	default:
-		return fmt.Errorf("KAITE_VARIANT must be one of slim, full (got %q)", variant)
+		return fmt.Errorf("KAIT_VARIANT must be one of slim, full (got %q)", variant)
 	}
 }
 

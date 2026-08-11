@@ -1,5 +1,5 @@
 variable "REGISTRY" {
-  default = "ghcr.io/alexhraber/kaite"
+  default = "ghcr.io/alexhraber/kait"
 }
 
 variable "VERSION" {
@@ -35,9 +35,9 @@ target "cpu-slim" {
   ]
   args = {
     BASE_IMAGE = "ubuntu:24.04"
-    KAITE_HARDWARE = "cpu"
-    KAITE_VARIANT = "slim"
-    KAITE_CAPABILITIES = "data-science"
+    KAIT_HARDWARE = "cpu"
+    KAIT_VARIANT = "slim"
+    KAIT_CAPABILITIES = "data-science"
   }
 }
 
@@ -60,9 +60,9 @@ target "cpu-full" {
   ]
   args = {
     BASE_IMAGE = "ubuntu:24.04"
-    KAITE_HARDWARE = "cpu"
-    KAITE_VARIANT = "full"
-    KAITE_CAPABILITIES = "data-science,training,orchestration,serving"
+    KAIT_HARDWARE = "cpu"
+    KAIT_VARIANT = "full"
+    KAIT_CAPABILITIES = "data-science,training,orchestration,serving"
   }
 }
 
@@ -79,9 +79,9 @@ target "apple-slim" {
   ]
   args = {
     BASE_IMAGE = "ubuntu:24.04"
-    KAITE_HARDWARE = "apple"
-    KAITE_VARIANT = "slim"
-    KAITE_CAPABILITIES = "data-science"
+    KAIT_HARDWARE = "apple"
+    KAIT_VARIANT = "slim"
+    KAIT_CAPABILITIES = "data-science"
   }
 }
 
@@ -104,9 +104,9 @@ target "apple-full" {
   ]
   args = {
     BASE_IMAGE = "ubuntu:24.04"
-    KAITE_HARDWARE = "apple"
-    KAITE_VARIANT = "full"
-    KAITE_CAPABILITIES = "data-science,training,orchestration,serving"
+    KAIT_HARDWARE = "apple"
+    KAIT_VARIANT = "full"
+    KAIT_CAPABILITIES = "data-science,training,orchestration,serving"
   }
 }
 
@@ -125,9 +125,9 @@ target "nvidia-slim" {
   ]
   args = {
     BASE_IMAGE = "nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04"
-    KAITE_HARDWARE = "nvidia"
-    KAITE_VARIANT = "slim"
-    KAITE_CAPABILITIES = "data-science"
+    KAIT_HARDWARE = "nvidia"
+    KAIT_VARIANT = "slim"
+    KAIT_CAPABILITIES = "data-science"
   }
 }
 
@@ -150,9 +150,9 @@ target "nvidia-full" {
   ]
   args = {
     BASE_IMAGE = "nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04"
-    KAITE_HARDWARE = "nvidia"
-    KAITE_VARIANT = "full"
-    KAITE_CAPABILITIES = "data-science,training,orchestration,serving"
+    KAIT_HARDWARE = "nvidia"
+    KAIT_VARIANT = "full"
+    KAIT_CAPABILITIES = "data-science,training,orchestration,serving"
   }
 }
 
@@ -171,9 +171,9 @@ target "amd-slim" {
   ]
   args = {
     BASE_IMAGE = "rocm/dev-ubuntu-24.04:6.2.4-complete"
-    KAITE_HARDWARE = "amd"
-    KAITE_VARIANT = "slim"
-    KAITE_CAPABILITIES = "data-science"
+    KAIT_HARDWARE = "amd"
+    KAIT_VARIANT = "slim"
+    KAIT_CAPABILITIES = "data-science"
   }
 }
 
@@ -196,9 +196,9 @@ target "amd-full" {
   ]
   args = {
     BASE_IMAGE = "rocm/dev-ubuntu-24.04:6.2.4-complete"
-    KAITE_HARDWARE = "amd"
-    KAITE_VARIANT = "full"
-    KAITE_CAPABILITIES = "data-science,training,orchestration,serving"
+    KAIT_HARDWARE = "amd"
+    KAIT_VARIANT = "full"
+    KAIT_CAPABILITIES = "data-science,training,orchestration,serving"
   }
 }
 
@@ -217,10 +217,10 @@ target "intel-slim" {
   ]
   args = {
     BASE_IMAGE = "intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04"
-    KAITE_HARDWARE = "intel"
-    KAITE_VARIANT = "slim"
-    KAITE_CAPABILITIES = "data-science"
-    KAITE_PYTHON = "python3.11"
+    KAIT_HARDWARE = "intel"
+    KAIT_VARIANT = "slim"
+    KAIT_CAPABILITIES = "data-science"
+    KAIT_PYTHON = "python3.11"
   }
 }
 
@@ -243,9 +243,9 @@ target "intel-full" {
   ]
   args = {
     BASE_IMAGE = "intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04"
-    KAITE_HARDWARE = "intel"
-    KAITE_VARIANT = "full"
-    KAITE_CAPABILITIES = "data-science,training,orchestration,serving"
-    KAITE_PYTHON = "python3.11"
+    KAIT_HARDWARE = "intel"
+    KAIT_VARIANT = "full"
+    KAIT_CAPABILITIES = "data-science,training,orchestration,serving"
+    KAIT_PYTHON = "python3.11"
   }
 }

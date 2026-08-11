@@ -1,9 +1,9 @@
-# kaite
+# kait
 
-[![Release](https://img.shields.io/github/v/release/alexhraber/kaite?display_name=tag)](https://github.com/alexhraber/kaite/releases/latest)
-[![CI](https://github.com/alexhraber/kaite/actions/workflows/build-images.yml/badge.svg?branch=main)](https://github.com/alexhraber/kaite/actions/workflows/build-images.yml)
+[![Release](https://img.shields.io/github/v/release/alexhraber/kait?display_name=tag)](https://github.com/alexhraber/kait/releases/latest)
+[![CI](https://github.com/alexhraber/kait/actions/workflows/build-images.yml/badge.svg?branch=main)](https://github.com/alexhraber/kait/actions/workflows/build-images.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GHCR](https://img.shields.io/badge/ghcr.io-alexhraber%2Fkaite-blue)](https://github.com/alexhraber/kaite/pkgs/container/kaite)
+[![GHCR](https://img.shields.io/badge/ghcr.io-alexhraber%2Fkait-blue)](https://github.com/alexhraber/kait/pkgs/container/kait)
 [![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.96.21-dc2626)](https://github.com/DecapodLabs/decapod)
 
 Self-hosted [Buildkite](https://buildkite.com) agents with a batteries-included
@@ -11,20 +11,26 @@ AI/ML execution environment. Choose the work capability and hardware; the
 image already contains the Buildkite agent, pinned Python toolchain, hardware
 contract, diagnostics, and lightweight observability.
 
-Pronounced “kite” — the ai is just a harder i.
+Kait is pronounced “kite.” Its spelling keeps `ai` at the center, reflecting
+its focus on AI and machine-learning execution. It also carries a small
+linguistic resonance: 愛 (*ai*) is the Japanese kanji for “love”; in Japanese,
+the vowels in *ai* are articulated together as /a.i/, which English speakers
+commonly perceive as close to “eye.” The connection is a resonance in the
+spelling, not a claim that Kait is a Japanese word; spoken aloud, it remains
+simply “kite.”
 
 ## Quick start
 
 ```bash
 # Pull the latest data-science environment (stable alias)
-docker pull ghcr.io/alexhraber/kaite:cpu-slim
+docker pull ghcr.io/alexhraber/kait:cpu-slim
 
 # Run as a Buildkite agent
 BUILDKITE_AGENT_TOKEN=… \
-KAITE_HARDWARE=cpu \
-KAITE_VARIANT=slim \
-KAITE_O11Y=prometheus \
-KAITE_IMAGE=ghcr.io/alexhraber/kaite:cpu-slim \
+KAIT_HARDWARE=cpu \
+KAIT_VARIANT=slim \
+KAIT_O11Y=prometheus \
+KAIT_IMAGE=ghcr.io/alexhraber/kait:cpu-slim \
   ./deploy/docker/run.sh
 ```
 
@@ -35,17 +41,17 @@ the image; the pipeline does not install them at job start.
 Pin a release for production:
 
 ```bash
-docker pull ghcr.io/alexhraber/kaite:v0.2.1-cpu-slim
+docker pull ghcr.io/alexhraber/kait:v0.2.1-cpu-slim
 ```
 
 > **Package visibility:** the container package must be **public** for anonymous
 > pulls. If `docker pull` returns 401/404 for a public repo, open
-> [Package settings](https://github.com/users/alexhraber/packages/container/package/kaite/settings)
+> [Package settings](https://github.com/users/alexhraber/packages/container/package/kait/settings)
 > → **Change visibility** → Public.
 
 ## Images
 
-Registry: [`ghcr.io/alexhraber/kaite`](https://github.com/alexhraber/kaite/pkgs/container/kaite)
+Registry: [`ghcr.io/alexhraber/kait`](https://github.com/alexhraber/kait/pkgs/container/kait)
 
 | Tag | Platform (published) | Footprint |
 | --- | --- | --- |
@@ -65,9 +71,9 @@ The current capability set is deliberately small:
 | `orchestration` | full | Ray plus MLflow and W&B |
 | `serving` | full | FastAPI, Gradio, and Uvicorn |
 
-Every official image records this set in `/etc/kaite/identity.json`, exposes it
-through `kaite doctor`, and advertises it to Buildkite as
-`kaite.capability.<name>=true`. `slim` and `full` remain compatibility names;
+Every official image records this set in `/etc/kait/identity.json`, exposes it
+through `kait doctor`, and advertises it to Buildkite as
+`kait.capability.<name>=true`. `slim` and `full` remain compatibility names;
 they describe package footprints, while capabilities describe usable work.
 
 Versioned tags: `v0.2.1-cpu-slim`, `v0.2.1-apple-full`, …. Unversioned aliases
@@ -88,26 +94,26 @@ make build-full   # cpu + apple full
 
 ## Runtime
 
-Kaite is a small Go supervisor (`cmd/kaite`) that validates hardware/variant/o11y
+Kait is a small Go supervisor (`cmd/kait`) that validates hardware/variant/o11y
 settings, starts `buildkite-agent start` (or a diagnostic command), exposes
 health/metrics when enabled, and exits with the child status.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `BUILDKITE_AGENT_TOKEN` | — | Cluster agent token (or use `…_TOKEN_FILE`) |
-| `KAITE_HARDWARE` | `cpu` | `cpu` · `apple` · `nvidia` · `amd` · `intel` |
-| `KAITE_VARIANT` | `slim` | `slim` · `full` |
-| `KAITE_O11Y` | `none` | `none` · `prometheus` · `datadog` · `splunk` |
-| `KAITE_RUN_MODE` | `agent` | `agent` or `command` (+ `KAITE_COMMAND`) |
+| `KAIT_HARDWARE` | `cpu` | `cpu` · `apple` · `nvidia` · `amd` · `intel` |
+| `KAIT_VARIANT` | `slim` | `slim` · `full` |
+| `KAIT_O11Y` | `none` | `none` · `prometheus` · `datadog` · `splunk` |
+| `KAIT_RUN_MODE` | `agent` | `agent` or `command` (+ `KAIT_COMMAND`) |
 | `BUILDKITE_AGENT_QUEUE` / `TAGS` | — | Queue and capability targeting |
 
 ```bash
-kaite doctor    # JSON hardware probe
-kaite smoke     # framework + device check (used by CI)
-kaite hardware  # accelerator CLI output
+kait doctor    # JSON hardware probe
+kait smoke     # framework + device check (used by CI)
+kait hardware  # accelerator CLI output
 ```
 
-`kaite doctor` reports the baked identity and detected devices. `kaite smoke`
+`kait doctor` reports the baked identity and detected devices. `kait smoke`
 validates representative imports for each declared capability and performs
 the hardware check when an accelerator is expected. Runtime attempts to
 override the baked hardware, variant, or capability set fail closed.
@@ -115,29 +121,29 @@ override the baked hardware, variant, or capability set fail closed.
 Deeper layout: [docs/architecture.md](docs/architecture.md) and the
 [capability contract](docs/capabilities.md).
 
-Read the [Kaite documentation site](https://alexhraber.github.io/kaite/) for
+Read the [Kait documentation site](https://alexhraber.github.io/kait/) for
 the execution-substrate perspective, capability contract, and architecture.
 
 ## Deploy
 
 - **Docker:** [`deploy/docker/run.sh`](deploy/docker/run.sh) — local agent launch.
   Use `deploy/docker/smoke.sh` for device/framework checks without a token.
-- **Kubernetes:** [`deploy/kubernetes/kaite-agent.yaml`](deploy/kubernetes/kaite-agent.yaml)
+- **Kubernetes:** [`deploy/kubernetes/kait-agent.yaml`](deploy/kubernetes/kait-agent.yaml)
   — one-shot Job. See [`deploy/kubernetes/README.md`](deploy/kubernetes/README.md).
 - **Pipeline targeting:** [`examples/pipeline.yml`](examples/pipeline.yml)
 
 ```yaml
 agents:
   queue: ai
-  kaite.hardware: cpu
-  kaite.capability.data-science: "true"
+  kait.hardware: cpu
+  kait.capability.data-science: "true"
 ```
 
-Training and serving jobs request `kaite.capability.training: "true"` or
-`kaite.capability.serving: "true"` and can land on a full worker. The old
-`kaite.variant` selector remains valid for compatibility, but it is not a
+Training and serving jobs request `kait.capability.training: "true"` or
+`kait.capability.serving: "true"` and can land on a full worker. The old
+`kait.variant` selector remains valid for compatibility, but it is not a
 workload promise. See [`examples/pipeline.yml`](examples/pipeline.yml) for a
-complete set of selectors. Kaite reserves `kaite.*` agent tags so custom tags
+complete set of selectors. Kait reserves `kait.*` agent tags so custom tags
 cannot silently contradict the image identity.
 
 ## Toolchain layers
@@ -150,33 +156,33 @@ cannot silently contradict the image identity.
 | `serving.txt` | `serving` | FastAPI/Gradio/Uvicorn |
 
 Vendor-specific packages (DeepSpeed, bitsandbytes, FlashAttention, vLLM, s3fs, …)
-stay out of the defaults. Pass them through `KAITE_EXTRA_PYTHON_PACKAGES` at
+stay out of the defaults. Pass them through `KAIT_EXTRA_PYTHON_PACKAGES` at
 build time. Details: [`requirements/README.md`](requirements/README.md).
 
 ## Derive an organizational image
 
-Kaite is also a base layer. Pin an immutable artifact, then add only the
+Kait is also a base layer. Pin an immutable artifact, then add only the
 organization's delta:
 
 ```dockerfile
-FROM ghcr.io/alexhraber/kaite:v0.2.2-cpu-full
+FROM ghcr.io/alexhraber/kait:v0.2.2-cpu-full
 
 COPY internal-requirements.txt /tmp/
-RUN /opt/kaite/venv/bin/pip install --no-cache-dir -r /tmp/internal-requirements.txt
+RUN /opt/kait/venv/bin/pip install --no-cache-dir -r /tmp/internal-requirements.txt
 COPY internal-tools/ /opt/acme-tools/
 ```
 
 The inherited identity and supervisor remain the source of the advertised
 capability contract. If an extension replaces core frameworks or hardware
-packages, the organization should rerun `kaite doctor`/`kaite smoke` and own
+packages, the organization should rerun `kait doctor`/`kait smoke` and own
 the resulting compatibility claim.
 
 ## Observability
 
 ```bash
-KAITE_O11Y=prometheus   # scrape :9090/metrics
-KAITE_O11Y=datadog      # DogStatsD via KAITE_DD_* / DD_*
-KAITE_O11Y=splunk       # same metrics + standard OTEL_* env
+KAIT_O11Y=prometheus   # scrape :9090/metrics
+KAIT_O11Y=datadog      # DogStatsD via KAIT_DD_* / DD_*
+KAIT_O11Y=splunk       # same metrics + standard OTEL_* env
 ```
 
 Structured JSON logs go to stderr. Child job output stays on the agent’s
@@ -188,7 +194,7 @@ in the image.
 ```bash
 make test
 make vet
-make build          # bin/kaite
+make build          # bin/kait
 ```
 
 ## Releases

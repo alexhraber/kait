@@ -6,12 +6,12 @@
 - Secrets are supplied by the executor and never baked into an image.
 
 ## Runtime Interfaces
-Kaite has an environment-driven container interface rather than an HTTP
+Kait has an environment-driven container interface rather than an HTTP
 control-plane API. The runtime exposes health and Prometheus-compatible metrics.
 
 | Interface | Inputs | Outputs | Errors | Ownership |
 |---|---|---|---|---|
-| Container entrypoint | KAITE_*, BUILDKITE_*, optional mounted token | Buildkite agent process | Exit 2 for invalid config; child exit otherwise | Orchestrator restarts container |
+| Container entrypoint | KAIT_*, BUILDKITE_*, optional mounted token | Buildkite agent process | Exit 2 for invalid config; child exit otherwise | Orchestrator restarts container |
 | GET /healthz | HTTP request | 200 while supervisor is alive | 5xx if server unavailable | Kubernetes liveness |
 | GET /readyz | HTTP request | 200 after child starts | 503 before child starts | Kubernetes readiness |
 | GET /metrics | HTTP request | Prometheus text exposition | 5xx if server unavailable | Prometheus scrape |
@@ -24,7 +24,7 @@ ordering, checkout, command execution, artifact upload, and job status.
 |---|---|---|
 | BUILDKITE_AGENT_TOKEN | Agent mode | Cluster token passed only to the child process |
 | BUILDKITE_AGENT_TOKEN_FILE | Agent mode alternative | Uses Buildkite file token syntax for a mounted secret |
-| BUILDKITE_AGENT_TAGS | Optional | Explicit tags; otherwise Kaite adds hardware, variant, and o11y tags |
+| BUILDKITE_AGENT_TAGS | Optional | Explicit tags; otherwise Kait adds hardware, variant, and o11y tags |
 | BUILDKITE_AGENT_NAME | Optional | Forwarded to Buildkite agent start |
 | BUILDKITE_AGENT_CONFIG | Optional | Forwarded config path |
 | BUILDKITE_KUBERNETES_EXEC | Optional | Enables Buildkite Kubernetes log/exit transport |
@@ -32,18 +32,18 @@ ordering, checkout, command execution, artifact upload, and job status.
 ## Inbound Contracts
 | Input | Values | Default |
 |---|---|---|
-| KAITE_HARDWARE | cpu, apple, nvidia, amd, intel | cpu |
-| KAITE_VARIANT | slim, full | slim |
-| KAITE_O11Y | none, prometheus, datadog, splunk | none |
-| KAITE_RUN_MODE | agent, command | agent |
-| KAITE_COMMAND | shell command | unset; required in command mode |
-| KAITE_METRICS_ADDR | TCP bind address | :9090 when o11y is enabled |
+| KAIT_HARDWARE | cpu, apple, nvidia, amd, intel | cpu |
+| KAIT_VARIANT | slim, full | slim |
+| KAIT_O11Y | none, prometheus, datadog, splunk | none |
+| KAIT_RUN_MODE | agent, command | agent |
+| KAIT_COMMAND | shell command | unset; required in command mode |
+| KAIT_METRICS_ADDR | TCP bind address | :9090 when o11y is enabled |
 
 ## Outbound Dependencies
 | Dependency | Purpose | Configuration | Failure behavior |
 |---|---|---|---|
 | Buildkite Agent API | Register agent and receive jobs | token, endpoint, tags | Startup failure exits non-zero |
-| DogStatsD | Datadog runtime counters | KAITE_DD_AGENT_HOST and KAITE_DD_DOGSTATSD_PORT | UDP metrics are best-effort |
+| DogStatsD | Datadog runtime counters | KAIT_DD_AGENT_HOST and KAIT_DD_DOGSTATSD_PORT | UDP metrics are best-effort |
 | OpenTelemetry Collector | Splunk metrics/log pipeline | OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_SERVICE_NAME | Local logs and metrics remain available |
 
 ## Image Platform Contract
@@ -57,7 +57,7 @@ ordering, checkout, command execution, artifact upload, and job status.
 | intel-slim / intel-full | oneAPI Base Toolkit 2025.0.1 / Ubuntu 22.04; linux/amd64 | inactive | Python 3.11 and Intel XPU runtime; full adds AI/ML layers |
 
 Inactive accelerator targets are available for deliberate local or manual
-workflow use. Their matching `kaite-nvidia`, `kaite-amd`, and `kaite-intel`
+workflow use. Their matching `kait-nvidia`, `kait-amd`, and `kait-intel`
 runner labels do not participate in ordinary CI or semantic-tag releases.
 Canonical image tags use `<tag>-<hardware>-<variant>`, for example
 `v1.2.3-apple-full`; stable aliases use `apple-full` and `apple-slim`.
@@ -85,7 +85,7 @@ Canonical image tags use `<tag>-<hardware>-<variant>`, for example
 
 ## Interface Versioning
 - Version strategy: GHCR image tags plus the supervisor `version` constant in
-  `cmd/kaite/version.go` (kept in lockstep with the released package version,
+  `cmd/kait/version.go` (kept in lockstep with the released package version,
   currently `0.2.0`).
 - Backward compatibility: existing environment names remain stable within a
   major image line; new options are additive.
@@ -124,7 +124,7 @@ Canonical image tags use `<tag>-<hardware>-<variant>`, for example
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
+- Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

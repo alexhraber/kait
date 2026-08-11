@@ -1,7 +1,7 @@
-REGISTRY ?= ghcr.io/alexhraber/kaite
+REGISTRY ?= ghcr.io/alexhraber/kait
 VERSION ?= dev
 AGENT_VERSION ?= 3.123.1
-BIN ?= bin/kaite
+BIN ?= bin/kait
 GOCACHE ?= $(CURDIR)/.gocache
 
 export GOCACHE
@@ -18,11 +18,11 @@ vet:
 	go vet ./...
 
 fmt:
-	gofmt -w cmd/kaite/*.go
+	gofmt -w cmd/kait/*.go
 
 build:
 	mkdir -p $(dir $(BIN))
-	CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o $(BIN) ./cmd/kaite
+	CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o $(BIN) ./cmd/kait
 
 clean:
 	rm -rf bin .gocache

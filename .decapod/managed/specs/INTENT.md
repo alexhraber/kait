@@ -16,14 +16,14 @@
 <!-- decapod:declared-capabilities:end -->
 
 ## Product Outcome
-Kaite ships self-hosted Buildkite agents with a portable AI/ML runtime: a
+Kait ships self-hosted Buildkite agents with a portable AI/ML runtime: a
 pinned agent, slim/full Python toolchains, hardware image contracts, and
 collector-friendly metrics. Operators pick an image tag for the host class and
 run ordinary Buildkite jobs inside that environment.
 
 ## What This Project Is
-A small Go supervisor (`cmd/kaite`) packaged into hardware-specific Linux
-images. Buildkite remains the orchestrator; Kaite owns process supervision,
+A small Go supervisor (`cmd/kait`) packaged into hardware-specific Linux
+images. Buildkite remains the orchestrator; Kait owns process supervision,
 input validation, health/metrics, and diagnostic subcommands (`doctor`,
 `smoke`, `hardware`). Active delivery targets are CPU and Apple Silicon
 (linux/arm64). NVIDIA, AMD, and Intel bake targets stay available for
@@ -38,7 +38,7 @@ Key operating facts:
   call `gh release edit --generate-notes` (create-only; breaks re-runs).
   A release PR is opened only for user-facing conventional commits (`feat` /
   `fix` / `perf`); a squash titled `chore:` does not open one.
-- **Version lockstep:** `cmd/kaite` `version` constant tracks the released
+- **Version lockstep:** `cmd/kait` `version` constant tracks the released
   package version (currently **0.2.1**) so doctor/smoke/Prometheus match the tag.
 - **Package visibility:** GHCR package visibility is independent of repo
   visibility; anonymous `docker pull` requires an explicit Public package
@@ -54,14 +54,14 @@ Key operating facts:
 ## Product View
 ```mermaid
 flowchart LR
-  U[AI Platform Operator] --> P[Kaite image and launcher]
+  U[AI Platform Operator] --> P[Kait image and launcher]
   P --> O[User-visible Outcome]
   P --> G[Proof Gates]
   G --> E[Evidence Artifacts]
 ```
 
 ## Inferred Baseline
-- Repository: kaite
+- Repository: kait
 - Product type: self-hosted AI runtime image
 - Primary languages: Go
 - Detected surfaces: runtime, image matrix, deployment templates, CI
@@ -89,11 +89,11 @@ flowchart LR
 - [ ] CPU, Apple Silicon arm64, NVIDIA, AMD, and Intel image targets are versioned and reproducible from the Bake definition.
 - [ ] Each hardware target exposes canonical `<tag>-<hardware>-slim` and `<tag>-<hardware>-full` image tags, with slim compatibility aliases preserved for active CPU and Apple images.
 - [ ] Every published target declares its supported Linux platform; GPU images remain limited to platforms supported by their vendor runtime.
-- [ ] Image CI builds and runs `kaite smoke` for every active target on a matching host class before the workflow can pass.
+- [ ] Image CI builds and runs `kait smoke` for every active target on a matching host class before the workflow can pass.
 - [ ] NVIDIA, AMD, and Intel jobs remain inactive on ordinary pushes and tags, with explicit manual opt-in required when matching hosts are available.
 - [ ] The default entrypoint validates the Buildkite token, forwards standard agent options, and exits with the child status.
-- [ ] Every image contains the pinned Buildkite agent; `kaite smoke` verifies the compact slim contract and imports the advertised full AI/ML package layer.
-- [ ] KAITE_O11Y selects none, Prometheus, Datadog, or Splunk/OTel behavior without changing workload commands.
+- [ ] Every image contains the pinned Buildkite agent; `kait smoke` verifies the compact slim contract and imports the advertised full AI/ML package layer.
+- [ ] KAIT_O11Y selects none, Prometheus, Datadog, or Splunk/OTel behavior without changing workload commands.
 - [ ] Docker and Kubernetes launch paths pass environment inputs and accelerator resources without committing secrets.
 - [ ] Go tests, bake-plan validation, CI, documentation, and Decapod validation are present.
 
@@ -101,7 +101,7 @@ flowchart LR
 
 ### Active Assumptions
 - [x] Buildkite cluster tokens are supplied at runtime through an environment variable or mounted file.
-- [x] Vendor collectors/agents own Datadog and Splunk credentials; Kaite emits compatible runtime signals.
+- [x] Vendor collectors/agents own Datadog and Splunk credentials; Kait emits compatible runtime signals.
 - [ ] Exact accelerator base-image availability is verified by image CI and may require operator overrides.
 - [x] Ubuntu/glibc is the common image contract; Apple Silicon is Linux arm64 CPU execution, not Apple Metal inside a container.
 
@@ -127,7 +127,7 @@ flowchart LR
 - [ ] Explicit conditions under which the agent should stop and ask for help.
 
 ### Proof Required Before Completion
-- [ ] GOCACHE=/tmp/kaite-gocache go test ./... passes.
+- [ ] GOCACHE=/tmp/kait-gocache go test ./... passes.
 - [ ] docker buildx bake --print renders all five targets.
 - [ ] GitHub Actions routes active CPU and arm64 work to native hosts; accelerator work is routed to explicit host labels only after the inactive manual path is enabled, rather than relying on emulation for device proof.
 - [ ] decapod validate passes after generated artifacts and living specs are refreshed.
@@ -139,7 +139,7 @@ flowchart LR
 | Strict gates vs dev speed | Higher confidence | More upfront discipline | Lead time regressions |
 
 ## First Implementation Slice
-- [x] Start Kaite as a Buildkite agent with runtime-selected hardware and o11y.
+- [x] Start Kait as a Buildkite agent with runtime-selected hardware and o11y.
 - [x] Define token, tag, metrics, collector, Docker, and Kubernetes input contracts.
 - [x] Postpone framework-specific training images, checkpoint stores, and vendor collector deployment automation.
 
@@ -153,7 +153,7 @@ flowchart LR
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
+- Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

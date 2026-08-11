@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Buildkite as an execution substrate
-description: A capability-oriented description of Buildkite execution and Kaite runtime environments.
+description: A capability-oriented description of Buildkite execution and Kait runtime environments.
 ---
 
 # Buildkite as an execution substrate
@@ -96,20 +96,20 @@ This gives the execution fleet semantic structure. Infrastructure can
 advertise that a validated environment exists for a known class of work,
 alongside the hardware and operating-system properties of the host.
 
-## Kaite
+## Kait
 
 The execution-substrate model gains a concrete runtime boundary when the
 properties exposed through agent tags correspond to reproducible execution
-environments. Kaite provides that layer for AI and machine-learning workloads.
+environments. Kait provides that layer for AI and machine-learning workloads.
 
-Kaite supplies capability-oriented runtime environments for self-hosted
+Kait supplies capability-oriented runtime environments for self-hosted
 Buildkite agents. An official image contains the Buildkite agent, a pinned
 Python toolchain, workload dependencies, hardware handling, diagnostics, and
 lightweight observability. The image is prepared and validated before a job
 arrives, allowing the worker to advertise a known computational capability
 alongside the characteristics of the host on which it runs.
 
-Kaite separates hardware capability from workload capability. Hardware
+Kait separates hardware capability from workload capability. Hardware
 identifies the execution context available to the runtime. Workload capability
 identifies the class of computation the environment is prepared to perform.
 
@@ -131,9 +131,9 @@ that execution surface.
 For example:
 
 ```text
-kaite=true
-kaite.hardware=nvidia
-kaite.capability.training=true
+kait=true
+kait.hardware=nvidia
+kait.capability.training=true
 ```
 
 A pipeline can address that capability directly:
@@ -144,21 +144,21 @@ steps:
     command: "python train.py"
     agents:
       queue: ai
-      kaite.hardware: nvidia
-      kaite.capability.training: "true"
+      kait.hardware: nvidia
+      kait.capability.training: "true"
 ```
 
-The request identifies the execution requirement: NVIDIA-backed Kaite training
-capability. Buildkite routes the job onto an eligible execution surface. Kaite
+The request identifies the execution requirement: NVIDIA-backed Kait training
+capability. Buildkite routes the job onto an eligible execution surface. Kait
 supplies the training runtime. The pipeline expresses the computational
 capability required for the job.
 
-This is the operating model Kaite makes concrete:
+This is the operating model Kait makes concrete:
 
 ```text
 Buildkite       -> execution substrate
 queues and tags -> capability routing
-Kaite           -> runtime contract
+Kait           -> runtime contract
 agent           -> attachment to the execution surface
 hardware        -> computation
 pipeline        -> composition of executions
@@ -190,8 +190,8 @@ steps:
     command: "python prepare.py"
     agents:
       queue: ai
-      kaite.hardware: cpu
-      kaite.capability.data-science: "true"
+      kait.hardware: cpu
+      kait.capability.data-science: "true"
 
   - label: ":brain: train"
     key: "train"
@@ -199,16 +199,16 @@ steps:
     depends_on: "prepare-data"
     agents:
       queue: ai
-      kaite.hardware: nvidia
-      kaite.capability.training: "true"
+      kait.hardware: nvidia
+      kait.capability.training: "true"
 
   - label: ":satellite: serve"
     command: "python serve.py"
     depends_on: "train"
     agents:
       queue: ai
-      kaite.hardware: cpu
-      kaite.capability.serving: "true"
+      kait.hardware: cpu
+      kait.capability.serving: "true"
 ```
 
 Buildkite also supports dynamic pipelines. Earlier computation can inspect
@@ -239,13 +239,13 @@ The responsibilities are distinct:
 | Human or initiating event | Establishes purpose, constraints, and authorization |
 | Pipeline | Describes executable work and dependencies |
 | Buildkite | Schedules and coordinates jobs |
-| Kaite | Supplies the validated runtime and hardware contract |
+| Kait | Supplies the validated runtime and hardware contract |
 | Buildkite agent | Connects the selected host to the control plane |
 | Hardware | Performs the computation |
 | Results and evidence | Provide inputs for decisions and subsequent work |
 
 The reasoning environment can remain bounded while specialized work is
-requested through Buildkite. Kaite supplies the requested dependencies as
+requested through Buildkite. Kait supplies the requested dependencies as
 versioned execution environments. Buildkite supplies the scheduling and
 execution graph.
 
@@ -254,14 +254,14 @@ execution surfaces with explicit provisioning boundaries.
 
 ## Direct use and downstream derivation
 
-Kaite supports direct execution through an official image. An organization can
+Kait supports direct execution through an official image. An organization can
 run the image as a self-hosted Buildkite worker and target its advertised
 hardware and workload capabilities from a pipeline.
 
-Kaite also serves as a base layer for organizational environments:
+Kait also serves as a base layer for organizational environments:
 
 ```dockerfile
-FROM ghcr.io/alexhraber/kaite:<immutable-release-tag>
+FROM ghcr.io/alexhraber/kait:<immutable-release-tag>
 
 COPY internal-certificates/ /usr/local/share/ca-certificates/
 RUN update-ca-certificates
@@ -272,7 +272,7 @@ COPY platform-config/ /etc/acme/
 The derived image inherits the common Python, ML, accelerator, Buildkite,
 diagnostic, and observability substrate. The organization adds its packages,
 certificates, tooling, and configuration. Changes to dependencies that
-underpin a Kaite capability require rerunning the corresponding doctor and
+underpin a Kait capability require rerunning the corresponding doctor and
 smoke checks and owning the resulting compatibility surface.
 
 ## The power-user model
@@ -296,10 +296,10 @@ Gates control progression.
 
 Artifacts, logs, metadata, and status preserve the result.
 
-Kaite extends this model by giving AI and machine-learning execution surfaces
+Kait extends this model by giving AI and machine-learning execution surfaces
 stable runtime identities that pipelines can address directly. A workload
 declares the capability and hardware it requires; Buildkite resolves that
-request against matching execution capacity; Kaite supplies the validated
+request against matching execution capacity; Kait supplies the validated
 runtime contract; the selected hardware performs the computation; and the
 result returns to the execution graph as input to whatever happens next.
 
@@ -307,6 +307,6 @@ This is the power-user model for the tool in front of us: Buildkite as a
 distributed execution substrate whose existing primitives route computational
 intent across heterogeneous, capability-defined infrastructure. Pipelines
 compose the work, jobs bound its execution, queues and agent tags determine
-placement, agents attach execution surfaces to the control plane, and Kaite
+placement, agents attach execution surfaces to the control plane, and Kait
 gives specialized AI and machine-learning environments a reproducible identity
 within that fabric. The workload changes; the execution model remains.

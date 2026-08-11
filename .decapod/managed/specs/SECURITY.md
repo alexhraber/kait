@@ -3,7 +3,7 @@
 ## Threat Model
 The primary trust boundary is the executor that supplies a Buildkite cluster
 token, vendor collector settings, and host device access to a privileged AI
-workload. Kaite must not expand that trust boundary by baking credentials into
+workload. Kait must not expand that trust boundary by baking credentials into
 an image or forwarding them to logs.
 
 | Threat | Surface | Mitigation | Verification |
@@ -21,7 +21,7 @@ an image or forwarding them to logs.
 - A mounted token file is preferred over a shell-visible token value.
 
 ## Authorization
-Buildkite cluster queue membership authorizes job dispatch. Kaite does not
+Buildkite cluster queue membership authorizes job dispatch. Kait does not
 introduce an application role system; host, container, and device privileges
 are controlled by Docker or Kubernetes configuration.
 
@@ -36,7 +36,7 @@ are controlled by Docker or Kubernetes configuration.
 - Encryption at rest is delegated to host, Kubernetes secret, Buildkite, and
   vendor systems.
 - Buildkite Agent API and OTLP endpoints must use TLS.
-- Kaite never logs token values; Buildkite redaction remains authoritative for
+- Kait never logs token values; Buildkite redaction remains authoritative for
   job logs.
 - Retention is delegated to Buildkite and the selected collector.
 
@@ -54,14 +54,14 @@ are controlled by Docker or Kubernetes configuration.
 ## Secrets Matrix
 | Secret | Source | Rotation | Consumer |
 |---|---|---|---|
-| Buildkite agent token | Docker/Kubernetes secret | Buildkite policy | Kaite |
+| Buildkite agent token | Docker/Kubernetes secret | Buildkite policy | Kait |
 | Datadog API key | Datadog Agent Secret | Vendor policy | Datadog Agent |
 | Splunk access token | OTel Collector Secret | Vendor policy | Splunk Collector |
 
 ## Security Proof
 - No credential is present in the Dockerfile, image tags, examples, or logs.
 - Runtime configuration fails closed when an agent token is absent.
-- Vendor integrations are collector-friendly and do not require Kaite to own
+- Vendor integrations are collector-friendly and do not require Kait to own
   external API credentials.
 
 <!-- decapod:capability-overlay:public-api:start -->
@@ -88,7 +88,7 @@ are controlled by Docker or Kubernetes configuration.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
+- Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

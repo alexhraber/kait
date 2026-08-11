@@ -1,39 +1,39 @@
 env:
-  KAITE_O11Y: prometheus
+  KAIT_O11Y: prometheus
 
 steps:
   - label: ":mag: CPU unit tests"
-    command: "kaite smoke"
+    command: "kait smoke"
     agents:
       queue: ai
-      kaite: "true"
-      kaite.hardware: cpu
-      kaite.variant: slim
-      kaite.capability.data-science: "true"
+      kait: "true"
+      kait.hardware: cpu
+      kait.variant: slim
+      kait.capability.data-science: "true"
 
   - label: ":brain: CPU training environment"
     command: "python train.py"
     agents:
       queue: ai
-      kaite: "true"
-      kaite.hardware: cpu
-      kaite.capability.training: "true"
+      kait: "true"
+      kait.hardware: cpu
+      kait.capability.training: "true"
 
   - label: ":apple: Apple Silicon serving environment"
-    command: "kaite smoke"
+    command: "kait smoke"
     agents:
       queue: ai
-      kaite: "true"
-      kaite.hardware: apple
-      kaite.variant: full
-      kaite.capability.serving: "true"
+      kait: "true"
+      kait.hardware: apple
+      kait.variant: full
+      kait.capability.serving: "true"
 
   # Accelerator hosts are manual opt-in (inactive in default CI/release):
   # - label: ":cuda: NVIDIA inference"
-  #   command: "kaite smoke"
+  #   command: "kait smoke"
   #   agents:
   #     queue: ai
-  #     kaite: "true"
-  #     kaite.hardware: nvidia
-  #     kaite.variant: slim
-  #     kaite.capability.data-science: "true"
+  #     kait: "true"
+  #     kait.hardware: nvidia
+  #     kait.variant: slim
+  #     kait.capability.data-science: "true"

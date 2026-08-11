@@ -11,7 +11,7 @@ func logEvent(level, event string, fields map[string]string) {
 	entry := map[string]any{
 		"ts":        time.Now().UTC().Format(time.RFC3339Nano),
 		"level":     level,
-		"component": "kaite",
+		"component": "kait",
 		"event":     event,
 	}
 	for key, value := range fields {

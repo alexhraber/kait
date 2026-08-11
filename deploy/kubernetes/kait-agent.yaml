@@ -1,9 +1,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kaite-agent
+  name: kait-agent
   labels:
-    app.kubernetes.io/name: kaite
+    app.kubernetes.io/name: kait
     app.kubernetes.io/component: buildkite-agent
 spec:
   backoffLimit: 0
@@ -11,7 +11,7 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: kaite
+        app.kubernetes.io/name: kait
         app.kubernetes.io/component: buildkite-agent
       annotations:
         prometheus.io/scrape: "true"
@@ -20,8 +20,8 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-        - name: kaite
-          image: ghcr.io/alexhraber/kaite:cpu-slim
+        - name: kait
+          image: ghcr.io/alexhraber/kait:cpu-slim
           imagePullPolicy: IfNotPresent
           ports:
             - name: metrics
@@ -33,25 +33,25 @@ spec:
                   name: buildkite-agent
                   key: token
             - name: BUILDKITE_AGENT_TAGS
-              value: kaite=true,kaite.hardware=cpu,kaite.variant=slim,kaite.o11y=prometheus,kaite.capability.data-science=true
+              value: kait=true,kait.hardware=cpu,kait.variant=slim,kait.o11y=prometheus,kait.capability.data-science=true
             - name: BUILDKITE_AGENT_QUEUE
               value: ai
             - name: BUILDKITE_AGENT_DISCONNECT_AFTER_JOB
               value: "true"
-            - name: KAITE_HARDWARE
+            - name: KAIT_HARDWARE
               value: cpu
-            - name: KAITE_VARIANT
+            - name: KAIT_VARIANT
               value: slim
-            - name: KAITE_O11Y
+            - name: KAIT_O11Y
               value: prometheus
-            - name: KAITE_METRICS_ADDR
+            - name: KAIT_METRICS_ADDR
               value: 0.0.0.0:9090
             - name: OTEL_SERVICE_NAME
-              value: kaite
+              value: kait
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               valueFrom:
                 configMapKeyRef:
-                  name: kaite-observability
+                  name: kait-observability
                   key: otlp-endpoint
                   optional: true
           resources:

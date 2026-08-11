@@ -1,16 +1,16 @@
 ---
 layout: default
 title: Architecture
-description: Kaite supervisor, image, deployment, and release architecture.
+description: Kait supervisor, image, deployment, and release architecture.
 ---
 
 # Architecture
 
-Kaite is a **thin Go supervisor** packaged into **hardware-specific Linux
-images**. Buildkite remains the orchestrator; Kaite owns process lifecycle,
+Kait is a **thin Go supervisor** packaged into **hardware-specific Linux
+images**. Buildkite remains the orchestrator; Kait owns process lifecycle,
 image/runtime identity validation, health/metrics, and diagnostic subcommands.
 
-If you only need to run an agent, start with the [root README](https://github.com/alexhraber/kaite#readme).
+If you only need to run an agent, start with the [root README](https://github.com/alexhraber/kait#readme).
 This document is the deeper layout for contributors and operators who want to
 know how the pieces fit.
 
@@ -21,7 +21,7 @@ Docker / Kubernetes
         │
         ▼
 ┌───────────────────┐     start / signals      ┌────────────────────┐
-│  kaite supervisor │ ───────────────────────► │  buildkite-agent   │
+│  kait supervisor │ ───────────────────────► │  buildkite-agent   │
 │  (static Go bin)  │ ◄─────────────────────── │  (pinned in image) │
 └─────────┬─────────┘     exit status          └─────────┬──────────┘
           │                                              │
@@ -46,7 +46,7 @@ Design choices that stay fixed:
 
 | Path | Role |
 | --- | --- |
-| [`cmd/kaite/`](../cmd/kaite/) | Go supervisor and unit tests |
+| [`cmd/kait/`](../cmd/kait/) | Go supervisor and unit tests |
 | [`Dockerfile`](../Dockerfile) | Multi-stage image: build supervisor → runtime + agent + venv |
 | [`docker-bake.hcl`](../docker-bake.hcl) | Image matrix (hardware × compatibility variant) and capability build args |
 | [`requirements/`](../requirements/) | Layered Python manifests |
@@ -55,14 +55,14 @@ Design choices that stay fixed:
 | [`examples/`](../examples/) | Pipeline agent-targeting snippets |
 | [`.github/workflows/`](../.github/workflows/) | Image CI, Release Please, GHCR publish |
 
-## Supervisor (`cmd/kaite`)
+## Supervisor (`cmd/kait`)
 
 The binary is split by concern so the entrypoint stays readable:
 
 | File | Responsibility |
 | --- | --- |
 | `main.go` | CLI dispatch (`doctor` / `smoke` / `hardware`) and process bootstrap |
-| `config.go` | Env loading and validation (`KAITE_*`, Buildkite token sources) |
+| `config.go` | Env loading and validation (`KAIT_*`, Buildkite token sources) |
 | `run.go` | Child process start, SIGTERM, exit-code propagation, agent args |
 | `metrics.go` | HTTP `/healthz`, `/readyz`, `/metrics`; DogStatsD client |
 | `doctor.go` | Framework/device smoke checks used by CI and operators |
@@ -75,8 +75,8 @@ The binary is split by concern so the entrypoint stays readable:
 1. Optional hardware environment setup (no-op on CPU/Apple).
 2. Subcommand path returns immediately (`doctor`, `smoke`, `hardware`).
 3. Otherwise load config (exit **2** on invalid input).
-4. Start metrics server when `KAITE_METRICS_ADDR` is set or o11y ≠ `none`.
-5. Start either `buildkite-agent start` or `sh -lc "$KAITE_COMMAND"`.
+4. Start metrics server when `KAIT_METRICS_ADDR` is set or o11y ≠ `none`.
+5. Start either `buildkite-agent start` or `sh -lc "$KAIT_COMMAND"`.
 6. On SIGINT/SIGTERM, forward SIGTERM to the child and wait.
 7. Exit with the child status; shut down the metrics server.
 
@@ -89,28 +89,28 @@ Runtime is entirely environment-driven. The important knobs:
 
 | Variable | Values | Notes |
 | --- | --- | --- |
-| `KAITE_HARDWARE` | `cpu` `apple` `nvidia` `amd` `intel` | Must match the baked image device contract |
-| `KAITE_VARIANT` | `slim` `full` | Compatibility package-footprint selector; must match the baked image |
-| `KAITE_CAPABILITIES` | comma-separated capability names | Optional runtime assertion; must match the baked image when set |
-| `KAITE_O11Y` | `none` `prometheus` `datadog` `splunk` | Metrics/log adapter selection |
-| `KAITE_RUN_MODE` | `agent` `command` | Production vs diagnostics |
+| `KAIT_HARDWARE` | `cpu` `apple` `nvidia` `amd` `intel` | Must match the baked image device contract |
+| `KAIT_VARIANT` | `slim` `full` | Compatibility package-footprint selector; must match the baked image |
+| `KAIT_CAPABILITIES` | comma-separated capability names | Optional runtime assertion; must match the baked image when set |
+| `KAIT_O11Y` | `none` `prometheus` `datadog` `splunk` | Metrics/log adapter selection |
+| `KAIT_RUN_MODE` | `agent` `command` | Production vs diagnostics |
 | `BUILDKITE_AGENT_TOKEN` / `_FILE` | secret | Exactly one required in agent mode |
 | `BUILDKITE_AGENT_*` | agent CLI flags | Name, queue, tags, endpoint, disconnect, … |
 
-Official images write `/etc/kaite/identity.json` during the Docker build. It
+Official images write `/etc/kait/identity.json` during the Docker build. It
 contains the schema version, hardware, compatibility variant, and capability
 set. The file is the runtime authority because ordinary container environment
 variables can be overridden by a caller. OCI labels repeat the build inputs for
 image inspection, but the supervisor validates the identity file.
 
-When `BUILDKITE_AGENT_TAGS` is unset, Kaite supplies:
+When `BUILDKITE_AGENT_TAGS` is unset, Kait supplies:
 
 ```text
-kaite=true,kaite.hardware=<hw>,kaite.variant=<variant>,kaite.o11y=<o11y>,kaite.capability.data-science=true,...
+kait=true,kait.hardware=<hw>,kait.variant=<variant>,kait.o11y=<o11y>,kait.capability.data-science=true,...
 ```
 
 Custom tags are preserved and appended before these canonical tags. Reserved
-`kaite` and `kaite.*` tags may repeat the exact canonical value, but conflicting
+`kait` and `kait.*` tags may repeat the exact canonical value, but conflicting
 values fail before the Buildkite agent starts. This keeps a pipeline's selector
 truthful without inventing a scheduler or a second tag system.
 
@@ -148,7 +148,7 @@ shares one Dockerfile and varies base image, platforms, and build args.
 
 Tag shapes:
 
-- Versioned: `kaite:<semver>-<hardware>-<variant>` (e.g. `v0.2.0-cpu-slim`)
+- Versioned: `kait:<semver>-<hardware>-<variant>` (e.g. `v0.2.0-cpu-slim`)
 - Stable aliases: `cpu-slim`, `cpu-full`, `apple-slim`, `apple-full`
 - Capability aliases: `cpu-data-science`, `cpu-training`, `cpu-orchestration`,
   `cpu-serving` (aliases to the existing slim/full artifacts, not extra builds)
@@ -156,13 +156,13 @@ Tag shapes:
 
 ### Build layers inside the image
 
-1. **Builder stage** — `golang:1.23` cross-compiles a static `kaite` binary.
+1. **Builder stage** — `golang:1.23` cross-compiles a static `kait` binary.
 2. **Runtime base** — Ubuntu or vendor image (`BASE_IMAGE`).
 3. **System packages** — bash, curl, git, tini, Python venv tooling.
 4. **Buildkite agent** — pinned release, SHA256-verified install under `/buildkite`.
 5. **Python venv** — layered requirements selected by the capability set (see below).
-6. **Identity** — `/etc/kaite/identity.json` plus OCI labels.
-7. **Entrypoint** — `tini` → `/usr/local/bin/kaite`.
+6. **Identity** — `/etc/kait/identity.json` plus OCI labels.
+7. **Entrypoint** — `tini` → `/usr/local/bin/kait`.
 
 ### Python requirement layers
 
@@ -178,7 +178,7 @@ is explicit in Bake and in the image identity, so a future focused artifact can
 reuse the same composition without adding a new Dockerfile or supervisor mode.
 
 Non-portable packages (DeepSpeed, bitsandbytes, FlashAttention, vLLM, s3fs, …)
-are **not** defaults. Operators pass them with `KAITE_EXTRA_PYTHON_PACKAGES` at
+are **not** defaults. Operators pass them with `KAIT_EXTRA_PYTHON_PACKAGES` at
 build time. See [`requirements/README.md`](../requirements/README.md).
 
 ## Deploy paths
@@ -188,16 +188,16 @@ build time. See [`requirements/README.md`](../requirements/README.md).
 [`deploy/docker/run.sh`](../deploy/docker/run.sh) is a thin wrapper:
 
 - Requires a Buildkite token (or command override) in agent mode
-- Forwards `BUILDKITE_*` / `KAITE_*` / o11y env
+- Forwards `BUILDKITE_*` / `KAIT_*` / o11y env
 - Adds device flags for nvidia (`--gpus`), amd/intel (`/dev/dri`, …)
-- Optionally runs a container command (`KAITE_CONTAINER_COMMAND=smoke`)
+- Optionally runs a container command (`KAIT_CONTAINER_COMMAND=smoke`)
 
 [`deploy/docker/smoke.sh`](../deploy/docker/smoke.sh) sets that command so hosts
 can verify devices and frameworks without a cluster token.
 
 ### Kubernetes Job
 
-[`deploy/kubernetes/kaite-agent.yaml`](../deploy/kubernetes/kaite-agent.yaml) is a
+[`deploy/kubernetes/kait-agent.yaml`](../deploy/kubernetes/kait-agent.yaml) is a
 **one-shot** agent: register → claim one matching job → disconnect → Job
 completes. Continuous pools need a Deployment or Buildkite Agent Stack.
 
@@ -209,32 +209,32 @@ to Agent Stack for Kubernetes only.
 
 ### Pipeline targeting
 
-Jobs select Kaite agents with tags, not image pulls inside the step:
+Jobs select Kait agents with tags, not image pulls inside the step:
 
 ```yaml
 agents:
   queue: ai
-  kaite.hardware: cpu
-  kaite.capability.training: "true"
+  kait.hardware: cpu
+  kait.capability.training: "true"
 ```
 
 The image already is the job environment; the step command runs inside it.
-Capability tags are ordinary Buildkite agent tags, not a Kaite pipeline schema.
-The producer is the Kaite supervisor, the consumer is Buildkite's agent
-matcher, and `kaite smoke` is the local proof surface.
+Capability tags are ordinary Buildkite agent tags, not a Kait pipeline schema.
+The producer is the Kait supervisor, the consumer is Buildkite's agent
+matcher, and `kait smoke` is the local proof surface.
 
 ## Observability model
 
 ```text
-KAITE_O11Y=none        → no metrics server (unless KAITE_METRICS_ADDR set)
-KAITE_O11Y=prometheus  → bind :9090, scrape /metrics
-KAITE_O11Y=datadog     → DogStatsD to KAITE_DD_* / DD_*
-KAITE_O11Y=splunk      → metrics + OTEL_* for collector export
+KAIT_O11Y=none        → no metrics server (unless KAIT_METRICS_ADDR set)
+KAIT_O11Y=prometheus  → bind :9090, scrape /metrics
+KAIT_O11Y=datadog     → DogStatsD to KAIT_DD_* / DD_*
+KAIT_O11Y=splunk      → metrics + OTEL_* for collector export
 ```
 
 Always:
 
-- Supervisor events → **stderr** as JSON (`component=kaite`)
+- Supervisor events → **stderr** as JSON (`component=kait`)
 - Child/job output → agent **stdout/stderr** (Buildkite job logs)
 
 Never:
@@ -264,7 +264,7 @@ semver tag + GitHub Release
       │ dispatch
       ▼
 release-images.yml  →  native CPU + Apple hosts
-                      →  kaite smoke per active target
+                      →  kait smoke per active target
                       →  GHCR (versioned + alias tags, provenance, SBOM)
 ```
 
@@ -283,8 +283,8 @@ via `make build-*` (requires Docker Buildx; Podman-only hosts may lack bake).
 
 ## Related docs
 
-- [README](https://github.com/alexhraber/kaite#readme) — quick start and env table
+- [README](https://github.com/alexhraber/kait#readme) — quick start and env table
 - [Capability contract]({{ '/capabilities/' | relative_url }}) — identity, Buildkite selectors, and derivation semantics
-- [CONTRIBUTING](https://github.com/alexhraber/kaite/blob/main/CONTRIBUTING.md) — local build and PR expectations
-- [requirements/README](https://github.com/alexhraber/kaite/blob/main/requirements/README.md) — Python layer details
-- [deploy/kubernetes/README](https://github.com/alexhraber/kaite/blob/main/deploy/kubernetes/README.md) — cluster Job notes
+- [CONTRIBUTING](https://github.com/alexhraber/kait/blob/main/CONTRIBUTING.md) — local build and PR expectations
+- [requirements/README](https://github.com/alexhraber/kait/blob/main/requirements/README.md) — Python layer details
+- [deploy/kubernetes/README](https://github.com/alexhraber/kait/blob/main/deploy/kubernetes/README.md) — cluster Job notes

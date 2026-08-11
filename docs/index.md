@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Kaite · Execution environments for Buildkite
+title: Kait · Execution environments for Buildkite
 description: Capability-oriented AI and ML execution environments for self-hosted Buildkite agents.
 ---
 
@@ -8,7 +8,7 @@ description: Capability-oriented AI and ML execution environments for self-hoste
   <p class="eyebrow">Buildkite execution environments</p>
   <h1>Make the environment sophisticated so the pipeline can stay simple.</h1>
   <p class="lede">
-    Kaite gives self-hosted Buildkite agents a known computational identity:
+    Kait gives self-hosted Buildkite agents a known computational identity:
     the hardware, runtime, diagnostics, and workload capabilities are prepared
     before the job arrives.
   </p>
@@ -21,7 +21,7 @@ description: Capability-oriented AI and ML execution environments for self-hoste
 <div class="callout">
   <strong>The operating model</strong>
   <p>
-    A pipeline expresses work. Buildkite routes that work. Kaite supplies a
+    A pipeline expresses work. Buildkite routes that work. Kait supplies a
     reproducible capability. The workload executes where the declared hardware
     and runtime contract are true.
   </p>
@@ -40,7 +40,7 @@ description: Capability-oriented AI and ML execution environments for self-hoste
   <a class="card" href="{{ '/capabilities/' | relative_url }}">
     <h3>Capability contract</h3>
     <p>
-      How Kaite turns runtime composition into validated workload capabilities
+      How Kait turns runtime composition into validated workload capabilities
       such as data science, training, orchestration, and serving.
     </p>
   </a>
@@ -66,8 +66,8 @@ steps:
     command: "python train.py"
     agents:
       queue: ai
-      kaite.hardware: nvidia
-      kaite.capability.training: "true"
+      kait.hardware: nvidia
+      kait.capability.training: "true"
 ~~~
 
 <p>
@@ -79,13 +79,13 @@ steps:
 <h2>Direct destination or known-good base</h2>
 
 <p>
-  Use an official Kaite image directly, or derive an organizational image from
-  an immutable Kaite artifact and add only the internal delta. Platform teams
+  Use an official Kait image directly, or derive an organizational image from
+  an immutable Kait artifact and add only the internal delta. Platform teams
   maintain the common floor; application teams and agents bring the work that
   is unique to them.
 </p>
 
 <div class="actions">
-  <a class="button secondary" href="https://github.com/alexhraber/kaite">View the repository</a>
-  <a class="button secondary" href="https://github.com/alexhraber/kaite/blob/main/examples/pipeline.yml">See the pipeline examples</a>
+  <a class="button secondary" href="https://github.com/alexhraber/kait">View the repository</a>
+  <a class="button secondary" href="https://github.com/alexhraber/kait/blob/main/examples/pipeline.yml">See the pipeline examples</a>
 </div>
