@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/alexhraber/kaite/compare/v0.2.1...v0.2.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* **ci:** open patch release after [#13](https://github.com/alexhraber/kaite/issues/13) chore squash skipped RP ([6823763](https://github.com/alexhraber/kaite/commit/68237630353f658b54c90a1ba6cea02cbb35cfab))
+* **ci:** open patch release after [#13](https://github.com/alexhraber/kaite/issues/13) chore squash skipped RP ([f43fcf8](https://github.com/alexhraber/kaite/commit/f43fcf8660de6a725e39127bfbaaf2060e282bbd))
+
 ## [0.2.1](https://github.com/alexhraber/kaite/compare/v0.2.0...v0.2.1) (2026-08-11)
 
 
