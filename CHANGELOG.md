@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/alexhraber/kait/compare/v0.4.0...v0.5.0) (2026-08-11)
+
+
+### Features
+
+* implement capability execution contracts ([95a51ad](https://github.com/alexhraber/kait/commit/95a51adf9f7ee404ce2986b48bb914ea5da16551))
+* make Kait capability execution contracts real ([3cb7743](https://github.com/alexhraber/kait/commit/3cb7743c5ac0b7a3541e1cabb04f4ab6b25e0269))
+
 ## [0.4.0](https://github.com/alexhraber/kait/compare/v0.3.0...v0.4.0) (2026-08-11)
 
 
