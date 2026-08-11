@@ -16,31 +16,31 @@
   "capability_definition_version": "1.0.0",
   "config_input_hash": "1b02b9970e418b58b48ede1d87fd9857118fde793526f4ac9efaaad348b2d0c5",
   "spec_input_hash": "bde862bcb3f5e0882de99282bafe084b66604d50be4401a260cf8030488c187c",
-  "decapod_release": "0.96.16",
+  "decapod_release": "0.96.15",
   "entrypoints": [
     {
       "path": "AGENTS.md",
-      "template_hash": "a14c8bbda36d58d85a45ca6ceb20f07473d8d8d162c54dc5ce99d6c69d25a44a",
+      "template_hash": "bca671552c54040bc43f54f4c054e25cc594ff9a1bc0b841cce680790c95a689",
       "content_hash": "bca671552c54040bc43f54f4c054e25cc594ff9a1bc0b841cce680790c95a689",
-      "fingerprint": "be3935eddddd14e244f616db6eb1924671e61ee4218f747400c5a7f079210b4d"
+      "fingerprint": "e8c12c650831ad18cccf92ff5bb9bbe6d0b0998d8813dd421259c30b99ca69c4"
     },
     {
       "path": "CLAUDE.md",
-      "template_hash": "ee314c780b69489036b47f8bc8161240318b96da56adc5879b09c40440932342",
+      "template_hash": "518805dd6838375f4007183f9972a38345a37592794eade7717566c5f6225a2e",
       "content_hash": "518805dd6838375f4007183f9972a38345a37592794eade7717566c5f6225a2e",
-      "fingerprint": "80d270c5b07dc5be715c323111789c8ce01ed15fe5df7000bfd176db8574c51a"
+      "fingerprint": "31e8b6a1e48735260fdbac84c68a3b12a23bce47b76e5f92b5582f9fc9c76dc6"
     },
     {
       "path": "GEMINI.md",
-      "template_hash": "de97f11d9c6657d4e8f624b9dba510b811fb4328d23e6a6c5816e2e3fbe2c2bd",
+      "template_hash": "e94810c9ac434f19d546da67ebf9d528218eb13760344e7f66241f862f7c2205",
       "content_hash": "e94810c9ac434f19d546da67ebf9d528218eb13760344e7f66241f862f7c2205",
-      "fingerprint": "a35188e7ed65f37a8b5dc96135f889b9cad249add1ea24cb89feffa898fa0a0a"
+      "fingerprint": "f96ffde2588c1e2aed1c57240847ec9e80351985e2c99b078ed3921722ce73de"
     },
     {
       "path": "CODEX.md",
-      "template_hash": "02fca6f9bb3243c7aa6467a1bc0856f1de30f8f356f8a539d854b8540c72912e",
+      "template_hash": "5cee9ec3725fa325f4e0df5727a8d377c1645787604d793c7e61ac7eb6f80d8c",
       "content_hash": "5cee9ec3725fa325f4e0df5727a8d377c1645787604d793c7e61ac7eb6f80d8c",
-      "fingerprint": "3d6e82bc47cbc8c34081655642e21c6570a1aa9cc5b9ecf188154a72ebc2b10d"
+      "fingerprint": "0a71174811031d9b328cf07270937fd8ae8cd2dda79dabe5f61cbc3344029e26"
     }
   ],
   "files": [
