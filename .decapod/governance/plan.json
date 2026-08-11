@@ -1,17 +1,17 @@
 {
   "schema_version": "1.0.0",
-  "title": "Migrate repository identity to Kait",
-  "intent": "Migrate the repository identity to Kait across source paths, Go module, image and runtime contracts, Buildkite tags and environment variables, CI/release/docs/Pages references, and current Decapod project metadata while preserving historical audit events.",
+  "title": "Automate release publication after merge",
+  "intent": "Make Kait releases run automatically on the post-merge main path, and update README Decapod identity to v0.97.0 without changing the existing release contract.",
   "state": "APPROVED",
   "todo_ids": [
-    "code_01kzs6jqsf36mpns"
+    "docs_01kzs983z7h7kkdq"
   ],
   "proof_hooks": [
     "git diff --check",
     "go test ./...",
-    "docker buildx bake --print (when available)",
     "decapod validate",
-    "current repository and database searches contain no stale active prior-name references"
+    "GitHub workflow syntax and trigger inspection",
+    "README badge shows v0.97.0"
   ],
   "unknowns": [],
   "human_questions": [],
@@ -20,8 +20,8 @@
   "deferred_questions": [],
   "constraints": {
     "forbidden_paths": [],
-    "file_touch_budget": 100
+    "file_touch_budget": 6
   },
   "phases": [],
-  "updated_at": "1786479397Z"
+  "updated_at": "1786481536Z"
 }

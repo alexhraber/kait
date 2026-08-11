@@ -20,6 +20,8 @@ jobs:
     name: Create or update release PR
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
+
       - name: Create or update release PR
         id: release
         uses: googleapis/release-please-action@v5
@@ -27,6 +29,45 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # Release Please normally waits for feat/fix/deps commits. A merged
+      # infrastructure, documentation, or repository-identity change still
+      # needs a versioned artifact so image publication remains automatic.
+      - name: Determine fallback patch release
+        id: fallback
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASES_CREATED: ${{ steps.release.outputs.releases_created }}
+          PRS_CREATED: ${{ steps.release.outputs.prs_created }}
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$RELEASES_CREATED" == "true" || "$PRS_CREATED" == "true" || "$HEAD_MESSAGE" == chore\(main\):\ release* ]]; then
+            echo "force=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          pending_count="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --label 'autorelease: pending' --json number --jq 'length')"
+          if [[ "$pending_count" != "0" ]]; then
+            echo "force=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          current="$(jq -r '."."' .release-please-manifest.json)"
+          IFS=. read -r major minor patch <<< "$current"
+          next="${major}.${minor}.$((patch + 1))"
+          echo "force=true" >> "$GITHUB_OUTPUT"
+          echo "release_as=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Create fallback patch release PR
+        if: ${{ steps.fallback.outputs.force == 'true' }}
+        uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          release-as: ${{ steps.fallback.outputs.release_as }}
 
       # GitHub does not start another workflow for a tag created with
       # GITHUB_TOKEN (on: push tags never fires). Dispatch against the exact
