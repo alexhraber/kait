@@ -1,28 +1,30 @@
 {
   "schema_version": "1.0.0",
-  "title": "Make Kaite workload capabilities explicit and schedulable",
-  "intent": "Evolve Kaite's existing hardware plus slim/full image substrate into a truthful capability-set contract. Preserve current image and runtime interfaces while making the existing data-science, training, orchestration, and serving layers explicit in image identity, supervisor validation, Buildkite agent tags, pipeline examples, CI/release metadata, and documentation. Do not add a new framework or a Cartesian image matrix.",
+  "title": "Publish Kaite documentation through GitHub Pages",
+  "intent": "Provide a static docs landing page and a Buildkite execution-substrate article that explains how Kaite makes validated computational capability concrete for Buildkite power users.",
   "state": "APPROVED",
   "todo_ids": [
-    "code_01kzrxk1c4sx7ah3"
+    "feat_01kzs1b3cvz753dp"
   ],
   "proof_hooks": [
+    "git diff --check",
     "decapod validate",
-    "go test ./...",
-    "docker buildx bake --print",
-    "make test"
+    "GitHub Pages branch source main/docs",
+    "Pages route and navigation review"
   ],
   "unknowns": [],
   "human_questions": [],
   "stop_conditions": [
-    "Do not re-enable accelerator auto-release without matching hosts"
+    "Do not add a Pages deployment workflow while the repository is configured to deploy main/docs."
   ],
   "unresolved_contradictions": [],
   "deferred_questions": [],
   "constraints": {
-    "forbidden_paths": [],
-    "file_touch_budget": 45
+    "forbidden_paths": [
+      ".github/workflows/deploy-pages.yml"
+    ],
+    "file_touch_budget": 12
   },
   "phases": [],
-  "updated_at": "1786469333Z"
+  "updated_at": "1786473626Z"
 }

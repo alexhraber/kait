@@ -72,6 +72,16 @@ native CPU and arm64 hosts. Accelerator definitions and their
 `kaite-nvidia` / `kaite-amd` / `kaite-intel` runner labels remain manual
 opt-ins so a green release cannot queue work on missing GPU infrastructure.
 
+## Documentation Publication Surface
+Kaite's public documentation is a static GitHub Pages site sourced from
+main/docs. docs/index.md is the landing page and routes readers to the
+architecture, capability-contract, and execution-substrate documents. The
+docs directory owns the Jekyll configuration and shared layout; the site does
+not require an application server or a separate deployment workflow. The
+execution-substrate article explains Buildkite as the execution substrate and
+positions Kaite as the validated capability layer that makes that model
+concrete for power users.
+
 ## Strongest Existing Primitives
 - Go standard-library supervisor (no third-party runtime deps); version constant
   aligned with the published package version.
@@ -197,7 +207,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `8e262b3c9e364a0c07874dde13dd5a03128cc9dba98ed8af7e7a7f4b5ee506ee`
+- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

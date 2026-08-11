@@ -116,6 +116,13 @@ matching inactive host jobs are deliberately enabled.
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
 
+## Codebase Attestation
+
+- Repository signal fingerprint: `24454fd28087d866086db267cb3430825d2ec92494981796bfd69e715a9cee16`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
+- Refreshed from the current codebase by `decapod specs.refresh`
+<!-- decapod:codebase-attestation:end -->
+
 <!-- decapod:capability-overlay:background-processing:start -->
 
 ## Background Processing Validation Overlay
@@ -176,7 +183,7 @@ matching inactive host jobs are deliberately enabled.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `8e262b3c9e364a0c07874dde13dd5a03128cc9dba98ed8af7e7a7f4b5ee506ee`
+- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
