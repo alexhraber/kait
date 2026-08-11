@@ -1,5 +1,7 @@
 # kaite
 
+[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.96.15-dc2626)](https://github.com/DecapodLabs/decapod)
+
 Self-hosted [Buildkite](https://buildkite.com) agents with a batteries-included
 AI/ML runtime. One image ships the agent, a pinned Python toolchain, hardware
 contracts, and lightweight observability.
