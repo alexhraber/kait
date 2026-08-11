@@ -6,7 +6,10 @@
   "original_intent": "Rename the renamed repository and its governed state from kaite to kait, then publish the result to alexhraber/kait.",
   "derived_intent": "Migrate active repository identity, code paths, runtime contracts, CI/release/docs/Pages surfaces, current Decapod metadata, and supported current todo projections to Kait while preserving historical audit provenance.",
   "destination": "Publish a pull request to alexhraber/kait main.",
-  "current_phase": "implementation-and-publication",
+  "current_phase": "validation",
+  "next_transitions": [
+    "publish"
+  ],
   "active_boundaries": [
     "Do not rewrite immutable historical audit events or bypass Decapod governance APIs for database state."
   ],
@@ -27,6 +30,8 @@
   ],
   "modified_files": [
     ".decapod",
+    ".decapod/governance/trajectory.json",
+    ".decapod/governance/validation.json",
     "Dockerfile",
     "Makefile",
     "README.md",
@@ -37,11 +42,16 @@
   "declared_commands": [
     "GOCACHE=/tmp/kait-gocache go test ./...",
     "GOCACHE=/tmp/kait-gocache go vet ./...",
+    "decapod validate",
     "git diff --check",
     "make build"
   ],
   "tool_calls": [],
   "checks": [
+    {
+      "name": "decapod validate",
+      "status": "passed"
+    },
     {
       "name": "docker buildx bake --print",
       "status": "unavailable"
@@ -64,7 +74,8 @@
     }
   ],
   "evidence": [
-    "Go tests and vet pass; Kait binary builds; Docker Buildx Bake is unavailable because local docker is a Buildah shim without bake."
+    "Go tests and vet pass; Kait binary builds; Docker Buildx Bake is unavailable because local docker is a Buildah shim without bake.",
+    "validation epoch ve_2c0c9ac4d1e8453e completed with zero failures"
   ],
   "shortcut_risk_signals": [],
   "unresolved_assumptions": [
@@ -77,7 +88,7 @@
     "shortcut_risk": "supported",
     "completion_proof": "caution"
   },
-  "artifact_hash": "sha256:722ad5a0129ccc870b11b5313c543ebb516fa811efbae2459ed4b876f1d8c2a2",
+  "artifact_hash": "sha256:579afc04e0d796cff158c686beebcd3bc8608445c57cde3fb49d18370e4c4cbb",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
@@ -116,6 +127,13 @@
       {
         "sequence": 4,
         "event_id": "event:4",
+        "intent_id": "intent:kait-rename-20260811",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:kait-rename-20260811"
+      },
+      {
+        "sequence": 5,
+        "event_id": "event:5",
         "intent_id": "intent:kait-rename-20260811",
         "kind": "trajectory_step_recorded",
         "detail": "trajectory:kait-rename-20260811"
@@ -165,12 +183,30 @@
               "Historical Decapod audit events retain original repository names for provenance; current project-facing projections and active todos are migrated through supported APIs."
             ],
             "custody_event_id": "event:4"
+          },
+          {
+            "sequence": 5,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              "Repository source, Docker/Bake/release/CI/docs/deployment surfaces, current Decapod project metadata and active todo projections."
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_2c0c9ac4d1e8453e completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:5"
           }
         ]
       }
     },
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 4
+    "next_sequence": 5
   }
 }
