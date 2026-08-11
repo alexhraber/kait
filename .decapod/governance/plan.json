@@ -1,13 +1,12 @@
 {
   "schema_version": "1.0.0",
-  "title": "Make kaite release surface production-legit",
-  "intent": "After v0.2.1 GHCR success: green end-to-end release workflow (annotate without --generate-notes), supervisor version lockstep with 0.2.1, public-ready README (pulls, platforms, badges, SECURITY.md), accurate docs that GHCR package visibility is independent of repo visibility.",
+  "title": "Trigger Release Please patch after chore squash skipped release",
+  "intent": "Document that only feat/fix/perf open release PRs; land a fix: commit so Release Please opens 0.2.2 for the annotate-job work already on main from #13.",
   "state": "APPROVED",
   "todo_ids": [
-    "docs_01kzqvrpxt2h7v6g"
+    "cicd_01kzqx8p2cr02gak"
   ],
   "proof_hooks": [
-    "GOCACHE=/tmp/kaite-gocache go test ./...",
     "decapod validate"
   ],
   "unknowns": [],
@@ -16,13 +15,11 @@
     "Do not re-enable accelerator auto-release without matching hosts"
   ],
   "unresolved_contradictions": [],
-  "deferred_questions": [
-    "Operator must set GHCR package Public in package settings for anonymous pulls (API visibility 404 with current token)"
-  ],
+  "deferred_questions": [],
   "constraints": {
     "forbidden_paths": [],
-    "file_touch_budget": 30
+    "file_touch_budget": 25
   },
   "phases": [],
-  "updated_at": "1786433728Z"
+  "updated_at": "1786435194Z"
 }

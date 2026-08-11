@@ -93,6 +93,11 @@ the immutable tag, because tags created with `GITHUB_TOKEN` do not re-trigger
 `actions: write` so it can dispatch image builds; without that permission the
 tag and release still appear but GHCR stays empty (observed for v0.2.0).
 
+Release Please only opens a release PR when commits since the last tag include
+user-facing conventional types (`feat`, `fix`, `perf`). Squash titles of
+`chore:` / `docs:` / `ci:` produce a successful Release PR workflow run with
+**no** release PR and a skipped image dispatch (observed after #13).
+
 After active images pass verify, the **Annotate GitHub release with image tags**
 job appends a Container images section (pull table + example) to the existing
 release body. It uses `gh release edit --notes-file` (or `create` only if the
