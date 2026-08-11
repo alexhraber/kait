@@ -33,6 +33,19 @@ that dispatches and records jobs.
   broader data, Hugging Face, orchestration, and serving layers.
 - Product type: self-hosted Buildkite AI runtime.
 
+## Capability Contract
+Kaite keeps hardware and workload capability as separate contracts. The
+existing `slim` and `full` build variants select a small capability set rather
+than introducing a third image-matrix dimension: slim declares
+`data-science`, while full declares `data-science`, `training`,
+`orchestration`, and `serving`. Docker writes that identity to
+`/etc/kaite/identity.json`; the Go supervisor validates runtime overrides,
+smoke-tests representative imports, and advertises one canonical
+`kaite.capability.<name>=true` Buildkite tag per declared capability. Pipeline
+selectors therefore consume an artifact-backed contract, while organizations
+can derive images from an immutable Kaite base without rebuilding the common
+supervisor and hardware substrate.
+
 ## Architecture Map
 - `cmd/kaite/`: Go supervisor split by concern — `main`, `config`, `run`,
   `metrics`, `doctor`/`smoke`, `hardware`, `log`, `version` — plus unit tests.
@@ -184,7 +197,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `bbcc61486b1c6c224fa8e4057cb8283714a4d1e869c3879e4aa82178d8ca397b`
+- Repository signal fingerprint: `8e262b3c9e364a0c07874dde13dd5a03128cc9dba98ed8af7e7a7f4b5ee506ee`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
