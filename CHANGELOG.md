@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/alexhraber/kaite/compare/v0.2.0...v0.2.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* **ci:** make release image dispatch work (v0.2.0 GHCR gap) ([#11](https://github.com/alexhraber/kaite/issues/11)) ([34a8dc3](https://github.com/alexhraber/kaite/commit/34a8dc3dfd5485ea7a1517e6abc4fd86145d3f22))
+
 ## [0.2.0](https://github.com/alexhraber/kaite/compare/v0.1.1...v0.2.0) (2026-08-07)
 
 
