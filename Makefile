@@ -1,14 +1,31 @@
 REGISTRY ?= ghcr.io/alexhraber/kaite
 VERSION ?= dev
 AGENT_VERSION ?= 3.123.1
+BIN ?= bin/kaite
+GOCACHE ?= $(CURDIR)/.gocache
 
-.PHONY: test fmt build-plan build-cpu build-slim build-full build-all build-all-full build-all-accelerators
+export GOCACHE
+
+.PHONY: all test vet fmt build clean \
+	build-plan build-cpu build-slim build-full build-all build-all-full build-all-accelerators
+
+all: test vet build
 
 test:
 	go test ./...
 
+vet:
+	go vet ./...
+
 fmt:
 	gofmt -w cmd/kaite/*.go
+
+build:
+	mkdir -p $(dir $(BIN))
+	CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o $(BIN) ./cmd/kaite
+
+clean:
+	rm -rf bin .gocache
 
 build-plan:
 	REGISTRY=$(REGISTRY) VERSION=$(VERSION) AGENT_VERSION=$(AGENT_VERSION) docker buildx bake --print

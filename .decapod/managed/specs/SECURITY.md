@@ -85,7 +85,7 @@ are controlled by Docker or Kubernetes configuration.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Repository signal fingerprint: `6c4805884ae976e92ae4a4aa78a88d1ef2b5d83bc3a16bd9d53bdd45c03b6a87`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

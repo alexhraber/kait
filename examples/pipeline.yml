@@ -10,7 +10,7 @@ steps:
       kaite.hardware: cpu
       kaite.variant: slim
 
-  - label: ":apple: Apple Silicon CPU evaluation"
+  - label: ":apple: Apple Silicon evaluation"
     command: "kaite smoke"
     agents:
       queue: ai
@@ -18,11 +18,11 @@ steps:
       kaite.hardware: apple
       kaite.variant: full
 
-# Inactive until a matching accelerator host is deliberately enabled:
-# - label: ":cuda: NVIDIA inference"
-#   command: "kaite smoke"
-#   agents:
-#     queue: ai
-#     kaite: "true"
-#     kaite.hardware: nvidia
-#     kaite.variant: slim
+  # Accelerator hosts are manual opt-in (inactive in default CI/release):
+  # - label: ":cuda: NVIDIA inference"
+  #   command: "kaite smoke"
+  #   agents:
+  #     queue: ai
+  #     kaite: "true"
+  #     kaite.hardware: nvidia
+  #     kaite.variant: slim

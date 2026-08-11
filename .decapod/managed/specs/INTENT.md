@@ -16,25 +16,25 @@
 <!-- decapod:declared-capabilities:end -->
 
 ## Product Outcome
-Kaite provides a portable, production-ready AI execution environment that makes
-Buildkite a first-class orchestration layer for model training, evaluation,
-inference, and agent workloads. The first slice standardizes the container
-entrypoint, Buildkite agent, slim/full toolchain variants, accelerator
-selection, health/metrics surfaces, and collector-friendly logs across CPU,
-Apple Silicon arm64, NVIDIA, AMD, and Intel images.
+Kaite ships self-hosted Buildkite agents with a portable AI/ML runtime: a
+pinned agent, slim/full Python toolchains, hardware image contracts, and
+collector-friendly metrics. Operators pick an image tag for the host class and
+run ordinary Buildkite jobs inside that environment.
 
 ## What This Project Is
-Kaite is a Go-based container runtime for self-hosted Buildkite AI agents.
-The container is the workload environment: Buildkite dispatches jobs to the
-agent, and the image tag selects the target hardware contract. CPU and Apple
-arm64 are the active delivery targets for now; NVIDIA, AMD, and Intel remain
-explicit image contracts but their CI, release, and `kaite-*` runner paths are
-inactive until matching hosts are intentionally enabled.
+A small Go supervisor (`cmd/kaite`) packaged into hardware-specific Linux
+images. Buildkite remains the orchestrator; Kaite owns process supervision,
+input validation, health/metrics, and diagnostic subcommands (`doctor`,
+`smoke`, `hardware`). Active delivery targets are CPU and Apple Silicon
+(linux/arm64). NVIDIA, AMD, and Intel bake targets stay available for
+deliberate host testing but are inactive in automatic CI and release until
+matching runners exist.
 
 Key operating facts:
 - **Primary languages**: Go, Dockerfile, shell, YAML
-- **Detected surfaces**: Buildkite agent supervisor, Docker Bake image matrix,
-  Docker launcher, Kubernetes Job template, Prometheus/DogStatsD/OTel adapters
+- **Surfaces**: Go supervisor, Docker Bake matrix, Docker launcher, Kubernetes
+  Job template, Python requirement layers, Release Please + GHCR image CI
+- **Docs**: root README for operators; `docs/architecture.md` for system layout
 
 ## Product View
 ```mermaid
@@ -138,7 +138,7 @@ flowchart LR
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Repository signal fingerprint: `6c4805884ae976e92ae4a4aa78a88d1ef2b5d83bc3a16bd9d53bdd45c03b6a87`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

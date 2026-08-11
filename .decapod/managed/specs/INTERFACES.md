@@ -84,10 +84,20 @@ Canonical image tags use `<tag>-<hardware>-<variant>`, for example
 | Buildkite job failure | Buildkite policy | Child exit status | Buildkite job log and metric |
 
 ## Interface Versioning
-- Version strategy: image tags and the runtime version constant.
+- Version strategy: GHCR image tags plus the supervisor `version` constant in
+  `cmd/kaite/version.go` (kept in lockstep with the released package version,
+  currently `0.2.0`).
 - Backward compatibility: existing environment names remain stable within a
   major image line; new options are additive.
 - Deprecation: announce in README and living specs before removing an input.
+
+## Documentation Surfaces
+| Surface | Audience | Contract |
+|---|---|---|
+| Root `README.md` | Operators | Quick start, image catalog, env table, deploy pointers |
+| `CONTRIBUTING.md` | Contributors | Layout, test/vet/build, release flow |
+| `requirements/README.md` | Image builders | Python layer install order and opt-in extras |
+| `deploy/kubernetes/README.md` | Cluster operators | Job template, secrets, observability |
 
 <!-- decapod:capability-overlay:public-api:start -->
 
@@ -114,7 +124,7 @@ Canonical image tags use `<tag>-<hardware>-<variant>`, for example
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Repository signal fingerprint: `6c4805884ae976e92ae4a4aa78a88d1ef2b5d83bc3a16bd9d53bdd45c03b6a87`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
