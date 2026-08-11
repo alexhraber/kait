@@ -5,22 +5,22 @@ Validation is a release gate, not documentation theater.
 
 ## Validation Harness
 Local proof is the Makefile-backed Go harness plus the Docker Bake graph.
-Image builds and `kaite smoke` run on tagged releases (and can be run locally
+Image builds and `kait smoke` run on tagged releases (and can be run locally
 per hardware target).
 
 - Automated tests: `make test` (or `GOCACHE=… go test ./...`)
 - Static checks: `make vet`
 - Formatting: `make fmt`
-- Local binary: `make build` → `bin/kaite`
+- Local binary: `make build` → `bin/kait`
 - Image contract: `make build-plan` / `docker buildx bake --print`
 - Dependency contract: review `requirements/*.txt` install order; native CPU
-  and Apple `*-slim`/`*-full` image builds with `kaite smoke`
+  and Apple `*-slim`/`*-full` image builds with `kait smoke`
 - Governance: `decapod validate`
 
 ## Proof Surfaces
 - decapod validate
-- GOCACHE=/tmp/kaite-gocache go test ./...
-- GOCACHE=/tmp/kaite-gocache go vet ./...
+- GOCACHE=/tmp/kait-gocache go test ./...
+- GOCACHE=/tmp/kait-gocache go vet ./...
 - docker buildx bake --print
 - Kubernetes YAML review with a cluster-specific validation tool before apply
 
@@ -28,9 +28,9 @@ per hardware target).
 | Gate | Command | Evidence |
 |---|---|---|
 | Architecture and interface drift | decapod validate | Gate output |
-| Go tests pass | GOCACHE=/tmp/kaite-gocache go test ./... | CI and local logs |
+| Go tests pass | GOCACHE=/tmp/kait-gocache go test ./... | CI and local logs |
 | Bake graph valid | docker buildx bake --print | CI output |
-| Active dependency layers resolve | native CPU/Apple slim/full Docker builds | Image build logs and variant-aware `kaite smoke` |
+| Active dependency layers resolve | native CPU/Apple slim/full Docker builds | Image build logs and variant-aware `kait smoke` |
 | Docs/specs current | README and living-spec diff | PR diff |
 | Security scan | image scanner on tagged builds | Scanner reports |
 
@@ -45,9 +45,9 @@ per hardware target).
 ## Regression Guardrails
 - A missing Buildkite token must continue to fail closed.
 - Child exit codes must remain observable and non-zero when the job fails.
-- Hardware and variant tags must match the image target, KAITE_HARDWARE, and
-  KAITE_VARIANT values.
-- O11y mode changes must not require vendor credentials in the Kaite image.
+- Hardware and variant tags must match the image target, KAIT_HARDWARE, and
+  KAIT_VARIANT values.
+- O11y mode changes must not require vendor credentials in the Kait image.
 
 ## CI Flow
 1. Every pull request renders the Bake graph.
@@ -72,7 +72,7 @@ Please owns the main-to-release-PR and release-PR-to-tag transitions, while
 release annotation. The explicit dispatch is required because GitHub does not
 recursively trigger workflows from resources created with `GITHUB_TOKEN`.
 
-Supervisor version proof: `cmd/kaite` `version` constant and unit tests must
+Supervisor version proof: `cmd/kait` `version` constant and unit tests must
 match the released package version so doctor/smoke/Prometheus labels are not
 stale relative to the GitHub/GHCR tag.
 
@@ -183,7 +183,7 @@ matching inactive host jobs are deliberately enabled.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
+- Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

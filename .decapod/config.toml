@@ -12,7 +12,7 @@ entrypoints = [
 ]
 
 [repo]
-product_name = "kaite"
+product_name = "kait"
 product_summary = "Self-hosted Buildkite agents packaged with a portable AI/ML runtime: pinned agent, slim/full Python toolchains, hardware image contracts, and collector-friendly metrics for CPU and Apple Silicon (with opt-in NVIDIA/AMD/Intel paths)."
 architecture_direction = "infra"
 product_type = "service_or_library"

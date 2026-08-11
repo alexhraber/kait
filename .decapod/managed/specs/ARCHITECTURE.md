@@ -5,12 +5,12 @@ Infra-oriented container architecture with explicit runtime boundaries and
 proof-backed delivery invariants.
 
 ## What This Project Is
-Kaite is the open-source AI runtime for self-hosted Buildkite. It packages the
+Kait is the open-source AI runtime for self-hosted Buildkite. It packages the
 agent, standard Python toolchain, hardware runtime, process supervision, and
 observability adapters into one deployable image.
 
 ## Runtime Boundary
-Kaite is a Go supervisor packaged into hardware-specific Linux images. The
+Kait is a Go supervisor packaged into hardware-specific Linux images. The
 supervisor owns process lifecycle, input validation, health endpoints, metrics,
 structured logs, and Buildkite agent invocation. Buildkite remains the system
 that dispatches and records jobs.
@@ -22,7 +22,7 @@ that dispatches and records jobs.
 - Reliability: PID 1 signal handling, health/readiness endpoints, and child
   exit propagation are verified in Go.
 - Collector friendliness: vendor credentials live in Datadog/Splunk agents or
-  collectors; Kaite exposes stable signals and never owns those secrets.
+  collectors; Kait exposes stable signals and never owns those secrets.
 
 ## Current Facts
 - Runtime/languages: Go supervisor, Ubuntu-based Docker images, Python venv.
@@ -34,20 +34,20 @@ that dispatches and records jobs.
 - Product type: self-hosted Buildkite AI runtime.
 
 ## Capability Contract
-Kaite keeps hardware and workload capability as separate contracts. The
+Kait keeps hardware and workload capability as separate contracts. The
 existing `slim` and `full` build variants select a small capability set rather
 than introducing a third image-matrix dimension: slim declares
 `data-science`, while full declares `data-science`, `training`,
 `orchestration`, and `serving`. Docker writes that identity to
-`/etc/kaite/identity.json`; the Go supervisor validates runtime overrides,
+`/etc/kait/identity.json`; the Go supervisor validates runtime overrides,
 smoke-tests representative imports, and advertises one canonical
-`kaite.capability.<name>=true` Buildkite tag per declared capability. Pipeline
+`kait.capability.<name>=true` Buildkite tag per declared capability. Pipeline
 selectors therefore consume an artifact-backed contract, while organizations
-can derive images from an immutable Kaite base without rebuilding the common
+can derive images from an immutable Kait base without rebuilding the common
 supervisor and hardware substrate.
 
 ## Architecture Map
-- `cmd/kaite/`: Go supervisor split by concern — `main`, `config`, `run`,
+- `cmd/kait/`: Go supervisor split by concern — `main`, `config`, `run`,
   `metrics`, `doctor`/`smoke`, `hardware`, `log`, `version` — plus unit tests.
 - `docs/architecture.md`: human-facing deep dive (supervisor layout, image
   matrix, deploy paths, observability model, failure/exit codes, release flow).
@@ -67,20 +67,21 @@ manual opt-ins and are `linux/amd64` contracts. Versioned tags are
 latest successful release. A musl/Alpine image would be a separate dependency
 contract and is not treated as equivalent.
 
-Image delivery is host-matrixed. Active CI builds and runs `kaite smoke` on
+Image delivery is host-matrixed. Active CI builds and runs `kait smoke` on
 native CPU and arm64 hosts. Accelerator definitions and their
-`kaite-nvidia` / `kaite-amd` / `kaite-intel` runner labels remain manual
+`kait-nvidia` / `kait-amd` / `kait-intel` runner labels remain manual
 opt-ins so a green release cannot queue work on missing GPU infrastructure.
 
 ## Documentation Publication Surface
-Kaite's public documentation is a static GitHub Pages site sourced from
+Kait's public documentation is a static GitHub Pages site sourced from
 main/docs. docs/index.md is the landing page and routes readers to the
 architecture, capability-contract, and execution-substrate documents. The
 docs directory owns the Jekyll configuration and shared layout; the site does
 not require an application server or a separate deployment workflow. The
 execution-substrate article explains Buildkite as the execution substrate and
-positions Kaite as the validated capability layer that makes that model
-concrete for power users.
+positions Kait as the validated capability layer that makes that model
+concrete for power users. It closes by returning to the governing invariant:
+the workload changes; the execution model remains.
 
 ## Strongest Existing Primitives
 - Go standard-library supervisor (no third-party runtime deps); version constant
@@ -91,13 +92,13 @@ concrete for power users.
 
 ## Data Flows
 1. Docker or Kubernetes injects environment and device resources.
-2. Kaite validates KAITE_HARDWARE, KAITE_VARIANT, KAITE_O11Y, and Buildkite credentials.
-3. Kaite starts buildkite-agent start, which polls Buildkite and executes jobs.
+2. Kait validates KAIT_HARDWARE, KAIT_VARIANT, KAIT_O11Y, and Buildkite credentials.
+3. Kait starts buildkite-agent start, which polls Buildkite and executes jobs.
 4. Metrics are scraped by Prometheus or forwarded to DogStatsD/OTel
    collectors; logs remain structured on stdout/stderr.
 
 ```text
-Docker/Kubernetes -> Kaite supervisor -> Buildkite agent -> Buildkite jobs
+Docker/Kubernetes -> Kait supervisor -> Buildkite agent -> Buildkite jobs
                          |                 |
                          +-> /metrics     +-> stdout/stderr
                                            +-> DogStatsD/OTel collector
@@ -105,7 +106,7 @@ Docker/Kubernetes -> Kaite supervisor -> Buildkite agent -> Buildkite jobs
 
 ## Topology
 ```text
-Docker/Kubernetes -> Kaite -> Buildkite Agent API
+Docker/Kubernetes -> Kait -> Buildkite Agent API
         |             |              |
    device nodes   /metrics       Buildkite jobs
         |             |
@@ -115,14 +116,14 @@ Docker/Kubernetes -> Kaite -> Buildkite Agent API
 ## Store Boundaries
 ```mermaid
 flowchart LR
-  E[Executor] --> K[Kaite Container]
+  E[Executor] --> K[Kait Container]
   K --> B[Buildkite Agent API]
   K --> M[Metrics and Collectors]
   K --> J[Buildkite Job Workspace]
 ```
 
 ## Happy Path Sequence
-Executor injects token and hardware settings -> Kaite validates inputs ->
+Executor injects token and hardware settings -> Kait validates inputs ->
 agent registers with Buildkite -> Buildkite dispatches a job -> job runs in
 the selected image -> logs, artifacts, and metrics leave through their
 configured systems.
@@ -133,7 +134,7 @@ metrics listener, or child process returns a non-zero status and is visible in
 structured logs. The orchestrator owns restart and rollback.
 
 ## Execution Path
-- Ingress parse and validation: load KAITE_* and BUILDKITE_* inputs.
+- Ingress parse and validation: load KAIT_* and BUILDKITE_* inputs.
 - Policy checks: require a token in agent mode and validate the o11y enum.
 - Core execution: start and supervise the Buildkite child process.
 - Verification: expose health/metrics and propagate the child exit status.
@@ -207,7 +208,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
+- Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

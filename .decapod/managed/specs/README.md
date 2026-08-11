@@ -4,7 +4,7 @@ Canonical path: `.decapod/managed/specs/`.
 These files are the project-local contract for humans and agents.
 
 ## Snapshot
-- Project: **kaite**
+- Project: **kait**
 - Outcome: Self-hosted Buildkite agents with a portable AI/ML runtime image.
 - Primary language: Go (stdlib supervisor)
 - Surfaces: Docker Bake image matrix, Docker launcher, Kubernetes Job,
@@ -29,7 +29,7 @@ These files are the project-local contract for humans and agents.
 
 ## Contributor checklist
 - [x] Intent and acceptance criteria describe the shipping product.
-- [x] Architecture map matches `cmd/kaite/` file layout and image matrix.
+- [x] Architecture map matches `cmd/kait/` file layout and image matrix.
 - [x] Interfaces document env vars, metrics endpoints, and image tags.
 - [x] Validation gates cover `go test`, `go vet`, bake graph, and CI smoke.
 - [ ] Accelerator paths stay inactive until real host runners exist.
@@ -39,7 +39,7 @@ These files are the project-local contract for humans and agents.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
+- Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

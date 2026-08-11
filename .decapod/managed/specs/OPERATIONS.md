@@ -9,7 +9,7 @@
   inactive until their matching host pools are deliberately enabled.
 
 ## Deployment Model
-Kaite runs as a long-lived self-hosted agent or a one-shot Kubernetes Job.
+Kait runs as a long-lived self-hosted agent or a one-shot Kubernetes Job.
 Docker hosts and Kubernetes node pools select the image tag and device
 resources; the Buildkite queue selects where work is dispatched.
 
@@ -39,7 +39,7 @@ pull requests, in addition to the workflow scopes.
 
 ## Container Launch Wrapper
 `deploy/docker/run.sh` places runtime flags and environment bindings before the
-image reference, then places `KAITE_CONTAINER_COMMAND` after the image. This
+image reference, then places `KAIT_CONTAINER_COMMAND` after the image. This
 keeps agent launches and one-shot commands such as `smoke` valid for Docker
 and Kubernetes executor workflows.
 
@@ -54,31 +54,31 @@ and Kubernetes executor workflows.
 - Liveness: GET /healthz on port 9090.
 - Readiness: GET /readyz returns 200 after the Buildkite child starts.
 - Dependency health: Buildkite agent logs and child exit status.
-- Hardware check: kaite doctor and kaite-hardware.
+- Hardware check: kait doctor and kait-hardware.
 
 ## Monitoring
 | Signal | Source | Backend selection |
 |---|---|---|
-| Agent starts/exits/running | Kaite /metrics | Prometheus scrape or Splunk collector |
+| Agent starts/exits/running | Kait /metrics | Prometheus scrape or Splunk collector |
 | Runtime counters | DogStatsD | Datadog Agent |
 | Lifecycle and job logs | stdout/stderr | Buildkite, Datadog Agent, or OTel collector |
 
 ## Logging
-Kaite emits structured JSON lifecycle logs to stderr and preserves the
+Kait emits structured JSON lifecycle logs to stderr and preserves the
 Buildkite agent's stdout/stderr. Datadog and Splunk deployments should collect
 container logs with their node agent or OpenTelemetry Collector.
 
 ## Secrets
 | Secret | Source | Consumer |
 |---|---|---|
-| Buildkite agent token | Docker secret or Kubernetes Secret | Kaite entrypoint |
+| Buildkite agent token | Docker secret or Kubernetes Secret | Kait entrypoint |
 | Datadog credentials | Datadog Agent or DaemonSet Secret | Datadog Agent |
 | Splunk access token | OpenTelemetry Collector Secret | Splunk Collector |
 
 ## Incident Response
 - Detection: alert on agent exits, failed readiness, queue age, or hardware
   discovery failures.
-- Triage: inspect structured Kaite logs, Buildkite agent status, and node
+- Triage: inspect structured Kait logs, Buildkite agent status, and node
   device-plugin health.
 - Mitigation: drain the queue and roll back to the previous image tag.
 - Communication: record the affected hardware queue and observability mode.
@@ -108,7 +108,7 @@ tag-push and `workflow_dispatch` inputs.
 ### Public package pulls
 
 GHCR package visibility is **not** inherited from repository visibility. For
-anonymous pulls of `ghcr.io/<owner>/kaite:…` on a public project, set the
+anonymous pulls of `ghcr.io/<owner>/kait:…` on a public project, set the
 container package to Public under package settings. Document this for operators
 in README/CONTRIBUTING; automation via Packages REST visibility endpoints may
 return 404 depending on token scopes.
@@ -124,7 +124,7 @@ return 404 depending on token scopes.
   regresses.
 
 To activate NVIDIA, AMD, or Intel delivery, manually enable the accelerator
-workflow path only after registering the corresponding `kaite-*` runner and
+workflow path only after registering the corresponding `kait-*` runner and
 vendor device runtime.
 
 <!-- decapod:capability-overlay:background-processing:start -->
@@ -168,7 +168,7 @@ vendor device runtime.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a`
+- Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
