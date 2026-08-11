@@ -1,0 +1,8 @@
+title: Kaite documentation
+description: Capability-oriented AI and ML execution environments for Buildkite.
+url: https://alexhraber.github.io
+baseurl: /kaite
+markdown: kramdown
+permalink: pretty
+kramdown:
+  input: GFM

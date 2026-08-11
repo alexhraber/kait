@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ page.description | default: site.description }}">
+    <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+    <style>
+      :root {
+        --ink: #172033;
+        --muted: #5c687d;
+        --line: #dce3ec;
+        --paper: #f6f8fb;
+        --card: #ffffff;
+        --navy: #14213d;
+        --teal: #0f766e;
+        --teal-soft: #e6f5f2;
+        --orange: #c56a2d;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font: 16px/1.7 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--teal); }
+      a:hover { color: var(--orange); }
+      .site-header {
+        border-bottom: 1px solid rgba(220, 227, 236, .9);
+        background: rgba(246, 248, 251, .94);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+      }
+      .nav {
+        max-width: 1120px;
+        margin: 0 auto;
+        min-height: 68px;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+      .brand {
+        color: var(--navy);
+        font: 700 1.08rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: .04em;
+        text-decoration: none;
+      }
+      .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 18px;
+        font-size: .92rem;
+      }
+      .nav-links a { color: var(--muted); text-decoration: none; }
+      .nav-links a:hover { color: var(--teal); }
+      .content {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 72px 24px 96px;
+      }
+      .content > h1, .content > h2, .content > h3,
+      .content > p, .content > ul, .content > ol,
+      .content > table, .content > blockquote, .content > pre,
+      .content > hr { max-width: 780px; }
+      h1, h2, h3 {
+        color: var(--navy);
+        line-height: 1.18;
+        letter-spacing: -.025em;
+      }
+      h1 { font-size: clamp(2.35rem, 5vw, 4.4rem); margin: 0 0 24px; }
+      h2 { font-size: clamp(1.6rem, 3vw, 2.35rem); margin: 60px 0 18px; }
+      h3 { font-size: 1.25rem; margin: 36px 0 12px; }
+      p, ul, ol { margin: 0 0 20px; }
+      li { margin: 6px 0; }
+      code {
+        padding: .12em .32em;
+        border-radius: 4px;
+        background: #e9eef5;
+        font: .9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      pre {
+        overflow-x: auto;
+        padding: 20px;
+        border-radius: 10px;
+        color: #e9f2ff;
+        background: #101827;
+        box-shadow: 0 12px 28px rgba(16, 24, 39, .12);
+      }
+      pre code { padding: 0; color: inherit; background: transparent; }
+      blockquote {
+        margin: 28px 0;
+        padding: 4px 24px;
+        border-left: 4px solid var(--teal);
+        color: var(--muted);
+        font-size: 1.08rem;
+      }
+      table {
+        width: 100%;
+        margin: 24px 0;
+        border-collapse: collapse;
+        background: var(--card);
+      }
+      th, td {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      th { color: var(--navy); background: #edf2f7; }
+      .eyebrow {
+        margin-bottom: 16px;
+        color: var(--teal);
+        font: 700 .78rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+      }
+      .lede {
+        max-width: 720px;
+        color: var(--muted);
+        font-size: clamp(1.12rem, 2vw, 1.35rem);
+      }
+      .hero { padding: 28px 0 46px; }
+      .hero h1 { max-width: 780px; }
+      .hero .lede { margin-bottom: 28px; }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 24px 0 0;
+      }
+      .button {
+        display: inline-block;
+        padding: 11px 17px;
+        border: 1px solid var(--teal);
+        border-radius: 7px;
+        color: white;
+        background: var(--teal);
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .button:hover { color: white; background: var(--orange); border-color: var(--orange); }
+      .button.secondary { color: var(--navy); background: transparent; border-color: var(--line); }
+      .button.secondary:hover { color: var(--teal); border-color: var(--teal); background: white; }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin: 30px 0 52px;
+      }
+      .card {
+        display: block;
+        padding: 23px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: inherit;
+        background: var(--card);
+        text-decoration: none;
+        box-shadow: 0 5px 16px rgba(20, 33, 61, .04);
+      }
+      .card:hover { border-color: var(--teal); transform: translateY(-2px); }
+      .card h3 { margin: 0 0 8px; font-size: 1.1rem; }
+      .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+      .callout {
+        margin: 30px 0;
+        padding: 22px 24px;
+        border: 1px solid #b9e3dc;
+        border-radius: 10px;
+        background: var(--teal-soft);
+      }
+      .callout p:last-child { margin-bottom: 0; }
+      .site-footer {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 24px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: .9rem;
+      }
+      @media (max-width: 640px) {
+        .nav { align-items: flex-start; flex-direction: column; padding: 18px 20px; }
+        .nav-links { justify-content: flex-start; gap: 10px 14px; }
+        .content { padding: 48px 20px 72px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Primary">
+        <a class="brand" href="{{ '/' | relative_url }}">kaite</a>
+        <div class="nav-links">
+          <a href="{{ '/execution-substrate/' | relative_url }}">Execution substrate</a>
+          <a href="{{ '/capabilities/' | relative_url }}">Capabilities</a>
+          <a href="{{ '/architecture/' | relative_url }}">Architecture</a>
+          <a href="https://github.com/alexhraber/kaite">GitHub</a>
+        </div>
+      </nav>
+    </header>
+    <main class="content">
+      {% if page.url != '/' and page.url != '/index.html' %}
+        <p class="eyebrow">Kaite documentation</p>
+      {% endif %}
+      {{ content }}
+    </main>
+    <footer class="site-footer">
+      Kaite provides capability-oriented execution environments for self-hosted Buildkite agents.
+    </footer>
+  </body>
+</html>
