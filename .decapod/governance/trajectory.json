@@ -6,7 +6,7 @@
   "original_intent": "Produce proof artifacts for a repository validation completion.",
   "derived_intent": "Run the bounded validation gates and bind the successful receipt to a trajectory.",
   "destination": "validation completion",
-  "current_phase": "documentation implementation and validation complete",
+  "current_phase": "validation",
   "next_transitions": [
     "publish",
     "publish governed workspace"
@@ -103,7 +103,8 @@
   "evidence": [
     "Final normal decapod validate returned status ok with 186 passing gates and zero failures; only the repository's existing risk-map, watcher-audit, and unpushed-branch review warnings remained. Static site structure and navigation remain checked; local Jekyll rendering is unavailable.",
     "Static Pages structure, navigation targets, front matter, and Markdown sources were reviewed. Decapod validation returned status ok with 173 passing gates and zero failures; risk-map and watcher-audit warnings are pre-existing governance warnings. Ruby/Jekyll is unavailable locally.",
-    "validation epoch ve_9cdd6ae6abb14e3e completed with zero failures"
+    "validation epoch ve_9cdd6ae6abb14e3e completed with zero failures",
+    "validation epoch ve_c43044d5bbe5c006 completed with zero failures"
   ],
   "shortcut_risk_signals": [],
   "unresolved_assumptions": [
@@ -116,7 +117,7 @@
     "shortcut_risk": "supported",
     "completion_proof": "caution"
   },
-  "artifact_hash": "sha256:1dbd31bd156db959c74f44d326bebb1b50ec490d55123442100b0236791ace60",
+  "artifact_hash": "sha256:bb606a7445d4d08e473520c5721627aec01998e167f20aecddb84ebcd2a2e2d7",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
@@ -177,6 +178,13 @@
       {
         "sequence": 7,
         "event_id": "event:7",
+        "intent_id": "intent:validation_01KZS21CZV6C8D3K7N9TMSQ6G4",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:validation_01KZS21CZV6C8D3K7N9TMSQ6G4"
+      },
+      {
+        "sequence": 8,
+        "event_id": "event:8",
         "intent_id": "intent:validation_01KZS21CZV6C8D3K7N9TMSQ6G4",
         "kind": "trajectory_step_recorded",
         "detail": "trajectory:validation_01KZS21CZV6C8D3K7N9TMSQ6G4"
@@ -261,12 +269,32 @@
               "Normal governed validation passed; live Jekyll rendering remains unavailable locally."
             ],
             "custody_event_id": "event:7"
+          },
+          {
+            "sequence": 8,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "docs/ landing page, Jekyll config/layout, existing architecture and capability docs, new execution-substrate article, README documentation link, governed specs and receipts."
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_c43044d5bbe5c006 completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:8"
           }
         ]
       }
     },
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 7
+    "next_sequence": 8
   }
 }
