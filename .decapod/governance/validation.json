@@ -2,10 +2,10 @@
   "schema_version": "1.0.0",
   "kind": "validation_receipt",
   "decapod_release": "0.96.21",
-  "git_revision": "1c3815b29dec859415bf2767e4c2474500d38ed3",
-  "repo_signal_fingerprint": "ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a",
-  "trajectory_run_id": "validation_01KZS5MS4S5JA74Z8E09GN4KBF",
-  "trajectory_artifact_hash": "sha256:8cbca4d2ff98d2b3a2dd440e1b7289681a96ebaedcc720367e516a4745078f70",
+  "git_revision": "f2b3b4f1669b787cce790a77a6a0b866b2f13665",
+  "repo_signal_fingerprint": "78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444",
+  "trajectory_run_id": "kait-rename-20260811",
+  "trajectory_artifact_hash": "sha256:722ad5a0129ccc870b11b5313c543ebb516fa811efbae2459ed4b876f1d8c2a2",
   "validation_epoch": {
     "schema_version": "1.0.0",
     "epoch_id": "ve_06f7f1bdf6750313",
@@ -17,8 +17,8 @@
     "validation_profile_hash": "sha256:37a8eec1ce19687d132fe29051dca629d164e2c4958ba141d5f4133a33f0688f",
     "proof_rubric": "decapod-validate/current-proof-v1",
     "proof_rubric_hash": "sha256:99e8ef25629da391e9b479db9fff52b82f340224f7a69d8a88d2992ae8e90466",
-    "generated_specs_manifest_hash": "sha256:4f3aac0b37f40bf2a7d9b673d46a1914a180b68a34b82ed3d36a54f38388ce55",
-    "generated_specs_fingerprint": "ebdd4c45e9cca8258a272baab4305f9601ba9af0f8b9c84e84a0ad92a999206a",
+    "generated_specs_manifest_hash": "sha256:a3917d5fa4f0563a3b64a5f5250f1e9a41c805ca73f8aae44742978d9a63e9e5",
+    "generated_specs_fingerprint": "78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444",
     "material_hashes": {
       "constitution:core/DECAPOD": "sha256:658c5066f97f773feb6e8859911deb5bddce786cbd9a2f6466ddc0dad94846c6",
       "generated_spec:.decapod/managed/specs/ARCHITECTURE.md": "sha256:e2d6c22f63f4807bfae43b33a534f69a98bb3890a339a2bc75bcdc8d0fdeace2",
@@ -292,5 +292,5 @@
       "Use `decapod validate -v --format json` to inspect the affected gate output."
     ]
   },
-  "receipt_hash": "sha256:32c10af41a82a099cfd9c4572a4e51055185b3a9e1e0ecba465b29b40c00ba20"
+  "receipt_hash": "sha256:d53efd027795d179c0082a3e95d4b60e592937302e7faf7f3befe26aedd41dfc"
 }

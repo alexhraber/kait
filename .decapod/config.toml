@@ -44,6 +44,12 @@ approval_categories = ["destructive_operations"]
 [proof]
 commands = []
 
+[repo.migration_validation]
+command = "decapod"
+args = ["activate"]
+working_directory = "."
+timeout_seconds = 60
+
 [custody]
 isolation = "container"
 
