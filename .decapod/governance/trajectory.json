@@ -1,58 +1,36 @@
 {
   "schema_version": "1.1.0",
-  "run_id": "kait-execution-substrate-2026-08-11",
-  "intent_id": "intent:kait-execution-substrate-2026-08-11",
-  "task_id": "fend_01kzsbbcxbwgpdfb",
-  "original_intent": "Make the execution model declared by the Kait execution-substrate document real as validated Buildkite execution surfaces.",
-  "derived_intent": "Implement an aggressive authoritative capability model for slim, full, data-science, training, orchestration, and serving across dependencies, hardware, identity, tags, diagnostics, CI, release, and docs.",
-  "current_phase": "verification",
+  "run_id": "kait-execution-substrate-2026-08-11-cicd",
+  "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
+  "task_id": "cicd_01kzsb4vt3qyxcv7",
+  "original_intent": "Realize Kait execution-substrate profiles and validated Buildkite capability contracts",
+  "derived_intent": "Repair and publish the current governance bundle for the capability-contract implementation",
+  "current_phase": "validation",
   "next_transitions": [
-    "publication review",
-    "repository audit -> capability contract implementation",
-    "repository audit complete -> contract implementation"
+    "publish"
   ],
   "active_boundaries": [
-    "Kait supplies reproducible validated runtime and hardware contracts; Buildkite owns scheduling and graph semantics; no AI agent framework."
+    "Kait runtime, image identity, capability metadata, validation, CI, release, and documentation; not Buildkite orchestration"
   ],
   "repo_scope": [
-    "Dockerfile,cmd/kait,requirements,docker-bake.hcl,deploy,examples,.github/workflows,README.md,docs,tests,.decapod/managed/specs"
+    "Repository-wide execution-substrate implementation and PR governance artifacts"
   ],
   "inspected_files": [
-    ".decapod/managed/specs/ARCHITECTURE.md",
-    ".decapod/managed/specs/INTERFACES.md",
+    ".decapod/governance/claims.json",
+    ".decapod/governance/plan.json",
+    ".decapod/governance/trajectory.json",
+    ".decapod/governance/validation.json",
     ".github/workflows/build-images.yml",
-    ".github/workflows/release-images.yml",
-    "Dockerfile",
-    "README.md",
-    "cmd/kait/config.go",
-    "cmd/kait/doctor.go",
-    "cmd/kait/hardware.go",
-    "cmd/kait/identity.go",
-    "cmd/kait/main_test.go",
-    "cmd/kait/run.go",
-    "deploy/docker/run.sh",
-    "deploy/docker/smoke.sh",
-    "deploy/kubernetes/kait-agent.yaml",
-    "docker-bake.hcl",
-    "docs/architecture.md",
-    "docs/capabilities.md",
-    "docs/execution-substrate.md",
-    "examples/pipeline.yml",
-    "requirements/README.md",
-    "requirements/orchestration.txt",
-    "requirements/serving.txt",
-    "requirements/slim.txt",
-    "requirements/training.txt"
+    "cmd/kait/capability-contract.json",
+    "cmd/kait/contract.go"
   ],
   "modified_files": [
-    ".github/workflows/build-images.yml",
-    ".github/workflows/release-images.yml",
-    "Dockerfile",
-    "cmd/kait/capability-contract.json",
-    "cmd/kait/contract.go",
-    "docker-bake.hcl"
+    ".decapod/governance/trajectory.json",
+    ".decapod/governance/validation.json"
   ],
-  "declared_commands": [],
+  "declared_commands": [
+    "decapod validate"
+  ],
   "tool_calls": [],
   "checks": [
     {
@@ -64,7 +42,7 @@
       "status": "passed"
     },
     {
-      "name": "active profile matrix",
+      "name": "decapod validate",
       "status": "passed"
     },
     {
@@ -81,18 +59,14 @@
     }
   ],
   "evidence": [
-    "PR #23 checks: 12 active CPU/Apple image builds and smokes passed; accelerator jobs skipped by explicit opt-in policy",
-    "Published execution-substrate contract retrieved from alexhraber.github.io/kait/execution-substrate/",
-    "local CPU data-science doctor/smoke passed",
-    "local CPU orchestration smoke passed with Ray local execution, SQLite MLflow, disabled W&B",
-    "local CPU serving doctor/smoke passed",
-    "origin/main fetched at dfdc06a and isolated container branch fast-forwarded to that tip"
+    "Local CPU data-science and serving doctor/smoke checks passed",
+    "Local CPU orchestration smoke passed Ray local execution, SQLite MLflow, and W&B-disabled validation",
+    "PR #23 completed all 12 active CPU/Apple image builds and smoke checks",
+    "validation epoch ve_032a774c37db8933 completed with zero failures"
   ],
   "shortcut_risk_signals": [],
   "unresolved_assumptions": [
-    "NVIDIA, AMD, and Intel accelerator smoke still requires matching physical hosts",
-    "Physical accelerator smoke remains unavailable on ordinary CI hosts and is reported as such",
-    "The current repository requirement manifests and hardware bases are the source evidence for supported capability/hardware combinations until contract tests prove otherwise"
+    "NVIDIA, AMD, and Intel physical accelerator smoke remains host-dependent and is opt-in in CI"
   ],
   "completion_claim": "Capability-oriented execution contracts are implemented and validated for active CPU/Apple profiles; inactive accelerator proof remains host-dependent.",
   "proof_status": "passed",
@@ -102,21 +76,21 @@
     "shortcut_risk": "supported",
     "completion_proof": "supported"
   },
-  "artifact_hash": "sha256:8fcc04294039a2862803b3c9c52520795e46516bcb463d76cdcb8755ef3d81bf",
+  "artifact_hash": "sha256:4410c9e625d2e4905620f6ee528ae4bacea3b073a968d4e5824864275afc4bba",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
-      "intent:kait-execution-substrate-2026-08-11": {
-        "id": "intent:kait-execution-substrate-2026-08-11",
-        "raw_intent": "Make the execution model declared by the Kait execution-substrate document real as validated Buildkite execution surfaces.",
-        "refined_intent": "Implement an aggressive authoritative capability model for slim, full, data-science, training, orchestration, and serving across dependencies, hardware, identity, tags, diagnostics, CI, release, and docs.",
+      "intent:kait-execution-substrate-2026-08-11-cicd": {
+        "id": "intent:kait-execution-substrate-2026-08-11-cicd",
+        "raw_intent": "Realize Kait execution-substrate profiles and validated Buildkite capability contracts",
+        "refined_intent": "Repair and publish the current governance bundle for the capability-contract implementation",
         "acceptance_criteria": [],
         "constraints": [
-          "Dockerfile,cmd/kait,requirements,docker-bake.hcl,deploy,examples,.github/workflows,README.md,docs,tests,.decapod/managed/specs"
+          "Repository-wide execution-substrate implementation and PR governance artifacts"
         ],
         "assumptions": [],
         "boundaries": [
-          "Kait supplies reproducible validated runtime and hardware contracts; Buildkite owns scheduling and graph semantics; no AI agent framework."
+          "Kait runtime, image identity, capability metadata, validation, CI, release, and documentation; not Buildkite orchestration"
         ],
         "out_of_scope": [],
         "proof_requirements": [],
@@ -129,107 +103,83 @@
       {
         "sequence": 2,
         "event_id": "event:2",
-        "intent_id": "intent:kait-execution-substrate-2026-08-11",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
         "kind": "created"
       },
       {
         "sequence": 3,
         "event_id": "event:3",
-        "intent_id": "intent:kait-execution-substrate-2026-08-11",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
         "kind": "refined"
       },
       {
         "sequence": 4,
         "event_id": "event:4",
-        "intent_id": "intent:kait-execution-substrate-2026-08-11",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
         "kind": "trajectory_step_recorded",
-        "detail": "trajectory:kait-execution-substrate-2026-08-11"
+        "detail": "trajectory:kait-execution-substrate-2026-08-11-cicd"
       },
       {
         "sequence": 5,
         "event_id": "event:5",
-        "intent_id": "intent:kait-execution-substrate-2026-08-11",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
         "kind": "trajectory_step_recorded",
-        "detail": "trajectory:kait-execution-substrate-2026-08-11"
+        "detail": "trajectory:kait-execution-substrate-2026-08-11-cicd"
       }
     ],
     "trajectories": {
-      "kait-execution-substrate-2026-08-11": {
-        "id": "kait-execution-substrate-2026-08-11",
-        "intent_id": "intent:kait-execution-substrate-2026-08-11",
+      "kait-execution-substrate-2026-08-11-cicd": {
+        "id": "kait-execution-substrate-2026-08-11-cicd",
+        "intent_id": "intent:kait-execution-substrate-2026-08-11-cicd",
         "evidence_only": true,
         "steps": [
           {
             "sequence": 4,
-            "action": "repository audit",
-            "scope": [
-              "Dockerfile,cmd/kait,requirements,docker-bake.hcl,deploy,examples,.github/workflows,README.md,docs,tests,.decapod/managed/specs"
-            ],
-            "observations": [
-              "Dockerfile",
-              "docker-bake.hcl",
-              "cmd/kait/identity.go",
-              "cmd/kait/config.go",
-              "cmd/kait/run.go",
-              "cmd/kait/doctor.go",
-              "cmd/kait/hardware.go",
-              "cmd/kait/main_test.go",
-              "requirements/README.md",
-              "requirements/slim.txt",
-              "requirements/training.txt",
-              "requirements/orchestration.txt",
-              "requirements/serving.txt",
-              ".github/workflows/build-images.yml",
-              ".github/workflows/release-images.yml",
-              "deploy/docker/run.sh",
-              "deploy/docker/smoke.sh",
-              "deploy/kubernetes/kait-agent.yaml",
-              "examples/pipeline.yml",
-              "README.md",
-              "docs/architecture.md",
-              "docs/capabilities.md",
-              "docs/execution-substrate.md",
-              ".decapod/managed/specs/ARCHITECTURE.md",
-              ".decapod/managed/specs/INTERFACES.md",
-              "Published execution-substrate contract retrieved from alexhraber.github.io/kait/execution-substrate/",
-              "origin/main fetched at dfdc06a and isolated container branch fast-forwarded to that tip"
-            ],
-            "proof_refs": [],
-            "validation_findings": [
-              "The current repository requirement manifests and hardware bases are the source evidence for supported capability/hardware combinations until contract tests prove otherwise",
-              "Physical accelerator smoke remains unavailable on ordinary CI hosts and is reported as such"
-            ],
-            "custody_event_id": "event:4"
-          },
-          {
-            "sequence": 5,
             "action": "verification",
             "scope": [
-              "Dockerfile,cmd/kait,requirements,docker-bake.hcl,deploy,examples,.github/workflows,README.md,docs,tests,.decapod/managed/specs"
+              "Repository-wide execution-substrate implementation and PR governance artifacts"
             ],
             "observations": [
+              ".decapod/governance/claims.json",
+              ".decapod/governance/plan.json",
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              ".github/workflows/build-images.yml",
               "cmd/kait/capability-contract.json",
               "cmd/kait/contract.go",
-              "Dockerfile",
-              "docker-bake.hcl",
-              ".github/workflows/build-images.yml",
-              ".github/workflows/release-images.yml",
-              "PR #23 checks: 12 active CPU/Apple image builds and smokes passed; accelerator jobs skipped by explicit opt-in policy",
-              "local CPU data-science doctor/smoke passed",
-              "local CPU serving doctor/smoke passed",
-              "local CPU orchestration smoke passed with Ray local execution, SQLite MLflow, disabled W&B"
+              ".decapod/governance/trajectory.json",
+              "PR #23 completed all 12 active CPU/Apple image builds and smoke checks",
+              "Local CPU data-science and serving doctor/smoke checks passed",
+              "Local CPU orchestration smoke passed Ray local execution, SQLite MLflow, and W&B-disabled validation"
             ],
             "proof_refs": [
               "go test",
               "go vet",
               "git diff --check",
-              "active profile matrix",
               "PR #23 Decapod validate",
               "PR #23 active image builds and smokes"
             ],
             "validation_findings": [
-              "NVIDIA, AMD, and Intel accelerator smoke still requires matching physical hosts"
+              "NVIDIA, AMD, and Intel physical accelerator smoke remains host-dependent and is opt-in in CI"
             ],
+            "custody_event_id": "event:4"
+          },
+          {
+            "sequence": 5,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              "Repository-wide execution-substrate implementation and PR governance artifacts"
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_032a774c37db8933 completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
             "custody_event_id": "event:5"
           }
         ]
