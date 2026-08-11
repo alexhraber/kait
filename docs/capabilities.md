@@ -1,12 +1,12 @@
 ---
 layout: default
 title: Capability contract
-description: The workload and hardware capability contract exposed by Kaite images.
+description: The workload and hardware capability contract exposed by Kait images.
 ---
 
-# Kaite capability contract
+# Kait capability contract
 
-Kaite's hardware names describe where an image can run. Its capability names
+Kait's hardware names describe where an image can run. Its capability names
 describe the work the image is prepared to perform. They are separate
 contracts:
 
@@ -34,7 +34,7 @@ packages remain downstream choices.
 
 ## Image identity
 
-The Docker build writes `/etc/kaite/identity.json` with:
+The Docker build writes `/etc/kait/identity.json` with:
 
 ```json
 {
@@ -46,11 +46,11 @@ The Docker build writes `/etc/kaite/identity.json` with:
 ```
 
 The identity is derived from build arguments and is not selected by a pipeline
-or changed by an ordinary runtime environment override. `KAITE_HARDWARE`,
-`KAITE_VARIANT`, and, when supplied, `KAITE_CAPABILITIES` must agree with the
+or changed by an ordinary runtime environment override. `KAIT_HARDWARE`,
+`KAIT_VARIANT`, and, when supplied, `KAIT_CAPABILITIES` must agree with the
 baked file. A mismatch fails closed before the Buildkite agent starts.
 
-`kaite doctor` reports the identity and detected device commands. `kaite smoke`
+`kait doctor` reports the identity and detected device commands. `kait smoke`
 executes representative imports for every declared capability and performs the
 accelerator check for NVIDIA, AMD, or Intel images. CPU and Apple images do not
 claim Apple Metal passthrough; Apple is a Linux/arm64 CPU contract here.
@@ -60,13 +60,13 @@ claim Apple Metal passthrough; Apple is a Linux/arm64 CPU contract here.
 The supervisor advertises one boolean tag for each declared capability:
 
 ```text
-kaite=true
-kaite.hardware=cpu
-kaite.variant=full
-kaite.capability.data-science=true
-kaite.capability.training=true
-kaite.capability.orchestration=true
-kaite.capability.serving=true
+kait=true
+kait.hardware=cpu
+kait.variant=full
+kait.capability.data-science=true
+kait.capability.training=true
+kait.capability.orchestration=true
+kait.capability.serving=true
 ```
 
 A pipeline requests the capability it needs with ordinary Buildkite matching:
@@ -77,13 +77,13 @@ steps:
     command: "python train.py"
     agents:
       queue: ai
-      kaite.hardware: cpu
-      kaite.capability.training: "true"
+      kait.hardware: cpu
+      kait.capability.training: "true"
 ```
 
-There is no Kaite-specific pipeline parser or scheduler. `kaite.*` is a
+There is no Kait-specific pipeline parser or scheduler. `kait.*` is a
 reserved tag namespace produced by the image identity. User-supplied custom
-tags are still supported, but an attempt to replace a canonical Kaite tag is a
+tags are still supported, but an attempt to replace a canonical Kait tag is a
 configuration error.
 
 ## Compatibility and future scope
@@ -98,7 +98,7 @@ Focused `training` or `serving` artifacts can be added later by reusing the
 existing capability composition and identity contract. They should only be
 introduced when their smaller dependency sets and release/CI proof are worth a
 new artifact. Agentic execution, inference-specific servers, and distributed
-training are deferred until Kaite has dependencies and tests that justify
+training are deferred until Kait has dependencies and tests that justify
 those stronger claims.
 
 ## Downstream derivation
@@ -106,6 +106,6 @@ those stronger claims.
 Organizations can inherit from an immutable versioned image and add internal
 packages, certificates, CLIs, model libraries, security tooling, or
 configuration with ordinary Docker. The inherited identity remains the common
-Kaite contract. If the derived image replaces a package covered by a
+Kait contract. If the derived image replaces a package covered by a
 capability, the organization owns the new validation and should not reuse the
 official capability claim without re-running the smoke checks.
