@@ -12,9 +12,7 @@
     "GitHub Pages branch source main/docs",
     "Pages route and navigation review"
   ],
-  "unknowns": [
-    "GitHub Pages rendering is controlled by the repository Pages setting and cannot be fully rendered locally because Ruby/Jekyll is unavailable."
-  ],
+  "unknowns": [],
   "human_questions": [],
   "stop_conditions": [
     "Do not add a Pages deployment workflow while the repository is configured to deploy main/docs."
@@ -28,5 +26,5 @@
     "file_touch_budget": 12
   },
   "phases": [],
-  "updated_at": "1786473594Z"
+  "updated_at": "1786473626Z"
 }
