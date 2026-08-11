@@ -29,6 +29,7 @@ jobs:
             platform: linux/amd64
             base_image: ubuntu:24.04
             python_bin: python3
+            capabilities: data-science
             smoke: true
           - hardware: cpu
             variant: full
@@ -36,6 +37,7 @@ jobs:
             platform: linux/amd64
             base_image: ubuntu:24.04
             python_bin: python3
+            capabilities: data-science,training,orchestration,serving
             smoke: true
           - hardware: apple
             variant: slim
@@ -43,6 +45,7 @@ jobs:
             platform: linux/arm64
             base_image: ubuntu:24.04
             python_bin: python3
+            capabilities: data-science
             smoke: true
           - hardware: apple
             variant: full
@@ -50,6 +53,7 @@ jobs:
             platform: linux/arm64
             base_image: ubuntu:24.04
             python_bin: python3
+            capabilities: data-science,training,orchestration,serving
             smoke: true
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +68,7 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           BASE_IMAGE: ${{ matrix.base_image }}
           PYTHON_BIN: ${{ matrix.python_bin }}
+          CAPABILITIES: ${{ matrix.capabilities }}
         run: |
           set -euo pipefail
           docker buildx build \
@@ -74,6 +79,7 @@ jobs:
             --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
             --build-arg KAITE_HARDWARE="${HARDWARE}" \
             --build-arg KAITE_VARIANT="${VARIANT}" \
+            --build-arg KAITE_CAPABILITIES="${CAPABILITIES}" \
             --build-arg KAITE_PYTHON="${PYTHON_BIN}" \
             --provenance=false \
             --sbom=false \
@@ -102,36 +108,42 @@ jobs:
             platform: linux/amd64
             base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
             python_bin: python3
+            capabilities: data-science
           - hardware: nvidia
             variant: full
             runner: kaite-nvidia
             platform: linux/amd64
             base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
             python_bin: python3
+            capabilities: data-science,training,orchestration,serving
           - hardware: amd
             variant: slim
             runner: kaite-amd
             platform: linux/amd64
             base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
             python_bin: python3
+            capabilities: data-science
           - hardware: amd
             variant: full
             runner: kaite-amd
             platform: linux/amd64
             base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
             python_bin: python3
+            capabilities: data-science,training,orchestration,serving
           - hardware: intel
             variant: slim
             runner: kaite-intel
             platform: linux/amd64
             base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
             python_bin: python3.11
+            capabilities: data-science
           - hardware: intel
             variant: full
             runner: kaite-intel
             platform: linux/amd64
             base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
             python_bin: python3.11
+            capabilities: data-science,training,orchestration,serving
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -142,6 +154,7 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           BASE_IMAGE: ${{ matrix.base_image }}
           PYTHON_BIN: ${{ matrix.python_bin }}
+          CAPABILITIES: ${{ matrix.capabilities }}
         run: |
           set -euo pipefail
           docker buildx build \
@@ -152,6 +165,7 @@ jobs:
             --build-arg BUILDKITE_AGENT_VERSION=3.123.1 \
             --build-arg KAITE_HARDWARE="${HARDWARE}" \
             --build-arg KAITE_VARIANT="${VARIANT}" \
+            --build-arg KAITE_CAPABILITIES="${CAPABILITIES}" \
             --build-arg KAITE_PYTHON="${PYTHON_BIN}" \
             --provenance=false \
             --sbom=false \

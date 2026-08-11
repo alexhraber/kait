@@ -9,14 +9,24 @@ steps:
       kaite: "true"
       kaite.hardware: cpu
       kaite.variant: slim
+      kaite.capability.data-science: "true"
 
-  - label: ":apple: Apple Silicon evaluation"
+  - label: ":brain: CPU training environment"
+    command: "python train.py"
+    agents:
+      queue: ai
+      kaite: "true"
+      kaite.hardware: cpu
+      kaite.capability.training: "true"
+
+  - label: ":apple: Apple Silicon serving environment"
     command: "kaite smoke"
     agents:
       queue: ai
       kaite: "true"
       kaite.hardware: apple
       kaite.variant: full
+      kaite.capability.serving: "true"
 
   # Accelerator hosts are manual opt-in (inactive in default CI/release):
   # - label: ":cuda: NVIDIA inference"
@@ -26,3 +36,4 @@ steps:
   #     kaite: "true"
   #     kaite.hardware: nvidia
   #     kaite.variant: slim
+  #     kaite.capability.data-science: "true"

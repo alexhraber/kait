@@ -1,13 +1,16 @@
 {
   "schema_version": "1.0.0",
-  "title": "Trigger Release Please patch after chore squash skipped release",
-  "intent": "Document that only feat/fix/perf open release PRs; land a fix: commit so Release Please opens 0.2.2 for the annotate-job work already on main from #13.",
+  "title": "Make Kaite workload capabilities explicit and schedulable",
+  "intent": "Evolve Kaite's existing hardware plus slim/full image substrate into a truthful capability-set contract. Preserve current image and runtime interfaces while making the existing data-science, training, orchestration, and serving layers explicit in image identity, supervisor validation, Buildkite agent tags, pipeline examples, CI/release metadata, and documentation. Do not add a new framework or a Cartesian image matrix.",
   "state": "APPROVED",
   "todo_ids": [
-    "cicd_01kzqx8p2cr02gak"
+    "code_01kzrxk1c4sx7ah3"
   ],
   "proof_hooks": [
-    "decapod validate"
+    "decapod validate",
+    "go test ./...",
+    "docker buildx bake --print",
+    "make test"
   ],
   "unknowns": [],
   "human_questions": [],
@@ -18,8 +21,8 @@
   "deferred_questions": [],
   "constraints": {
     "forbidden_paths": [],
-    "file_touch_budget": 25
+    "file_touch_budget": 45
   },
   "phases": [],
-  "updated_at": "1786435194Z"
+  "updated_at": "1786469333Z"
 }

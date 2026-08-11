@@ -1,66 +1,51 @@
 {
   "schema_version": "1.1.0",
-  "run_id": "release-please-chore-skip",
-  "intent_id": "intent:release-please-chore-skip",
-  "task_id": "cicd_01kzqx8p2cr02gak",
-  "original_intent": "merged PR #13 but it failed to generate a new release",
-  "derived_intent": "fix: commit + docs so Release Please opens patch release PR",
-  "current_phase": "validation",
+  "run_id": "kaite-capabilities-20260811",
+  "intent_id": "intent:kaite-capabilities-20260811",
+  "task_id": "code_01kzrxk1c4sx7ah3",
+  "original_intent": "Evolve Kaite toward first-class, opinionated AI/ML execution capabilities for self-hosted Buildkite agents while preserving direct use and downstream derivation.",
+  "derived_intent": "Make the existing requirement layers and hardware contracts explicit as a small capability set, bind image identity to runtime validation, advertise truthful Buildkite tags, and update active docs/CI/release surfaces without adding a matrix dimension.",
+  "destination": "isolated Decapod workspace",
+  "current_phase": "repository analysis and architecture selection",
   "next_transitions": [
-    "publish"
+    "implement after evidence-backed design"
   ],
   "active_boundaries": [
-    "INV-ROOT-ISOLATION"
+    "Do not modify protected main; preserve Docker/Buildkite/Release Please interfaces unless the new contract requires additive evolution; do not enable inactive accelerator hosts."
   ],
   "repo_scope": [
-    ".decapod/managed/specs/",
-    "CONTRIBUTING.md",
-    "release-please-config.json"
+    "Dockerfile, docker-bake.hcl, cmd/kaite, requirements docs, deploy examples, GitHub image/release workflows, README/docs, tests, and required governance artifacts"
   ],
   "inspected_files": [],
-  "modified_files": [
-    ".decapod/governance/trajectory.json",
-    ".decapod/governance/validation.json"
-  ],
-  "declared_commands": [
-    "decapod validate"
-  ],
+  "modified_files": [],
+  "declared_commands": [],
   "tool_calls": [],
-  "checks": [
-    {
-      "name": "decapod validate",
-      "status": "passed"
-    }
-  ],
-  "evidence": [
-    "validation epoch ve_a1d44123277044cd completed with zero failures"
-  ],
+  "checks": [],
+  "evidence": [],
   "shortcut_risk_signals": [],
   "unresolved_assumptions": [],
-  "proof_status": "passed",
+  "proof_status": "no_checks_run",
   "verdicts": {
     "intent_alignment": "supported",
     "boundary_discipline": "supported",
     "shortcut_risk": "supported",
-    "completion_proof": "supported"
+    "completion_proof": "unsupported"
   },
-  "artifact_hash": "sha256:7117eaf2b8c1f8141f1cd0e49a849a4ebd5feb8865d73afac5b7f219dbb73c23",
+  "artifact_hash": "sha256:9d8332ca0929705b23de1fa14294dc3096ce699af26873cf20b84eea9492961b",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
-      "intent:release-please-chore-skip": {
-        "id": "intent:release-please-chore-skip",
-        "raw_intent": "merged PR #13 but it failed to generate a new release",
-        "refined_intent": "fix: commit + docs so Release Please opens patch release PR",
+      "intent:kaite-capabilities-20260811": {
+        "id": "intent:kaite-capabilities-20260811",
+        "raw_intent": "Evolve Kaite toward first-class, opinionated AI/ML execution capabilities for self-hosted Buildkite agents while preserving direct use and downstream derivation.",
+        "refined_intent": "Make the existing requirement layers and hardware contracts explicit as a small capability set, bind image identity to runtime validation, advertise truthful Buildkite tags, and update active docs/CI/release surfaces without adding a matrix dimension.",
         "acceptance_criteria": [],
         "constraints": [
-          "CONTRIBUTING.md",
-          "release-please-config.json",
-          ".decapod/managed/specs/"
+          "Dockerfile, docker-bake.hcl, cmd/kaite, requirements docs, deploy examples, GitHub image/release workflows, README/docs, tests, and required governance artifacts"
         ],
         "assumptions": [],
         "boundaries": [
-          "INV-ROOT-ISOLATION"
+          "Do not modify protected main; preserve Docker/Buildkite/Release Please interfaces unless the new contract requires additive evolution; do not enable inactive accelerator hosts."
         ],
         "out_of_scope": [],
         "proof_requirements": [],
@@ -73,81 +58,19 @@
       {
         "sequence": 2,
         "event_id": "event:2",
-        "intent_id": "intent:release-please-chore-skip",
+        "intent_id": "intent:kaite-capabilities-20260811",
         "kind": "created"
       },
       {
         "sequence": 3,
         "event_id": "event:3",
-        "intent_id": "intent:release-please-chore-skip",
+        "intent_id": "intent:kaite-capabilities-20260811",
         "kind": "refined"
-      },
-      {
-        "sequence": 4,
-        "event_id": "event:4",
-        "intent_id": "intent:release-please-chore-skip",
-        "kind": "trajectory_step_recorded",
-        "detail": "trajectory:release-please-chore-skip"
-      },
-      {
-        "sequence": 5,
-        "event_id": "event:5",
-        "intent_id": "intent:release-please-chore-skip",
-        "kind": "trajectory_step_recorded",
-        "detail": "trajectory:release-please-chore-skip"
       }
     ],
-    "trajectories": {
-      "release-please-chore-skip": {
-        "id": "release-please-chore-skip",
-        "intent_id": "intent:release-please-chore-skip",
-        "evidence_only": true,
-        "steps": [
-          {
-            "sequence": 4,
-            "action": "validation",
-            "command": "decapod validate",
-            "scope": [
-              ".decapod/managed/specs/",
-              "CONTRIBUTING.md",
-              "release-please-config.json"
-            ],
-            "observations": [
-              ".decapod/governance/trajectory.json",
-              ".decapod/governance/validation.json",
-              "validation epoch ve_a1d44123277044cd completed with zero failures"
-            ],
-            "proof_refs": [
-              "decapod validate"
-            ],
-            "validation_findings": [],
-            "custody_event_id": "event:4"
-          },
-          {
-            "sequence": 5,
-            "action": "validation",
-            "command": "decapod validate",
-            "scope": [
-              ".decapod/managed/specs/",
-              "CONTRIBUTING.md",
-              "release-please-config.json"
-            ],
-            "observations": [
-              ".decapod/governance/trajectory.json",
-              ".decapod/governance/validation.json",
-              "validation epoch ve_a1d44123277044cd completed with zero failures"
-            ],
-            "proof_refs": [
-              "decapod validate"
-            ],
-            "validation_findings": [],
-            "custody_event_id": "event:5"
-          }
-        ]
-      }
-    },
+    "trajectories": {},
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 5
+    "next_sequence": 3
   }
 }

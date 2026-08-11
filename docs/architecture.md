@@ -2,7 +2,7 @@
 
 Kaite is a **thin Go supervisor** packaged into **hardware-specific Linux
 images**. Buildkite remains the orchestrator; Kaite owns process lifecycle,
-input validation, health/metrics, and a few diagnostic subcommands.
+image/runtime identity validation, health/metrics, and diagnostic subcommands.
 
 If you only need to run an agent, start with the [root README](../README.md).
 This document is the deeper layout for contributors and operators who want to
@@ -34,6 +34,7 @@ Design choices that stay fixed:
 | Ubuntu/glibc bases | Shared wheel and vendor-runtime contract; musl would be a separate product |
 | Collector-friendly o11y | Vendor secrets stay on Datadog/Splunk agents, not in the image |
 | Slim vs full variants | Same supervisor; package footprint is a build-time matrix, not a fork |
+| Baked capability identity | The image declares its supported workload layers and the supervisor refuses conflicting runtime identity |
 
 ## Repository map
 
@@ -41,7 +42,7 @@ Design choices that stay fixed:
 | --- | --- |
 | [`cmd/kaite/`](../cmd/kaite/) | Go supervisor and unit tests |
 | [`Dockerfile`](../Dockerfile) | Multi-stage image: build supervisor → runtime + agent + venv |
-| [`docker-bake.hcl`](../docker-bake.hcl) | Image matrix (hardware × slim/full) |
+| [`docker-bake.hcl`](../docker-bake.hcl) | Image matrix (hardware × compatibility variant) and capability build args |
 | [`requirements/`](../requirements/) | Layered Python manifests |
 | [`deploy/docker/`](../deploy/docker/) | Local launcher and smoke wrapper |
 | [`deploy/kubernetes/`](../deploy/kubernetes/) | One-shot Buildkite agent Job |
@@ -82,18 +83,30 @@ Runtime is entirely environment-driven. The important knobs:
 
 | Variable | Values | Notes |
 | --- | --- | --- |
-| `KAITE_HARDWARE` | `cpu` `apple` `nvidia` `amd` `intel` | Selects expected device contract and default tags |
-| `KAITE_VARIANT` | `slim` `full` | Must match the image tag footprint |
+| `KAITE_HARDWARE` | `cpu` `apple` `nvidia` `amd` `intel` | Must match the baked image device contract |
+| `KAITE_VARIANT` | `slim` `full` | Compatibility package-footprint selector; must match the baked image |
+| `KAITE_CAPABILITIES` | comma-separated capability names | Optional runtime assertion; must match the baked image when set |
 | `KAITE_O11Y` | `none` `prometheus` `datadog` `splunk` | Metrics/log adapter selection |
 | `KAITE_RUN_MODE` | `agent` `command` | Production vs diagnostics |
 | `BUILDKITE_AGENT_TOKEN` / `_FILE` | secret | Exactly one required in agent mode |
 | `BUILDKITE_AGENT_*` | agent CLI flags | Name, queue, tags, endpoint, disconnect, … |
 
+Official images write `/etc/kaite/identity.json` during the Docker build. It
+contains the schema version, hardware, compatibility variant, and capability
+set. The file is the runtime authority because ordinary container environment
+variables can be overridden by a caller. OCI labels repeat the build inputs for
+image inspection, but the supervisor validates the identity file.
+
 When `BUILDKITE_AGENT_TAGS` is unset, Kaite supplies:
 
 ```text
-kaite=true,kaite.hardware=<hw>,kaite.variant=<variant>,kaite.o11y=<o11y>
+kaite=true,kaite.hardware=<hw>,kaite.variant=<variant>,kaite.o11y=<o11y>,kaite.capability.data-science=true,...
 ```
+
+Custom tags are preserved and appended before these canonical tags. Reserved
+`kaite` and `kaite.*` tags may repeat the exact canonical value, but conflicting
+values fail before the Buildkite agent starts. This keeps a pipeline's selector
+truthful without inventing a scheduler or a second tag system.
 
 Token values are never written into argv when the env-token path is used; the
 file-token path uses Buildkite’s `file://` syntax so the secret stays on disk.
@@ -131,6 +144,8 @@ Tag shapes:
 
 - Versioned: `kaite:<semver>-<hardware>-<variant>` (e.g. `v0.2.0-cpu-slim`)
 - Stable aliases: `cpu-slim`, `cpu-full`, `apple-slim`, `apple-full`
+- Capability aliases: `cpu-data-science`, `cpu-training`, `cpu-orchestration`,
+  `cpu-serving` (aliases to the existing slim/full artifacts, not extra builds)
 - Compatibility: bare `cpu` / `apple` still point at slim
 
 ### Build layers inside the image
@@ -139,17 +154,22 @@ Tag shapes:
 2. **Runtime base** — Ubuntu or vendor image (`BASE_IMAGE`).
 3. **System packages** — bash, curl, git, tini, Python venv tooling.
 4. **Buildkite agent** — pinned release, SHA256-verified install under `/buildkite`.
-5. **Python venv** — layered requirements (see below).
-6. **Entrypoint** — `tini` → `/usr/local/bin/kaite`.
+5. **Python venv** — layered requirements selected by the capability set (see below).
+6. **Identity** — `/etc/kaite/identity.json` plus OCI labels.
+7. **Entrypoint** — `tini` → `/usr/local/bin/kaite`.
 
 ### Python requirement layers
 
 Install order matters so the hardware PyTorch wheel wins:
 
-| Variant | Manifests (in order) |
+| Capability set | Manifests (in order) |
 | --- | --- |
-| slim | `slim.txt` → `<hardware>.txt` |
-| full | slim set → `base.txt` → `training.txt` → `orchestration.txt` → `serving.txt` |
+| `data-science` | `slim.txt` → `<hardware>.txt` |
+| `data-science,training,orchestration,serving` | data-science set → `base.txt` → `training.txt` → `orchestration.txt` → `serving.txt` |
+
+The current `slim` and `full` targets select those two sets. The capability set
+is explicit in Bake and in the image identity, so a future focused artifact can
+reuse the same composition without adding a new Dockerfile or supervisor mode.
 
 Non-portable packages (DeepSpeed, bitsandbytes, FlashAttention, vLLM, s3fs, …)
 are **not** defaults. Operators pass them with `KAITE_EXTRA_PYTHON_PACKAGES` at
@@ -189,10 +209,13 @@ Jobs select Kaite agents with tags, not image pulls inside the step:
 agents:
   queue: ai
   kaite.hardware: cpu
-  kaite.variant: slim
+  kaite.capability.training: "true"
 ```
 
 The image already is the job environment; the step command runs inside it.
+Capability tags are ordinary Buildkite agent tags, not a Kaite pipeline schema.
+The producer is the Kaite supervisor, the consumer is Buildkite's agent
+matcher, and `kaite smoke` is the local proof surface.
 
 ## Observability model
 
@@ -246,13 +269,16 @@ via `make build-*` (requires Docker Buildx; Podman-only hosts may lack bake).
 ## Non-goals (current slice)
 
 - Apple Metal / GPU passthrough inside Ubuntu containers
-- Framework-specific image forks beyond slim/full + hardware
+- A third public image-matrix dimension or framework-specific image forks
+- Agentic, inference-server, or distributed-training claims without dedicated
+  dependencies and representative runtime proof
 - Embedding checkpoint stores or object-store credentials in the supervisor
 - Replacing Buildkite as the job dispatcher
 
 ## Related docs
 
 - [README](../README.md) — quick start and env table
+- [Capability contract](capabilities.md) — identity, Buildkite selectors, and derivation semantics
 - [CONTRIBUTING](../CONTRIBUTING.md) — local build and PR expectations
 - [requirements/README](../requirements/README.md) — Python layer details
 - [deploy/kubernetes/README](../deploy/kubernetes/README.md) — cluster Job notes

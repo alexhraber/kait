@@ -14,14 +14,15 @@ import (
 )
 
 type metrics struct {
-	starts    atomic.Uint64
-	exits     atomic.Uint64
-	running   atomic.Int64
-	lastExit  atomic.Int64
-	startTime time.Time
-	hardware  string
-	variant   string
-	o11y      string
+	starts       atomic.Uint64
+	exits        atomic.Uint64
+	running      atomic.Int64
+	lastExit     atomic.Int64
+	startTime    time.Time
+	hardware     string
+	variant      string
+	capabilities string
+	o11y         string
 }
 
 type dogStatsD struct {
@@ -71,7 +72,7 @@ func shutdownServer(server *http.Server) {
 }
 
 func (m *metrics) prometheus() string {
-	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",variant=\"" + prometheusLabel(m.variant) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
+	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",variant=\"" + prometheusLabel(m.variant) + "\",capabilities=\"" + prometheusLabel(m.capabilities) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
 	var b strings.Builder
 	fmt.Fprintf(&b, "# HELP kaite_info Kaite runtime build and configuration information.\n# TYPE kaite_info gauge\nkaite_info{version=\"%s\",%s} 1\n", version, labels)
 	fmt.Fprintf(&b, "# HELP kaite_agent_starts_total Number of child process starts.\n# TYPE kaite_agent_starts_total counter\nkaite_agent_starts_total{%s} %d\n", labels, m.starts.Load())

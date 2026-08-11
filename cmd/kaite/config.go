@@ -8,8 +8,10 @@ import (
 )
 
 type config struct {
+	identity       identity
 	hardware       string
 	variant        string
+	capabilities   []string
 	o11y           string
 	runMode        string
 	metricsAddr    string
@@ -20,9 +22,15 @@ type config struct {
 }
 
 func loadConfig() (config, error) {
+	id, err := loadRuntimeIdentity()
+	if err != nil {
+		return config{}, err
+	}
 	cfg := config{
-		hardware:       lowerEnv("KAITE_HARDWARE", "cpu"),
-		variant:        lowerEnv("KAITE_VARIANT", "slim"),
+		identity:       id,
+		hardware:       id.Hardware,
+		variant:        id.Variant,
+		capabilities:   id.Capabilities,
 		o11y:           lowerEnv("KAITE_O11Y", "none"),
 		runMode:        lowerEnv("KAITE_RUN_MODE", "agent"),
 		metricsAddr:    os.Getenv("KAITE_METRICS_ADDR"),

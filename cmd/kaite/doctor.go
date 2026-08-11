@@ -5,12 +5,19 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 )
 
 func writeDoctor(w io.Writer) error {
+	id, err := loadRuntimeIdentity()
+	if err != nil {
+		return err
+	}
 	result := map[string]any{
-		"version": version,
-		"variant": lowerEnv("KAITE_VARIANT", "slim"),
+		"version":      version,
+		"identity":     id,
+		"capabilities": id.Capabilities,
+		"variant":      id.Variant,
 		"hardware": map[string]bool{
 			"cpu":    true,
 			"apple":  true,
@@ -25,56 +32,76 @@ func writeDoctor(w io.Writer) error {
 }
 
 func writeSmoke(w io.Writer) error {
-	hardware := lowerEnv("KAITE_HARDWARE", "cpu")
-	variant := lowerEnv("KAITE_VARIANT", "slim")
-	if err := validateVariant(variant); err != nil {
-		return err
+	configuredHardware := lowerEnv("KAITE_HARDWARE", "cpu")
+	if err := validateHardware(configuredHardware); err != nil {
+		return fmt.Errorf("unsupported KAITE_HARDWARE=%s", configuredHardware)
 	}
-	frameworkCheck, err := smokeFrameworkCheck(hardware, variant)
+	id, err := loadRuntimeIdentity()
 	if err != nil {
 		return err
 	}
-	if hardware == "nvidia" || hardware == "amd" || hardware == "intel" {
+	frameworkCheck, err := smokeFrameworkCheck(id.Hardware, id.Capabilities)
+	if err != nil {
+		return err
+	}
+	if id.Hardware == "nvidia" || id.Hardware == "amd" || id.Hardware == "intel" {
 		if err := writeHardware(w); err != nil {
 			return err
 		}
 	}
 	if err := runCheck(w, "python", "-c", frameworkCheck); err != nil {
-		return fmt.Errorf("%s framework check: %w", hardware, err)
+		return fmt.Errorf("%s framework check: %w", id.Hardware, err)
 	}
-	fmt.Fprintf(w, "kaite smoke: %s-%s ready\n", hardware, variant)
+	fmt.Fprintf(w, "kaite smoke: %s-%s capabilities=%s ready\n", id.Hardware, id.Variant, strings.Join(id.Capabilities, ","))
 	return nil
 }
 
-func smokeFrameworkCheck(hardware, variant string) (string, error) {
-	switch hardware {
-	case "cpu", "apple":
-		if hardware == "apple" {
-			if err := requireAppleArch(); err != nil {
-				return "", err
-			}
-		}
-		if variant == "full" {
-			return `import accelerate, datasets, diffusers, fastapi, gradio, lightning, mlflow, ray, torch, transformers, uvicorn, wandb; print("full AI/ML toolchain ready")`, nil
-		}
-		return `import numpy, sklearn, torch; print("cpu toolchain ready")`, nil
-	case "nvidia", "amd":
-		if variant == "full" {
-			return `import accelerate, datasets, diffusers, fastapi, gradio, lightning, mlflow, ray, transformers, uvicorn, wandb; import torch; assert torch.cuda.is_available(), "torch cannot see the accelerator"; print(torch.cuda.get_device_name(0))`, nil
-		}
-		return `import torch; assert torch.cuda.is_available(), "torch cannot see the accelerator"; print(torch.cuda.get_device_name(0))`, nil
-	case "intel":
-		if variant == "full" {
-			return `import accelerate, datasets, diffusers, fastapi, gradio, lightning, mlflow, ray, transformers, uvicorn, wandb; import torch, intel_extension_for_pytorch; assert torch.xpu.is_available(), "torch cannot see the XPU"; print(torch.xpu.get_device_name(0))`, nil
-		}
-		return `import torch, intel_extension_for_pytorch; assert torch.xpu.is_available(), "torch cannot see the XPU"; print(torch.xpu.get_device_name(0))`, nil
-	default:
-		return "", fmt.Errorf("unsupported KAITE_HARDWARE=%s", hardware)
+func smokeFrameworkCheck(hardware string, capabilities []string) (string, error) {
+	if err := validateHardware(hardware); err != nil {
+		return "", err
 	}
+	if hardware == "apple" {
+		if err := requireAppleArch(); err != nil {
+			return "", err
+		}
+	}
+	imports := make([]string, 0, len(capabilities))
+	messages := make([]string, 0, len(capabilities))
+	for _, capability := range capabilities {
+		switch capability {
+		case "data-science":
+			imports = append(imports, "import numpy, sklearn, torch")
+			messages = append(messages, "data-science")
+		case "training":
+			imports = append(imports, "import accelerate, datasets, diffusers, lightning, transformers")
+			messages = append(messages, "training")
+		case "orchestration":
+			imports = append(imports, "import mlflow, ray, wandb")
+			messages = append(messages, "orchestration")
+		case "serving":
+			imports = append(imports, "import fastapi, gradio, uvicorn")
+			messages = append(messages, "serving")
+		default:
+			return "", fmt.Errorf("unsupported Kaite capability %s", capability)
+		}
+	}
+	check := strings.Join(imports, "; ")
+	switch hardware {
+	case "nvidia", "amd":
+		check += `; assert torch.cuda.is_available(), "torch cannot see the accelerator"; print(torch.cuda.get_device_name(0))`
+	case "intel":
+		check += `; import intel_extension_for_pytorch; assert torch.xpu.is_available(), "torch cannot see the XPU"; print(torch.xpu.get_device_name(0))`
+	}
+	check += `; print("Kaite capabilities ready: ` + strings.Join(messages, ",") + `")`
+	return check, nil
 }
 
 func writeHardware(w io.Writer) error {
-	hardware := lowerEnv("KAITE_HARDWARE", "cpu")
+	id, err := loadRuntimeIdentity()
+	if err != nil {
+		return err
+	}
+	hardware := id.Hardware
 	switch hardware {
 	case "cpu":
 		fmt.Fprintln(w, "cpu")

@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"time"
 )
 
@@ -40,16 +41,18 @@ func main() {
 	}
 
 	stats := &metrics{
-		startTime: time.Now().UTC(),
-		hardware:  cfg.hardware,
-		variant:   cfg.variant,
-		o11y:      cfg.o11y,
+		startTime:    time.Now().UTC(),
+		hardware:     cfg.hardware,
+		variant:      cfg.variant,
+		capabilities: strings.Join(cfg.capabilities, ","),
+		o11y:         cfg.o11y,
 	}
 	logEvent("info", "runtime_starting", map[string]string{
-		"hardware": cfg.hardware,
-		"variant":  cfg.variant,
-		"o11y":     cfg.o11y,
-		"run_mode": cfg.runMode,
+		"hardware":     cfg.hardware,
+		"variant":      cfg.variant,
+		"capabilities": strings.Join(cfg.capabilities, ","),
+		"o11y":         cfg.o11y,
+		"run_mode":     cfg.runMode,
 	})
 
 	server, listener, err := startMetricsServer(cfg.metricsAddr, stats)

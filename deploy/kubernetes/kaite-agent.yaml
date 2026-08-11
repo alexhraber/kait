@@ -33,7 +33,7 @@ spec:
                   name: buildkite-agent
                   key: token
             - name: BUILDKITE_AGENT_TAGS
-              value: kaite=true,kaite.hardware=cpu,kaite.variant=slim,kaite.o11y=prometheus
+              value: kaite=true,kaite.hardware=cpu,kaite.variant=slim,kaite.o11y=prometheus,kaite.capability.data-science=true
             - name: BUILDKITE_AGENT_QUEUE
               value: ai
             - name: BUILDKITE_AGENT_DISCONNECT_AFTER_JOB
