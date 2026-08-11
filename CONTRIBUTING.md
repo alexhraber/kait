@@ -24,7 +24,7 @@ make build-cpu    # local cpu-slim bake
 | --- | --- |
 | `cmd/kaite/` | Go supervisor (config, process lifecycle, metrics, doctor/smoke) |
 | `docs/architecture.md` | System layout, image matrix, deploy and failure model |
-| `Dockerfile` + `docker-bake.hcl` | Image matrix |
+| `Dockerfile` + `docker-bake.hcl` | Image matrix and baked capability identity |
 | `requirements/` | Python layer manifests |
 | `deploy/` | Docker launcher and Kubernetes Job template |
 | `examples/` | Buildkite pipeline snippets |
@@ -39,6 +39,10 @@ to pull something in.
 - Match existing style; run `make fmt` and `make test` before opening.
 - If you change runtime behavior, env contracts, or image tags, update
   `README.md` (and `requirements/README.md` or deploy docs when relevant).
+- Capability changes must also update the identity composition in `Dockerfile`,
+  representative checks in `cmd/kaite/doctor.go`, and
+  `examples/pipeline.yml`. Keep `kaite.*` agent tags canonical: custom tags may
+  add routing metadata but must not replace image hardware or capabilities.
 - Bump the `version` constant in `cmd/kaite/version.go` only when shipping a
   release that should surface a new supervisor identity; Release Please owns
   the package changelog and git tags.

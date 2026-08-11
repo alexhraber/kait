@@ -7,15 +7,16 @@
 [![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.96.18-dc2626)](https://github.com/DecapodLabs/decapod)
 
 Self-hosted [Buildkite](https://buildkite.com) agents with a batteries-included
-AI/ML runtime. One image ships the agent, a pinned Python toolchain, hardware
-contracts, and lightweight observability.
+AI/ML execution environment. Choose the work capability and hardware; the
+image already contains the Buildkite agent, pinned Python toolchain, hardware
+contract, diagnostics, and lightweight observability.
 
 Pronounced “kite” — the ai is just a harder i.
 
 ## Quick start
 
 ```bash
-# Pull the latest CPU slim image (stable alias)
+# Pull the latest data-science environment (stable alias)
 docker pull ghcr.io/alexhraber/kaite:cpu-slim
 
 # Run as a Buildkite agent
@@ -26,6 +27,10 @@ KAITE_O11Y=prometheus \
 KAITE_IMAGE=ghcr.io/alexhraber/kaite:cpu-slim \
   ./deploy/docker/run.sh
 ```
+
+For a training or serving job, use the full environment and select the
+capability in the pipeline. The worker advertises the capabilities baked into
+the image; the pipeline does not install them at job start.
 
 Pin a release for production:
 
@@ -44,15 +49,32 @@ Registry: [`ghcr.io/alexhraber/kaite`](https://github.com/alexhraber/kaite/pkgs/
 
 | Tag | Platform (published) | Footprint |
 | --- | --- | --- |
-| `cpu-slim` / `cpu-full` | `linux/amd64` | Agent + CPU PyTorch |
+| `cpu-slim` / `cpu-full` | `linux/amd64` | Agent + CPU PyTorch; data-science or all supported layers |
 | `apple-slim` / `apple-full` | `linux/arm64` | Same stack for Apple Silicon hosts |
 | `vX.Y.Z-<hardware>-<variant>` | as above | Immutable release tags |
 
 `slim` is the compact data-science stack. `full` adds Hugging Face training,
 Ray/MLflow/W&B, and FastAPI/Gradio serving.
 
+The current capability set is deliberately small:
+
+| Capability | Available in | Contract |
+| --- | --- | --- |
+| `data-science` | slim and full | NumPy, pandas, scikit-learn, Jupyter, and hardware-specific PyTorch |
+| `training` | full | Hugging Face, Lightning, and model-training frameworks |
+| `orchestration` | full | Ray plus MLflow and W&B |
+| `serving` | full | FastAPI, Gradio, and Uvicorn |
+
+Every official image records this set in `/etc/kaite/identity.json`, exposes it
+through `kaite doctor`, and advertises it to Buildkite as
+`kaite.capability.<name>=true`. `slim` and `full` remain compatibility names;
+they describe package footprints, while capabilities describe usable work.
+
 Versioned tags: `v0.2.1-cpu-slim`, `v0.2.1-apple-full`, …. Unversioned aliases
 (`cpu-slim`, …) track the latest successful release.
+Capability aliases such as `cpu-training` and `cpu-serving` point at the
+corresponding full artifact; they improve discoverability without creating
+additional images or a new matrix dimension.
 
 NVIDIA / AMD / Intel bake targets exist for deliberate host testing but are
 **inactive** in automatic CI/release. Opt in with `make build-all-accelerators`
@@ -85,7 +107,13 @@ kaite smoke     # framework + device check (used by CI)
 kaite hardware  # accelerator CLI output
 ```
 
-Deeper layout: [docs/architecture.md](docs/architecture.md).
+`kaite doctor` reports the baked identity and detected devices. `kaite smoke`
+validates representative imports for each declared capability and performs
+the hardware check when an accelerator is expected. Runtime attempts to
+override the baked hardware, variant, or capability set fail closed.
+
+Deeper layout: [docs/architecture.md](docs/architecture.md) and the
+[capability contract](docs/capabilities.md).
 
 ## Deploy
 
@@ -99,19 +127,46 @@ Deeper layout: [docs/architecture.md](docs/architecture.md).
 agents:
   queue: ai
   kaite.hardware: cpu
-  kaite.variant: slim
+  kaite.capability.data-science: "true"
 ```
+
+Training and serving jobs request `kaite.capability.training: "true"` or
+`kaite.capability.serving: "true"` and can land on a full worker. The old
+`kaite.variant` selector remains valid for compatibility, but it is not a
+workload promise. See [`examples/pipeline.yml`](examples/pipeline.yml) for a
+complete set of selectors. Kaite reserves `kaite.*` agent tags so custom tags
+cannot silently contradict the image identity.
 
 ## Toolchain layers
 
 | Layer | Installed when | Contents |
 | --- | --- | --- |
-| `slim.txt` + `<hardware>.txt` | every image | NumPy/pandas/sklearn/Jupyter + hardware PyTorch |
-| `base.txt` `training.txt` `orchestration.txt` `serving.txt` | `*-full` only | broader science, HF stack, Ray/MLflow/W&B, FastAPI/Gradio |
+| `slim.txt` + `<hardware>.txt` | `data-science` | NumPy/pandas/sklearn/Jupyter + hardware PyTorch |
+| `base.txt` + `training.txt` | `training` | Hugging Face and Lightning training stack |
+| `orchestration.txt` | `orchestration` | Ray/MLflow/W&B |
+| `serving.txt` | `serving` | FastAPI/Gradio/Uvicorn |
 
 Vendor-specific packages (DeepSpeed, bitsandbytes, FlashAttention, vLLM, s3fs, …)
 stay out of the defaults. Pass them through `KAITE_EXTRA_PYTHON_PACKAGES` at
 build time. Details: [`requirements/README.md`](requirements/README.md).
+
+## Derive an organizational image
+
+Kaite is also a base layer. Pin an immutable artifact, then add only the
+organization's delta:
+
+```dockerfile
+FROM ghcr.io/alexhraber/kaite:v0.2.2-cpu-full
+
+COPY internal-requirements.txt /tmp/
+RUN /opt/kaite/venv/bin/pip install --no-cache-dir -r /tmp/internal-requirements.txt
+COPY internal-tools/ /opt/acme-tools/
+```
+
+The inherited identity and supervisor remain the source of the advertised
+capability contract. If an extension replaces core frameworks or hardware
+packages, the organization should rerun `kaite doctor`/`kaite smoke` and own
+the resulting compatibility claim.
 
 ## Observability
 

@@ -22,7 +22,12 @@ func run(ctx context.Context, cfg config, stats *metrics, dog *dogStatsD) int {
 				return 1
 			}
 		}
-		command = exec.Command(agentBin, buildAgentArgs(cfg)...)
+		agentArgs, err := buildAgentArgs(cfg)
+		if err != nil {
+			logEvent("error", "agent_configuration_failed", map[string]string{"error": err.Error()})
+			return 2
+		}
+		command = exec.Command(agentBin, agentArgs...)
 		logEvent("info", "buildkite_agent_starting", map[string]string{"binary": agentBin})
 	} else {
 		command = exec.Command("/bin/sh", "-lc", cfg.command)
@@ -82,20 +87,28 @@ func finishProcess(err error, stats *metrics, dog *dogStatsD) int {
 	return code
 }
 
-func buildAgentArgs(cfg config) []string {
+func buildAgentArgs(cfg config) ([]string, error) {
 	args := []string{"start"}
 	if cfg.tokenFile != "" {
 		args = append(args, "--token", "file://"+cfg.tokenFile)
 	}
-	if tags := os.Getenv("BUILDKITE_AGENT_TAGS"); tags != "" {
-		args = append(args, "--tags", tags)
-	} else {
-		variant := cfg.variant
-		if variant == "" {
-			variant = "slim"
+	id := cfg.identity
+	if id.Hardware == "" {
+		id = identity{
+			Schema:       1,
+			Hardware:     cfg.hardware,
+			Variant:      cfg.variant,
+			Capabilities: cfg.capabilities,
 		}
-		args = append(args, "--tags", "kaite=true,kaite.hardware="+cfg.hardware+",kaite.variant="+variant+",kaite.o11y="+cfg.o11y)
+		if len(id.Capabilities) == 0 {
+			id.Capabilities = capabilitiesForVariant(id.Variant)
+		}
 	}
+	tags, err := mergeAgentTags(os.Getenv("BUILDKITE_AGENT_TAGS"), id, cfg.o11y)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, "--tags", tags)
 	appendEnvFlag := func(name, flag string) {
 		if value := os.Getenv(name); value != "" {
 			args = append(args, flag, value)
@@ -121,7 +134,7 @@ func buildAgentArgs(cfg config) []string {
 	if truthy(os.Getenv("BUILDKITE_KUBERNETES_EXEC")) {
 		args = append(args, "--kubernetes-exec")
 	}
-	return args
+	return args, nil
 }
 
 // ctxWithSignals cancels on SIGINT/SIGTERM for the process lifetime.

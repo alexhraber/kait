@@ -39,24 +39,28 @@ jobs:
             platforms: linux/amd64
             base_image: ubuntu:24.04
             python_bin: python3
+            capabilities: data-science
           - hardware: cpu
             variant: full
             runner: ubuntu-24.04
             platforms: linux/amd64
             base_image: ubuntu:24.04
             python_bin: python3
+            capabilities: data-science,training,orchestration,serving
           - hardware: apple
             variant: slim
             runner: ubuntu-24.04-arm
             platforms: linux/arm64
             base_image: ubuntu:24.04
             python_bin: python3
+            capabilities: data-science
           - hardware: apple
             variant: full
             runner: ubuntu-24.04-arm
             platforms: linux/arm64
             base_image: ubuntu:24.04
             python_bin: python3
+            capabilities: data-science,training,orchestration,serving
 
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +101,14 @@ jobs:
             type=raw,value=${{ matrix.hardware }}-${{ matrix.variant }},enable=${{ steps.release.outputs.publish_stable == 'true' }}
             type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }},enable=${{ matrix.variant == 'slim' }}
             type=raw,value=${{ matrix.hardware }},enable=${{ matrix.variant == 'slim' && steps.release.outputs.publish_stable == 'true' }}
+            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-data-science,enable=${{ matrix.variant == 'slim' }}
+            type=raw,value=${{ matrix.hardware }}-data-science,enable=${{ matrix.variant == 'slim' && steps.release.outputs.publish_stable == 'true' }}
+            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-training,enable=${{ matrix.variant == 'full' }}
+            type=raw,value=${{ matrix.hardware }}-training,enable=${{ matrix.variant == 'full' && steps.release.outputs.publish_stable == 'true' }}
+            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-orchestration,enable=${{ matrix.variant == 'full' }}
+            type=raw,value=${{ matrix.hardware }}-orchestration,enable=${{ matrix.variant == 'full' && steps.release.outputs.publish_stable == 'true' }}
+            type=raw,value=${{ steps.release.outputs.version }}-${{ matrix.hardware }}-serving,enable=${{ matrix.variant == 'full' }}
+            type=raw,value=${{ matrix.hardware }}-serving,enable=${{ matrix.variant == 'full' && steps.release.outputs.publish_stable == 'true' }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -114,6 +126,7 @@ jobs:
             BUILDKITE_AGENT_VERSION=3.123.1
             KAITE_HARDWARE=${{ matrix.hardware }}
             KAITE_VARIANT=${{ matrix.variant }}
+            KAITE_CAPABILITIES=${{ matrix.capabilities }}
             KAITE_PYTHON=${{ matrix.python_bin }}
 
       - name: Smoke published image on the matching host
@@ -151,15 +164,19 @@ jobs:
           - hardware: cpu
             variant: slim
             platform: linux/amd64
+            capability: data-science
           - hardware: apple
             variant: slim
             platform: linux/arm64
+            capability: data-science
           - hardware: cpu
             variant: full
             platform: linux/amd64
+            capability: training
           - hardware: apple
             variant: full
             platform: linux/arm64
+            capability: training
     steps:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/setup-qemu-action@v3
@@ -175,13 +192,16 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/kaite
           PLATFORM: ${{ matrix.platform }}
+          CAPABILITY: ${{ matrix.capability }}
         shell: bash
         run: |
           set -euo pipefail
           version="${INPUT_VERSION:-${REF_NAME}}"
           [[ "$version" == v* ]] || version="v$version"
           image="${IMAGE_PREFIX}:${version}-${{ matrix.hardware }}-${{ matrix.variant }}"
+          capability_image="${IMAGE_PREFIX}:${version}-${{ matrix.hardware }}-${CAPABILITY}"
           docker buildx imagetools inspect "$image"
+          docker buildx imagetools inspect "$capability_image"
           docker pull --platform "${PLATFORM}" "$image"
           docker run --rm --platform "${PLATFORM}" "$image" doctor
 
@@ -203,36 +223,42 @@ jobs:
             platforms: linux/amd64
             base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
             python_bin: python3
+            capabilities: data-science
           - hardware: nvidia
             variant: full
             runner: kaite-nvidia
             platforms: linux/amd64
             base_image: nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
             python_bin: python3
+            capabilities: data-science,training,orchestration,serving
           - hardware: amd
             variant: slim
             runner: kaite-amd
             platforms: linux/amd64
             base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
             python_bin: python3
+            capabilities: data-science
           - hardware: amd
             variant: full
             runner: kaite-amd
             platforms: linux/amd64
             base_image: rocm/dev-ubuntu-24.04:6.2.4-complete
             python_bin: python3
+            capabilities: data-science,training,orchestration,serving
           - hardware: intel
             variant: slim
             runner: kaite-intel
             platforms: linux/amd64
             base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
             python_bin: python3.11
+            capabilities: data-science
           - hardware: intel
             variant: full
             runner: kaite-intel
             platforms: linux/amd64
             base_image: intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04
             python_bin: python3.11
+            capabilities: data-science,training,orchestration,serving
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -267,6 +293,7 @@ jobs:
             BUILDKITE_AGENT_VERSION=3.123.1
             KAITE_HARDWARE=${{ matrix.hardware }}
             KAITE_VARIANT=${{ matrix.variant }}
+            KAITE_CAPABILITIES=${{ matrix.capabilities }}
             KAITE_PYTHON=${{ matrix.python_bin }}
       - name: Smoke published inactive accelerator image
         env:
@@ -315,6 +342,8 @@ jobs:
           | \`${image}:${version}-cpu-full\` | CPU full (\`linux/amd64\`) |
           | \`${image}:${version}-apple-slim\` | Apple Silicon slim (\`linux/arm64\`) |
           | \`${image}:${version}-apple-full\` | Apple Silicon full (\`linux/arm64\`) |
+          | \`${image}:${version}-<hardware>-data-science\` | Capability alias for the slim contract |
+          | \`${image}:${version}-<hardware>-training\` / \`-serving\` / \`-orchestration\` | Capability aliases for the full contract |
           | \`${image}:cpu-slim\` / \`cpu-full\` / \`apple-slim\` / \`apple-full\` | Stable aliases (latest release) |
 
           \`\`\`bash

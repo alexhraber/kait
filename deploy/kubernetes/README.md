@@ -15,7 +15,7 @@ kubectl apply -f deploy/kubernetes/kaite-agent.yaml
 
 Defaults in the template:
 
-- image `ghcr.io/alexhraber/kaite:cpu-slim`
+- image `ghcr.io/alexhraber/kaite:cpu-slim` (`data-science` capability)
 - queue `ai`, `BUILDKITE_AGENT_DISCONNECT_AFTER_JOB=true`
 - Prometheus scrape annotations on port `9090`
 
@@ -26,10 +26,11 @@ Agent Stack only.
 
 ## Targeting
 
-Change `image`, `KAITE_HARDWARE`, `KAITE_VARIANT`, agent tags, and resources
-for the host class. Active paths are CPU (`linux/amd64` + `arm64`) and Apple
-(`linux/arm64`). Accelerator images need the matching device plugin and stay
-manual opt-ins outside automatic CI/release.
+Change `image`, `KAITE_HARDWARE`, `KAITE_VARIANT`, capability tags, and
+resources for the host class. Active paths are CPU (`linux/amd64` + `arm64`)
+and Apple (`linux/arm64`). Accelerator images need the matching device plugin
+and stay manual opt-ins outside automatic CI/release. The image's baked
+identity must agree with the values and tags in the manifest.
 
 Pipeline side:
 
@@ -40,7 +41,7 @@ steps:
     agents:
       queue: ai
       kaite.hardware: cpu
-      kaite.variant: slim
+      kaite.capability.data-science: "true"
 ```
 
 ## Observability

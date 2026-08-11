@@ -14,9 +14,15 @@ FROM ${BASE_IMAGE} AS runtime
 ARG BUILDKITE_AGENT_VERSION=3.123.1
 ARG KAITE_HARDWARE=cpu
 ARG KAITE_VARIANT=slim
+ARG KAITE_CAPABILITIES=
 ARG KAITE_PYTHON=python3
 ARG KAITE_EXTRA_PYTHON_PACKAGES=""
 ARG TARGETARCH
+
+LABEL io.kaite.identity="/etc/kaite/identity.json" \
+      io.kaite.hardware="${KAITE_HARDWARE}" \
+      io.kaite.variant="${KAITE_VARIANT}" \
+      io.kaite.capabilities="${KAITE_CAPABILITIES}"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     BUILDKITE_AGENT_HOME=/buildkite \
@@ -41,7 +47,7 @@ RUN if [ "${KAITE_PYTHON}" = "python3.11" ]; then \
       && rm -rf /var/lib/apt/lists/*; \
     fi
 
-RUN mkdir -p /buildkite/bin /buildkite/builds /buildkite/hooks /opt/kaite /tmp/buildkite-agent \
+RUN mkdir -p /buildkite/bin /buildkite/builds /buildkite/hooks /etc/kaite /opt/kaite /tmp/buildkite-agent \
     && agent_arch="$(dpkg --print-architecture)" \
     && case "${agent_arch}" in amd64|arm64) ;; *) echo "unsupported Debian architecture: ${agent_arch}" >&2; exit 1 ;; esac \
     && archive="buildkite-agent-linux-${agent_arch}-${BUILDKITE_AGENT_VERSION}.tar.gz" \
@@ -61,18 +67,40 @@ COPY requirements /opt/kaite/requirements
 RUN set -eux; \
     "${KAITE_PYTHON}" -m venv /opt/kaite/venv; \
     /opt/kaite/venv/bin/pip install --no-cache-dir --upgrade pip; \
-    case "${KAITE_VARIANT}" in \
-      slim) requirements_files="slim.txt ${KAITE_HARDWARE}.txt" ;; \
-      full) requirements_files="slim.txt ${KAITE_HARDWARE}.txt base.txt training.txt orchestration.txt serving.txt" ;; \
-      *) echo "unsupported KAITE_VARIANT: ${KAITE_VARIANT}" >&2; exit 1 ;; \
-    esac; \
+    case "${KAITE_VARIANT}" in slim|full) ;; *) echo "unsupported KAITE_VARIANT: ${KAITE_VARIANT}" >&2; exit 1 ;; esac; \
+    effective_capabilities="${KAITE_CAPABILITIES}"; \
+    if [ -z "${effective_capabilities}" ]; then \
+      case "${KAITE_VARIANT}" in \
+        slim) effective_capabilities="data-science" ;; \
+        full) effective_capabilities="data-science,training,orchestration,serving" ;; \
+      esac; \
+    fi; \
+    case ",${effective_capabilities}," in *,data-science,*) ;; *) echo "KAITE_CAPABILITIES must include data-science" >&2; exit 1 ;; esac; \
+    requirements_files="slim.txt ${KAITE_HARDWARE}.txt"; \
+    identity_capabilities=""; \
+    old_ifs="${IFS}"; IFS=','; \
+    for capability in ${effective_capabilities}; do \
+      case "${capability}" in \
+        data-science) ;; \
+        training) requirements_files="${requirements_files} base.txt training.txt" ;; \
+        orchestration) requirements_files="${requirements_files} orchestration.txt" ;; \
+        serving) requirements_files="${requirements_files} serving.txt" ;; \
+        *) echo "unsupported KAITE_CAPABILITIES entry: ${capability}" >&2; exit 1 ;; \
+      esac; \
+      case ",${identity_capabilities}," in *,"${capability}",*) echo "duplicate KAITE_CAPABILITIES entry: ${capability}" >&2; exit 1 ;; esac; \
+      if [ -n "${identity_capabilities}" ]; then identity_capabilities="${identity_capabilities},"; fi; \
+      identity_capabilities="${identity_capabilities}\"${capability}\""; \
+    done; \
+    IFS="${old_ifs}"; \
     for requirements_file in ${requirements_files}; do \
       test -f "/opt/kaite/requirements/${requirements_file}" || { echo "missing requirements manifest: ${requirements_file}" >&2; exit 1; }; \
       /opt/kaite/venv/bin/pip install --no-cache-dir -r "/opt/kaite/requirements/${requirements_file}"; \
     done; \
     if [ -n "${KAITE_EXTRA_PYTHON_PACKAGES}" ]; then \
       /opt/kaite/venv/bin/pip install --no-cache-dir ${KAITE_EXTRA_PYTHON_PACKAGES}; \
-    fi
+    fi; \
+    printf '{"schema":1,"hardware":"%s","variant":"%s","capabilities":[%s]}\n' \
+      "${KAITE_HARDWARE}" "${KAITE_VARIANT}" "${identity_capabilities}" > /etc/kaite/identity.json
 
 COPY --from=kaite-build /out/kaite /usr/local/bin/kaite
 RUN chmod +x /usr/local/bin/kaite \

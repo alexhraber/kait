@@ -13,7 +13,11 @@ import (
 // present (today: Intel oneAPI setvars). Missing setvars is a no-op so the
 // same binary works on CPU-only hosts.
 func configureHardwareEnvironment() error {
-	if lowerEnv("KAITE_HARDWARE", "cpu") != "intel" {
+	id, err := loadRuntimeIdentity()
+	if err != nil {
+		return err
+	}
+	if id.Hardware != "intel" {
 		return nil
 	}
 	setvars := "/opt/intel/oneapi/setvars.sh"

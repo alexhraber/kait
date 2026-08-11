@@ -1,66 +1,151 @@
 {
   "schema_version": "1.1.0",
-  "run_id": "release-please-chore-skip",
-  "intent_id": "intent:release-please-chore-skip",
-  "task_id": "cicd_01kzqx8p2cr02gak",
-  "original_intent": "merged PR #13 but it failed to generate a new release",
-  "derived_intent": "fix: commit + docs so Release Please opens patch release PR",
-  "current_phase": "validation",
+  "run_id": "validation_01KZS01SHCG5X3DHT40FHAKVJC",
+  "intent_id": "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC",
+  "task_id": "code_01kzrxk1c4sx7ah3",
+  "original_intent": "Produce proof artifacts for a repository validation completion.",
+  "derived_intent": "Run the bounded validation gates and bind the successful receipt to a trajectory.",
+  "destination": "validation completion",
+  "current_phase": "implementation and validation complete",
   "next_transitions": [
-    "publish"
+    "publish",
+    "publish governed workspace"
   ],
   "active_boundaries": [
-    "INV-ROOT-ISOLATION"
+    "No new profile DSL, scheduler, daemon, or unvalidated package mega-image",
+    "Repository validation and tracked proof artifacts"
   ],
   "repo_scope": [
-    ".decapod/managed/specs/",
-    "CONTRIBUTING.md",
-    "release-please-config.json"
+    ".decapod/governance/trajectory.json",
+    ".decapod/governance/validation.json",
+    "Docker identity; Go supervisor/runtime; Buildkite tags and examples; requirements documentation; Bake and CI/release metadata; tests and governed specs"
   ],
-  "inspected_files": [],
+  "inspected_files": [
+    ".github/workflows",
+    "Dockerfile",
+    "README.md",
+    "cmd/kaite",
+    "docker-bake.hcl",
+    "docs",
+    "examples/pipeline.yml",
+    "requirements"
+  ],
   "modified_files": [
     ".decapod/governance/trajectory.json",
-    ".decapod/governance/validation.json"
+    ".decapod/governance/validation.json",
+    ".github/workflows",
+    "Dockerfile",
+    "README.md",
+    "cmd/kaite",
+    "docker-bake.hcl",
+    "docs",
+    "examples/pipeline.yml",
+    "requirements"
   ],
   "declared_commands": [
-    "decapod validate"
+    "GOCACHE=/tmp/kaite-gocache GOMODCACHE=/tmp/kaite-modcache make build",
+    "GOCACHE=/tmp/kaite-gocache go test ./...",
+    "GOCACHE=/tmp/kaite-gocache go vet ./...",
+    "bash -n deploy/docker/run.sh deploy/docker/smoke.sh",
+    "decapod validate",
+    "git diff --check",
+    "make test",
+    "make vet"
   ],
   "tool_calls": [],
+  "loops": [
+    {
+      "intent_id": "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC",
+      "trajectory_id": "validation_01KZS01SHCG5X3DHT40FHAKVJC",
+      "loop_id": "verification:capability-contract",
+      "loop_type": "verification",
+      "attempt": 1,
+      "trigger": "agent",
+      "grader_result": "skipped",
+      "feedback": "All available static and Go validation passed; image graph rendering and accelerator runtime checks were unavailable in this environment.",
+      "proof_refs": [
+        "decapod_validate",
+        "go_test",
+        "go_vet",
+        "make_build",
+        "make_test",
+        "make_vet"
+      ],
+      "mutation_proposal": "none",
+      "status": "passed",
+      "custody_event_id": "event:5"
+    }
+  ],
   "checks": [
     {
       "name": "decapod validate",
       "status": "passed"
+    },
+    {
+      "name": "decapod_validate",
+      "status": "passed"
+    },
+    {
+      "name": "docker_buildx_bake",
+      "status": "unavailable"
+    },
+    {
+      "name": "doctor",
+      "status": "passed"
+    },
+    {
+      "name": "go_test",
+      "status": "passed"
+    },
+    {
+      "name": "go_vet",
+      "status": "passed"
+    },
+    {
+      "name": "make_build",
+      "status": "passed"
+    },
+    {
+      "name": "make_test",
+      "status": "passed"
+    },
+    {
+      "name": "make_vet",
+      "status": "passed"
     }
   ],
   "evidence": [
-    "validation epoch ve_a1d44123277044cd completed with zero failures"
+    "Container-backed decapod validate returned status ok with 185 passing gates and 0 failures; Docker Bake was unavailable because the installed docker buildx has no bake subcommand; accelerator runtime validation remains unavailable locally.",
+    "validation epoch ve_9779b9cc2b8a2890 completed with zero failures"
   ],
   "shortcut_risk_signals": [],
-  "unresolved_assumptions": [],
-  "proof_status": "passed",
+  "unresolved_assumptions": [
+    "Buildkite ordinary key/value tag matching remains the scheduling mechanism, consistent with existing hardware and variant tags.",
+    "Official Bake and CI/release paths pass explicit capability inputs; legacy direct Docker builds derive capabilities from the existing variant."
+  ],
+  "proof_status": "partial",
   "verdicts": {
     "intent_alignment": "supported",
     "boundary_discipline": "supported",
     "shortcut_risk": "supported",
-    "completion_proof": "supported"
+    "completion_proof": "caution"
   },
-  "artifact_hash": "sha256:7117eaf2b8c1f8141f1cd0e49a849a4ebd5feb8865d73afac5b7f219dbb73c23",
+  "artifact_hash": "sha256:27819d96d37242a8c346d3326a811bda40559230f132fa79836bd1384cd8be71",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
-      "intent:release-please-chore-skip": {
-        "id": "intent:release-please-chore-skip",
-        "raw_intent": "merged PR #13 but it failed to generate a new release",
-        "refined_intent": "fix: commit + docs so Release Please opens patch release PR",
+      "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC": {
+        "id": "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC",
+        "raw_intent": "Produce proof artifacts for a repository validation completion.",
+        "refined_intent": "Run the bounded validation gates and bind the successful receipt to a trajectory.",
         "acceptance_criteria": [],
         "constraints": [
-          "CONTRIBUTING.md",
-          "release-please-config.json",
-          ".decapod/managed/specs/"
+          ".decapod/governance/trajectory.json",
+          ".decapod/governance/validation.json"
         ],
         "assumptions": [],
         "boundaries": [
-          "INV-ROOT-ISOLATION"
+          "Repository validation and tracked proof artifacts"
         ],
         "out_of_scope": [],
         "proof_requirements": [],
@@ -73,34 +158,34 @@
       {
         "sequence": 2,
         "event_id": "event:2",
-        "intent_id": "intent:release-please-chore-skip",
+        "intent_id": "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC",
         "kind": "created"
       },
       {
         "sequence": 3,
         "event_id": "event:3",
-        "intent_id": "intent:release-please-chore-skip",
+        "intent_id": "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC",
         "kind": "refined"
       },
       {
         "sequence": 4,
         "event_id": "event:4",
-        "intent_id": "intent:release-please-chore-skip",
+        "intent_id": "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC",
         "kind": "trajectory_step_recorded",
-        "detail": "trajectory:release-please-chore-skip"
+        "detail": "trajectory:validation_01KZS01SHCG5X3DHT40FHAKVJC"
       },
       {
         "sequence": 5,
         "event_id": "event:5",
-        "intent_id": "intent:release-please-chore-skip",
+        "intent_id": "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC",
         "kind": "trajectory_step_recorded",
-        "detail": "trajectory:release-please-chore-skip"
+        "detail": "trajectory:validation_01KZS01SHCG5X3DHT40FHAKVJC"
       }
     ],
     "trajectories": {
-      "release-please-chore-skip": {
-        "id": "release-please-chore-skip",
-        "intent_id": "intent:release-please-chore-skip",
+      "validation_01KZS01SHCG5X3DHT40FHAKVJC": {
+        "id": "validation_01KZS01SHCG5X3DHT40FHAKVJC",
+        "intent_id": "intent:validation_01KZS01SHCG5X3DHT40FHAKVJC",
         "evidence_only": true,
         "steps": [
           {
@@ -108,14 +193,13 @@
             "action": "validation",
             "command": "decapod validate",
             "scope": [
-              ".decapod/managed/specs/",
-              "CONTRIBUTING.md",
-              "release-please-config.json"
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json"
             ],
             "observations": [
               ".decapod/governance/trajectory.json",
               ".decapod/governance/validation.json",
-              "validation epoch ve_a1d44123277044cd completed with zero failures"
+              "validation epoch ve_9779b9cc2b8a2890 completed with zero failures"
             ],
             "proof_refs": [
               "decapod validate"
@@ -125,22 +209,24 @@
           },
           {
             "sequence": 5,
-            "action": "validation",
-            "command": "decapod validate",
+            "action": "loop:verification:capability-contract:1",
             "scope": [
-              ".decapod/managed/specs/",
-              "CONTRIBUTING.md",
-              "release-please-config.json"
-            ],
-            "observations": [
               ".decapod/governance/trajectory.json",
               ".decapod/governance/validation.json",
-              "validation epoch ve_a1d44123277044cd completed with zero failures"
+              "Docker identity; Go supervisor/runtime; Buildkite tags and examples; requirements documentation; Bake and CI/release metadata; tests and governed specs"
             ],
+            "observations": [],
             "proof_refs": [
-              "decapod validate"
+              "go_test",
+              "go_vet",
+              "make_test",
+              "make_vet",
+              "make_build",
+              "decapod_validate"
             ],
-            "validation_findings": [],
+            "validation_findings": [
+              "All available static and Go validation passed; image graph rendering and accelerator runtime checks were unavailable in this environment."
+            ],
             "custody_event_id": "event:5"
           }
         ]

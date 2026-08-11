@@ -6,10 +6,11 @@
 # Workspace creation and validation refresh this pin only when the evaluating Decapod release changes.
 
 
+
 # Kaite policy: CPU and Apple Silicon are active release targets; NVIDIA/AMD/Intel stay manual opt-ins. See docs/architecture.md.
-ARG DECAPOD_IMAGE=ghcr.io/decapodlabs/decapod:v0.96.18-debian
+ARG DECAPOD_IMAGE=ghcr.io/decapodlabs/decapod:v0.96.21-debian
 FROM $DECAPOD_IMAGE
-ARG DECAPOD_VERSION=0.96.18
+ARG DECAPOD_VERSION=0.96.21
 ARG DECAPOD_WORKSPACE_PATH=unknown
 ARG DECAPOD_USE_LOCAL_BINARY=0
 LABEL org.opencontainers.image.base.name="$DECAPOD_IMAGE"
