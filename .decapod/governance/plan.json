@@ -1,16 +1,16 @@
 {
   "schema_version": "1.0.0",
   "title": "Publish Kaite documentation through GitHub Pages",
-  "intent": "Provide a static docs landing page and a Buildkite execution-substrate article that explains how Kaite makes validated computational capability concrete for Buildkite power users.",
+  "intent": "Compress the execution-substrate article ending into one authoritative closing movement that returns to the governing execution-model thesis.",
   "state": "APPROVED",
   "todo_ids": [
-    "feat_01kzs1b3cvz753dp"
+    "docs_01kzs5h08qrhk8mr"
   ],
   "proof_hooks": [
     "git diff --check",
     "decapod validate",
     "GitHub Pages branch source main/docs",
-    "Pages route and navigation review"
+    "New pull request contains only the focused documentation change"
   ],
   "unknowns": [],
   "human_questions": [],
@@ -20,11 +20,9 @@
   "unresolved_contradictions": [],
   "deferred_questions": [],
   "constraints": {
-    "forbidden_paths": [
-      ".github/workflows/deploy-pages.yml"
-    ],
-    "file_touch_budget": 12
+    "forbidden_paths": [],
+    "file_touch_budget": 3
   },
   "phases": [],
-  "updated_at": "1786473626Z"
+  "updated_at": "1786477357Z"
 }

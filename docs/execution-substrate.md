@@ -297,22 +297,16 @@ Gates control progression.
 Artifacts, logs, metadata, and status preserve the result.
 
 Kaite extends this model by giving AI and machine-learning execution surfaces
-stable runtime identities that pipelines can address directly.
+stable runtime identities that pipelines can address directly. A workload
+declares the capability and hardware it requires; Buildkite resolves that
+request against matching execution capacity; Kaite supplies the validated
+runtime contract; the selected hardware performs the computation; and the
+result returns to the execution graph as input to whatever happens next.
 
-Under this model, the workload declares what it requires. Buildkite finds
-matching execution capacity. Kaite supplies the runtime contract. The hardware
-performs the computation. The result returns to the graph and becomes
-available to whatever happens next.
-
-This is a usage model for the tool in front of us: a distributed execution
-substrate whose existing primitives route computational intent across
-heterogeneous, capability-defined infrastructure.
-
-This perspective identifies how the existing platform is used. CI/CD remains
-a first-class workload, while the execution model underneath it applies
-wherever bounded work must be routed to a known execution capability.
-
-Under this model, a workload declares what it requires. Buildkite finds an
-eligible execution surface. Kaite gives that surface a reproducible runtime
-contract. The hardware performs the computation, and the result returns to the
-larger execution graph.
+This is the power-user model for the tool in front of us: Buildkite as a
+distributed execution substrate whose existing primitives route computational
+intent across heterogeneous, capability-defined infrastructure. Pipelines
+compose the work, jobs bound its execution, queues and agent tags determine
+placement, agents attach execution surfaces to the control plane, and Kaite
+gives specialized AI and machine-learning environments a reproducible identity
+within that fabric. The workload changes; the execution model remains.
