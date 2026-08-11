@@ -108,8 +108,9 @@ make build          # bin/kaite
 ```
 
 Images and releases: Release Please opens a release PR from `main`; merging it
-tags, creates a GitHub release, and builds active GHCR images with provenance
-and SBOM. See [CONTRIBUTING.md](CONTRIBUTING.md).
+tags, creates a GitHub release, then dispatches the image workflow against that
+tag so active GHCR images (CPU/Apple slim+full) publish with provenance and
+SBOM. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
