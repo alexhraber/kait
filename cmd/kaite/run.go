@@ -1,0 +1,135 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"os"
+	"os/exec"
+	"os/signal"
+	"strconv"
+	"syscall"
+)
+
+func run(ctx context.Context, cfg config, stats *metrics, dog *dogStatsD) int {
+	var command *exec.Cmd
+	if cfg.runMode == "agent" {
+		agentBin := cfg.buildkiteBin
+		if _, err := os.Stat(agentBin); err != nil {
+			if resolved, lookErr := exec.LookPath(agentBin); lookErr == nil {
+				agentBin = resolved
+			} else {
+				logEvent("error", "agent_binary_missing", map[string]string{"path": cfg.buildkiteBin})
+				return 1
+			}
+		}
+		command = exec.Command(agentBin, buildAgentArgs(cfg)...)
+		logEvent("info", "buildkite_agent_starting", map[string]string{"binary": agentBin})
+	} else {
+		command = exec.Command("/bin/sh", "-lc", cfg.command)
+		logEvent("info", "command_starting", map[string]string{"command": cfg.command})
+	}
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+	command.Stdin = os.Stdin
+
+	if err := command.Start(); err != nil {
+		logEvent("error", "process_start_failed", map[string]string{"error": err.Error()})
+		return 1
+	}
+	stats.starts.Add(1)
+	stats.running.Store(1)
+	if dog != nil {
+		dog.gauge("kaite.agent.running", 1)
+		dog.count("kaite.agent.starts", 1)
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- command.Wait() }()
+	select {
+	case err := <-done:
+		return finishProcess(err, stats, dog)
+	case <-ctx.Done():
+		logEvent("info", "shutdown_requested", map[string]string{"signal": "SIGTERM"})
+		_ = command.Process.Signal(syscall.SIGTERM)
+		err := <-done
+		if err == nil {
+			return 0
+		}
+		return finishProcess(err, stats, dog)
+	}
+}
+
+func finishProcess(err error, stats *metrics, dog *dogStatsD) int {
+	stats.running.Store(0)
+	stats.exits.Add(1)
+	code := 0
+	if err != nil {
+		code = 1
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			code = exitErr.ExitCode()
+			if code < 0 {
+				code = 1
+			}
+		}
+	}
+	stats.lastExit.Store(int64(code))
+	if dog != nil {
+		dog.gauge("kaite.agent.running", 0)
+		dog.count("kaite.agent.exits", 1)
+	}
+	logEvent("info", "runtime_stopped", map[string]string{"exit_code": strconv.Itoa(code)})
+	return code
+}
+
+func buildAgentArgs(cfg config) []string {
+	args := []string{"start"}
+	if cfg.tokenFile != "" {
+		args = append(args, "--token", "file://"+cfg.tokenFile)
+	}
+	if tags := os.Getenv("BUILDKITE_AGENT_TAGS"); tags != "" {
+		args = append(args, "--tags", tags)
+	} else {
+		variant := cfg.variant
+		if variant == "" {
+			variant = "slim"
+		}
+		args = append(args, "--tags", "kaite=true,kaite.hardware="+cfg.hardware+",kaite.variant="+variant+",kaite.o11y="+cfg.o11y)
+	}
+	appendEnvFlag := func(name, flag string) {
+		if value := os.Getenv(name); value != "" {
+			args = append(args, flag, value)
+		}
+	}
+	appendEnvFlag("BUILDKITE_AGENT_NAME", "--name")
+	appendEnvFlag("BUILDKITE_AGENT_CONFIG", "--config")
+	appendEnvFlag("BUILDKITE_AGENT_ENDPOINT", "--endpoint")
+	appendEnvFlag("BUILDKITE_AGENT_QUEUE", "--queue")
+	appendEnvFlag("BUILDKITE_AGENT_PRIORITY", "--priority")
+	appendEnvFlag("BUILDKITE_AGENT_ACQUIRE_JOB", "--acquire-job")
+	appendEnvFlag("BUILDKITE_AGENT_DISCONNECT_AFTER_IDLE_TIMEOUT", "--disconnect-after-idle-timeout")
+	appendEnvFlag("BUILDKITE_AGENT_SHELL", "--shell")
+	if truthy(os.Getenv("BUILDKITE_AGENT_DISCONNECT_AFTER_JOB")) {
+		args = append(args, "--disconnect-after-job")
+	}
+	if truthy(os.Getenv("BUILDKITE_AGENT_REFLECT_EXIT_STATUS")) {
+		args = append(args, "--reflect-exit-status")
+	}
+	if truthy(os.Getenv("BUILDKITE_WRITE_JOB_LOGS_TO_STDOUT")) {
+		args = append(args, "--write-job-logs-to-stdout")
+	}
+	if truthy(os.Getenv("BUILDKITE_KUBERNETES_EXEC")) {
+		args = append(args, "--kubernetes-exec")
+	}
+	return args
+}
+
+// ctxWithSignals cancels on SIGINT/SIGTERM for the process lifetime.
+// The cancel function is intentionally not returned; process exit is the cleanup.
+func ctxWithSignals() context.Context {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	// stop is not called on purpose: the process exits after the child does.
+	// Keeping the notify active for the process lifetime matches prior behavior.
+	_ = stop
+	return ctx
+}

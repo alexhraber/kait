@@ -13,10 +13,10 @@ entrypoints = [
 
 [repo]
 product_name = "kaite"
-product_summary = "Provide a portable, production-ready AI execution environment that makes Buildkite a first-class orchestration layer for model training, evaluation, inference, and agent workloads. By standardizing the runtime, tooling, observability, checkpointing, and artifact flow inside a reusable open-source image, Kaite enables teams to run sophisticated AI workloads across any compatible GPU, cluster, or compute environment with greater consistency, visibility, and operational control."
+product_summary = "Self-hosted Buildkite agents packaged with a portable AI/ML runtime: pinned agent, slim/full Python toolchains, hardware image contracts, and collector-friendly metrics for CPU and Apple Silicon (with opt-in NVIDIA/AMD/Intel paths)."
 architecture_direction = "infra"
 product_type = "service_or_library"
-done_criteria = "Kaite is done when it publishes reproducible, versioned CPU and GPU container images that can register as Buildkite agents or run as Buildkite job environments; includes validated AI tooling, accelerator detection, telemetry, checkpointing, artifact handling, and graceful process supervision; successfully executes reference workflows for model training, evaluation, inference, and agent workloads; and provides automated builds, security scans, compatibility tests, documentation, and examples sufficient for a team to deploy it without modifying the base image."
+done_criteria = "Versioned CPU and Apple images register as Buildkite agents or job environments with validated AI tooling, accelerator detection, telemetry, and process supervision; automated builds, smoke tests, docs, and examples are sufficient to deploy without modifying the base image. Accelerator paths remain explicit opt-ins."
 base_branch = "main"
 primary_languages = ["Go"]
 detected_surfaces = [

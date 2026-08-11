@@ -1,0 +1,107 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+)
+
+type config struct {
+	hardware       string
+	variant        string
+	o11y           string
+	runMode        string
+	metricsAddr    string
+	buildkiteBin   string
+	buildkiteToken string
+	tokenFile      string
+	command        string
+}
+
+func loadConfig() (config, error) {
+	cfg := config{
+		hardware:       lowerEnv("KAITE_HARDWARE", "cpu"),
+		variant:        lowerEnv("KAITE_VARIANT", "slim"),
+		o11y:           lowerEnv("KAITE_O11Y", "none"),
+		runMode:        lowerEnv("KAITE_RUN_MODE", "agent"),
+		metricsAddr:    os.Getenv("KAITE_METRICS_ADDR"),
+		buildkiteBin:   envOr("BUILDKITE_AGENT_BIN", "/buildkite/bin/buildkite-agent"),
+		buildkiteToken: os.Getenv("BUILDKITE_AGENT_TOKEN"),
+		tokenFile:      os.Getenv("BUILDKITE_AGENT_TOKEN_FILE"),
+		command:        os.Getenv("KAITE_COMMAND"),
+	}
+	if err := validateHardware(cfg.hardware); err != nil {
+		return config{}, err
+	}
+	if err := validateVariant(cfg.variant); err != nil {
+		return config{}, err
+	}
+	switch cfg.o11y {
+	case "none", "prometheus", "datadog", "splunk":
+	default:
+		return config{}, fmt.Errorf("KAITE_O11Y must be one of none, prometheus, datadog, splunk (got %q)", cfg.o11y)
+	}
+	switch cfg.runMode {
+	case "agent":
+		if cfg.buildkiteToken == "" && cfg.tokenFile == "" {
+			return config{}, errors.New("BUILDKITE_AGENT_TOKEN or BUILDKITE_AGENT_TOKEN_FILE is required in agent mode")
+		}
+		if cfg.buildkiteToken != "" && cfg.tokenFile != "" {
+			return config{}, errors.New("set only one of BUILDKITE_AGENT_TOKEN or BUILDKITE_AGENT_TOKEN_FILE")
+		}
+		if cfg.tokenFile != "" {
+			if _, err := os.Stat(cfg.tokenFile); err != nil {
+				return config{}, fmt.Errorf("BUILDKITE_AGENT_TOKEN_FILE: %w", err)
+			}
+		}
+	case "command":
+		if cfg.command == "" {
+			return config{}, errors.New("KAITE_COMMAND is required in command mode")
+		}
+	default:
+		return config{}, fmt.Errorf("KAITE_RUN_MODE must be agent or command (got %q)", cfg.runMode)
+	}
+	if cfg.metricsAddr == "" && cfg.o11y != "none" {
+		cfg.metricsAddr = ":9090"
+	}
+	return cfg, nil
+}
+
+func validateHardware(hardware string) error {
+	switch hardware {
+	case "cpu", "apple", "nvidia", "amd", "intel":
+		return nil
+	default:
+		return fmt.Errorf("KAITE_HARDWARE must be one of cpu, apple, nvidia, amd, intel (got %q)", hardware)
+	}
+}
+
+func validateVariant(variant string) error {
+	switch variant {
+	case "slim", "full":
+		return nil
+	default:
+		return fmt.Errorf("KAITE_VARIANT must be one of slim, full (got %q)", variant)
+	}
+}
+
+func lowerEnv(name, fallback string) string {
+	return strings.ToLower(envOr(name, fallback))
+}
+
+func envOr(name, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func truthy(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "y":
+		return true
+	default:
+		return false
+	}
+}

@@ -1,3 +1,4 @@
+# Decapod local state
 .decapod/data
 .decapod/data/*
 .decapod/.stfolder
@@ -10,3 +11,16 @@
 !.decapod/managed/specs/
 !.decapod/managed/specs/*.md
 !.decapod/managed/specs/.manifest.json
+
+# Build / local tooling
+/bin/
+.gocache/
+*.log
+*.test
+*.out
+
+# Language noise
+__pycache__/
+.pytest_cache/
+node_modules/
+target/

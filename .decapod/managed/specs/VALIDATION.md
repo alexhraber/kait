@@ -4,17 +4,18 @@
 Validation is a release gate, not documentation theater.
 
 ## Validation Harness
-The local proof harness is Go unit tests plus deterministic Docker Bake graph
-validation. Image builds are executed on tagged releases and can be run
-locally per hardware target.
+Local proof is the Makefile-backed Go harness plus the Docker Bake graph.
+Image builds and `kaite smoke` run on tagged releases (and can be run locally
+per hardware target).
 
-- Automated tests: GOCACHE=/tmp/kaite-gocache go test ./...
-- Static checks: GOCACHE=/tmp/kaite-gocache go vet ./...
-- Formatting: gofmt -w cmd/kaite/*.go
-- Image contract: docker buildx bake --print
-- Dependency contract: `yq eval "." requirements/*.txt` plus native CPU and
-  Apple `*-slim` and `*-full` image builds and smoke checks
-- Governance: decapod validate
+- Automated tests: `make test` (or `GOCACHE=… go test ./...`)
+- Static checks: `make vet`
+- Formatting: `make fmt`
+- Local binary: `make build` → `bin/kaite`
+- Image contract: `make build-plan` / `docker buildx bake --print`
+- Dependency contract: review `requirements/*.txt` install order; native CPU
+  and Apple `*-slim`/`*-full` image builds with `kaite smoke`
+- Governance: `decapod validate`
 
 ## Proof Surfaces
 - decapod validate
@@ -145,7 +146,7 @@ matching inactive host jobs are deliberately enabled.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Repository signal fingerprint: `6c4805884ae976e92ae4a4aa78a88d1ef2b5d83bc3a16bd9d53bdd45c03b6a87`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

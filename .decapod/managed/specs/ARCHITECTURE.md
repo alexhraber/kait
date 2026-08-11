@@ -34,31 +34,34 @@ that dispatches and records jobs.
 - Product type: self-hosted Buildkite AI runtime.
 
 ## Architecture Map
-- cmd/kaite/: runtime supervisor and contract tests.
-- Dockerfile and docker-bake.hcl: common image implementation and matrix.
-- deploy/: Docker and Kubernetes execution templates.
-- requirements/: portable Python defaults.
-- examples/: Buildkite targeting examples.
+- `cmd/kaite/`: Go supervisor split by concern — `main`, `config`, `run`,
+  `metrics`, `doctor`/`smoke`, `hardware`, `log`, `version` — plus unit tests.
+- `docs/architecture.md`: human-facing deep dive (supervisor layout, image
+  matrix, deploy paths, observability model, failure/exit codes, release flow).
+- `Dockerfile` + `docker-bake.hcl`: shared image implementation and matrix.
+- `requirements/`: layered Python manifests (`slim` / hardware / full stack).
+- `deploy/`: Docker launcher and Kubernetes one-shot Job template.
+- `examples/`: Buildkite agent-targeting snippets.
+- Root `README.md` + `CONTRIBUTING.md`: quick start and contributor entry;
+  the README links to `docs/architecture.md` for the longer story.
 
 The image matrix uses Ubuntu/glibc for every target. Each target has `*-slim`
 and `*-full` package variants. CPU publishes linux/amd64 and linux/arm64;
 Apple is an explicit linux/arm64 CPU target. NVIDIA, AMD, and Intel publish
 linux/amd64 because their pinned vendor bases and framework wheels are amd64
-contracts. Versioned tags are `<tag>-<hardware>-<variant>`.
-musl is not an equivalent option for these images: it would require separate
-Python wheels, vendor libraries, and validation.
+contracts. Versioned tags are `<tag>-<hardware>-<variant>`. A musl/Alpine
+image would be a separate dependency contract and is not treated as equivalent.
 
 Image delivery is host-matrixed. Active CI builds and runs `kaite smoke` on
-native CPU and arm64 hosts. NVIDIA, AMD, and Intel image definitions and their
-`kaite-nvidia`, `kaite-amd`, and `kaite-intel` runner labels are retained as
-inactive manual opt-ins until matching accelerator hosts are registered; a
-successful active release therefore cannot accidentally queue work on absent
-GPU infrastructure.
+native CPU and arm64 hosts. Accelerator definitions and their
+`kaite-nvidia` / `kaite-amd` / `kaite-intel` runner labels remain manual
+opt-ins so a green release cannot queue work on missing GPU infrastructure.
 
 ## Strongest Existing Primitives
-- Go standard-library supervisor with no runtime library dependencies.
-- Buildkite agent start command and its standard environment contract.
-- Docker Bake target inheritance for hardware image variants.
+- Go standard-library supervisor (no third-party runtime deps); version constant
+  aligned with the published package version.
+- Buildkite agent `start` environment contract and file-token support.
+- Docker Bake target inheritance for hardware and slim/full variants.
 - Kubernetes Secret, resource, and pod environment inputs.
 
 ## Data Flows
@@ -140,6 +143,8 @@ structured logs. The orchestrator owns restart and rollback.
 | ADR | Title | Status | Rationale | Date |
 |---|---|---|---|---|
 | ADR-001 | Agent-in-image topology | Accepted | Keep Buildkite dispatch and the AI toolchain in one hardware-selected image | 2026-08-06 |
+| ADR-002 | Split supervisor source by concern | Accepted | Keep the stdlib supervisor readable for contributors without changing runtime contracts | 2026-08-10 |
+| ADR-003 | Human architecture doc under docs/ | Accepted | Keep the root README thin; park system layout in docs/architecture.md | 2026-08-10 |
 
 ## Delivery Plan
 - Slice 1: supervisor, image matrix, launch templates, and o11y selector.
@@ -177,7 +182,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `6b92b08975bc14d7e2768c207cb2d90193e8e9df2f6aad11bef6e99f5636ac24`
+- Repository signal fingerprint: `6c4805884ae976e92ae4a4aa78a88d1ef2b5d83bc3a16bd9d53bdd45c03b6a87`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
