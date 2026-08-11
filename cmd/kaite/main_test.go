@@ -92,7 +92,7 @@ func TestPrometheusMetricsExposeRuntimeLabels(t *testing.T) {
 	m.running.Store(1)
 	output := m.prometheus()
 	for _, want := range []string{
-		"kaite_info{version=\"0.2.0\",hardware=\"intel\",variant=\"full\",o11y=\"prometheus\"} 1",
+		"kaite_info{version=\"0.2.1\",hardware=\"intel\",variant=\"full\",o11y=\"prometheus\"} 1",
 		"kaite_agent_starts_total{hardware=\"intel\",variant=\"full\",o11y=\"prometheus\"} 2",
 		"kaite_agent_running{hardware=\"intel\",variant=\"full\",o11y=\"prometheus\"} 1",
 	} {

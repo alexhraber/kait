@@ -61,9 +61,19 @@ Repository settings:
 To republish an existing tag (e.g. after a failed dispatch):
 
 ```bash
-gh workflow run release-images.yml --ref v0.2.0 \
-  -f version=v0.2.0 -f publish_stable=true -f enable_accelerators=false
+gh workflow run release-images.yml --ref v0.2.1 \
+  -f version=v0.2.1 -f publish_stable=true -f enable_accelerators=false
 ```
+
+After images publish, the workflow **annotates** the GitHub release with GHCR
+pull commands. It does not recreate the release (Release Please owns that).
+
+### Public package pulls
+
+The GitHub Container Registry package is independent of repo visibility. For
+anonymous `docker pull ghcr.io/alexhraber/kaite:…` on a public project, set the
+package to **Public** under
+[package settings](https://github.com/users/alexhraber/packages/container/package/kaite/settings).
 
 Accelerator images (NVIDIA/AMD/Intel) stay manual opt-in until matching runners
 exist. Do not re-enable them on the default CI path without host capacity.

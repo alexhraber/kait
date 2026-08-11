@@ -280,23 +280,66 @@ jobs:
             KAITE_CONTAINER_COMMAND=smoke ./deploy/docker/run.sh
 
   github-release:
-    name: Create GitHub release
+    # Release Please already creates the GitHub Release for semantic tags.
+    # Do not fail the matrix after images publish: annotate with GHCR pull lines
+    # (works for tag push and workflow_dispatch). Never use `gh release edit
+    # --generate-notes` — that flag is create-only and breaks re-runs.
+    name: Annotate GitHub release with image tags
     needs: verify
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - name: Create or update GitHub release
+      - name: Point release notes at published GHCR tags
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          OWNER: ${{ github.repository_owner }}
+        shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$VERSION" --repo "$GITHUB_REPOSITORY" \
-              --title "Kaite $VERSION" --generate-notes
+          version="${INPUT_VERSION:-${REF_NAME}}"
+          [[ "$version" == v* ]] || version="v$version"
+          image="ghcr.io/${OWNER}/kaite"
+          section_file=$(mktemp)
+          cat >"$section_file" <<EOF
+
+          ### Container images
+
+          Published to \`${image}\` (provenance + SBOM on each tag):
+
+          | Tag | Use |
+          | --- | --- |
+          | \`${image}:${version}-cpu-slim\` | CPU slim (\`linux/amd64\`) |
+          | \`${image}:${version}-cpu-full\` | CPU full (\`linux/amd64\`) |
+          | \`${image}:${version}-apple-slim\` | Apple Silicon slim (\`linux/arm64\`) |
+          | \`${image}:${version}-apple-full\` | Apple Silicon full (\`linux/arm64\`) |
+          | \`${image}:cpu-slim\` / \`cpu-full\` / \`apple-slim\` / \`apple-full\` | Stable aliases (latest release) |
+
+          \`\`\`bash
+          docker pull ${image}:${version}-cpu-slim
+          \`\`\`
+          EOF
+          # Drop the accidental leading indentation from the heredoc body.
+          section=$(sed 's/^          //' "$section_file")
+
+          if gh release view "$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            body=$(gh release view "$version" --repo "$GITHUB_REPOSITORY" --json body -q .body)
+            if [[ "$body" == *"### Container images"* ]]; then
+              echo "Release $version already documents container images"
+              exit 0
+            fi
+            notes=$(mktemp)
+            printf '%s\n%s\n' "$body" "$section" >"$notes"
+            gh release edit "$version" --repo "$GITHUB_REPOSITORY" \
+              --title "Kaite $version" \
+              --notes-file "$notes"
           else
-            gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" \
-              --title "Kaite $VERSION" --generate-notes
+            notes=$(mktemp)
+            printf 'Kaite %s\n%s\n' "$version" "$section" >"$notes"
+            gh release create "$version" --repo "$GITHUB_REPOSITORY" \
+              --title "Kaite $version" \
+              --notes-file "$notes" \
+              --verify-tag
           fi

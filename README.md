@@ -1,36 +1,63 @@
 # kaite
 
-[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.96.15-dc2626)](https://github.com/DecapodLabs/decapod)
+[![Release](https://img.shields.io/github/v/release/alexhraber/kaite?display_name=tag)](https://github.com/alexhraber/kaite/releases/latest)
+[![CI](https://github.com/alexhraber/kaite/actions/workflows/build-images.yml/badge.svg?branch=main)](https://github.com/alexhraber/kaite/actions/workflows/build-images.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GHCR](https://img.shields.io/badge/ghcr.io-alexhraber%2Fkaite-blue)](https://github.com/alexhraber/kaite/pkgs/container/kaite)
+[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.96.18-dc2626)](https://github.com/DecapodLabs/decapod)
 
 Self-hosted [Buildkite](https://buildkite.com) agents with a batteries-included
 AI/ML runtime. One image ships the agent, a pinned Python toolchain, hardware
 contracts, and lightweight observability.
 
+## Quick start
+
 ```bash
+# Pull the latest CPU slim image (stable alias)
+docker pull ghcr.io/alexhraber/kaite:cpu-slim
+
+# Run as a Buildkite agent
 BUILDKITE_AGENT_TOKEN=… \
-KAITE_HARDWARE=cpu KAITE_VARIANT=slim KAITE_O11Y=prometheus \
+KAITE_HARDWARE=cpu \
+KAITE_VARIANT=slim \
+KAITE_O11Y=prometheus \
+KAITE_IMAGE=ghcr.io/alexhraber/kaite:cpu-slim \
   ./deploy/docker/run.sh
 ```
 
-## Images
-
-Published to `ghcr.io/alexhraber/kaite`. Active tags:
-
-| Tag | Platform | Footprint |
-| --- | --- | --- |
-| `cpu-slim` / `cpu-full` | `linux/amd64`, `linux/arm64` | Agent + CPU PyTorch |
-| `apple-slim` / `apple-full` | `linux/arm64` (Apple Silicon hosts) | Same as CPU, arm64-only |
-
-`slim` is the compact data-science stack. `full` adds Hugging Face training,
-Ray/MLflow/W&B, and FastAPI/Gradio serving. Versioned tags look like
-`v0.2.0-cpu-slim`; unversioned aliases track the latest release.
-
-NVIDIA / AMD / Intel bake targets exist for deliberate host testing but are
-**inactive** in CI and automatic releases. Opt in with
-`make build-all-accelerators` or the image workflow’s accelerator input.
+Pin a release for production:
 
 ```bash
-make build-plan   # print bake graph
+docker pull ghcr.io/alexhraber/kaite:v0.2.1-cpu-slim
+```
+
+> **Package visibility:** the container package must be **public** for anonymous
+> pulls. If `docker pull` returns 401/404 for a public repo, open
+> [Package settings](https://github.com/users/alexhraber/packages/container/package/kaite/settings)
+> → **Change visibility** → Public.
+
+## Images
+
+Registry: [`ghcr.io/alexhraber/kaite`](https://github.com/alexhraber/kaite/pkgs/container/kaite)
+
+| Tag | Platform (published) | Footprint |
+| --- | --- | --- |
+| `cpu-slim` / `cpu-full` | `linux/amd64` | Agent + CPU PyTorch |
+| `apple-slim` / `apple-full` | `linux/arm64` | Same stack for Apple Silicon hosts |
+| `vX.Y.Z-<hardware>-<variant>` | as above | Immutable release tags |
+
+`slim` is the compact data-science stack. `full` adds Hugging Face training,
+Ray/MLflow/W&B, and FastAPI/Gradio serving.
+
+Versioned tags: `v0.2.1-cpu-slim`, `v0.2.1-apple-full`, …. Unversioned aliases
+(`cpu-slim`, …) track the latest successful release.
+
+NVIDIA / AMD / Intel bake targets exist for deliberate host testing but are
+**inactive** in automatic CI/release. Opt in with `make build-all-accelerators`
+or the image workflow’s accelerator input.
+
+```bash
+make build-plan   # print bake graph (Docker Buildx)
 make build-slim   # cpu + apple slim
 make build-full   # cpu + apple full
 ```
@@ -56,16 +83,14 @@ kaite smoke     # framework + device check (used by CI)
 kaite hardware  # accelerator CLI output
 ```
 
-Deeper layout (supervisor files, image matrix, deploy paths, failure model):
-[docs/architecture.md](docs/architecture.md).
+Deeper layout: [docs/architecture.md](docs/architecture.md).
 
 ## Deploy
 
 - **Docker:** [`deploy/docker/run.sh`](deploy/docker/run.sh) — local agent launch.
   Use `deploy/docker/smoke.sh` for device/framework checks without a token.
 - **Kubernetes:** [`deploy/kubernetes/kaite-agent.yaml`](deploy/kubernetes/kaite-agent.yaml)
-  — one-shot Job that claims a Buildkite job and exits. See
-  [`deploy/kubernetes/README.md`](deploy/kubernetes/README.md).
+  — one-shot Job. See [`deploy/kubernetes/README.md`](deploy/kubernetes/README.md).
 - **Pipeline targeting:** [`examples/pipeline.yml`](examples/pipeline.yml)
 
 ```yaml
@@ -82,10 +107,9 @@ agents:
 | `slim.txt` + `<hardware>.txt` | every image | NumPy/pandas/sklearn/Jupyter + hardware PyTorch |
 | `base.txt` `training.txt` `orchestration.txt` `serving.txt` | `*-full` only | broader science, HF stack, Ray/MLflow/W&B, FastAPI/Gradio |
 
-Vendor-specific or non-portable packages (DeepSpeed, bitsandbytes, FlashAttention,
-vLLM, s3fs, …) stay out of the defaults. Pass them through
-`KAITE_EXTRA_PYTHON_PACKAGES` at build time. Details in
-[`requirements/README.md`](requirements/README.md).
+Vendor-specific packages (DeepSpeed, bitsandbytes, FlashAttention, vLLM, s3fs, …)
+stay out of the defaults. Pass them through `KAITE_EXTRA_PYTHON_PACKAGES` at
+build time. Details: [`requirements/README.md`](requirements/README.md).
 
 ## Observability
 
@@ -107,10 +131,16 @@ make vet
 make build          # bin/kaite
 ```
 
-Images and releases: Release Please opens a release PR from `main`; merging it
-tags, creates a GitHub release, then dispatches the image workflow against that
-tag so active GHCR images (CPU/Apple slim+full) publish with provenance and
-SBOM. See [CONTRIBUTING.md](CONTRIBUTING.md).
+## Releases
+
+Release Please opens a release PR from `main`. Merging it:
+
+1. Creates the semver tag and GitHub release
+2. Dispatches `release-images.yml` against that tag (`actions: write` required)
+3. Publishes active CPU/Apple slim+full images to GHCR with provenance and SBOM
+4. Annotates the GitHub release with pull commands
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ## License
 

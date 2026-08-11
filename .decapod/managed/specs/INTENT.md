@@ -31,11 +31,23 @@ deliberate host testing but are inactive in automatic CI and release until
 matching runners exist.
 
 Key operating facts:
-- **Release images:** Release Please tags must dispatch `release-images.yml` (requires `actions: write` on the release job) or GHCR never receives versioned tags. Managed entrypoints and Dockerfile.decapod pin track Decapod **0.96.16**.
+- **Release images:** Release Please tags must dispatch `release-images.yml`
+  (requires `actions: write` on the release job) or GHCR never receives
+  versioned tags. After images publish, the workflow **annotates** the existing
+  GitHub Release with GHCR pull lines — it must not recreate the release or
+  call `gh release edit --generate-notes` (create-only; breaks re-runs).
+- **Version lockstep:** `cmd/kaite` `version` constant tracks the released
+  package version (currently **0.2.1**) so doctor/smoke/Prometheus match the tag.
+- **Package visibility:** GHCR package visibility is independent of repo
+  visibility; anonymous `docker pull` requires an explicit Public package
+  setting (documented in README/CONTRIBUTING/SECURITY).
+- **Decapod pin:** managed entrypoints and Dockerfile.decapod track the
+  evaluating Decapod release (refresh via validate / workspace ensure).
 - **Primary languages**: Go, Dockerfile, shell, YAML
 - **Surfaces**: Go supervisor, Docker Bake matrix, Docker launcher, Kubernetes
   Job template, Python requirement layers, Release Please + GHCR image CI
-- **Docs**: root README for operators; `docs/architecture.md` for system layout
+- **Docs**: root README for operators (quick start + badges); `SECURITY.md` for
+  vulnerability reporting; `docs/architecture.md` for system layout
 
 ## Product View
 ```mermaid
@@ -139,7 +151,7 @@ flowchart LR
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `c26fd3e39755202a0870c2ba78cc44f5f53bbdae45cc614ec6a8311547f5b2db`
+- Repository signal fingerprint: `59cfc539463405fb93e9865fc3c8422ec148931719703b16798449b6560ce4e0`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

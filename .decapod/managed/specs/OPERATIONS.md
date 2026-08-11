@@ -93,6 +93,21 @@ the immutable tag, because tags created with `GITHUB_TOKEN` do not re-trigger
 `actions: write` so it can dispatch image builds; without that permission the
 tag and release still appear but GHCR stays empty (observed for v0.2.0).
 
+After active images pass verify, the **Annotate GitHub release with image tags**
+job appends a Container images section (pull table + example) to the existing
+release body. It uses `gh release edit --notes-file` (or `create` only if the
+release is missing). It never uses `--generate-notes`. Re-runs are idempotent:
+if the section is already present, the job exits 0. The same job runs for both
+tag-push and `workflow_dispatch` inputs.
+
+### Public package pulls
+
+GHCR package visibility is **not** inherited from repository visibility. For
+anonymous pulls of `ghcr.io/<owner>/kaite:…` on a public project, set the
+container package to Public under package settings. Document this for operators
+in README/CONTRIBUTING; automation via Packages REST visibility endpoints may
+return 404 depending on token scopes.
+
 ## Rollout and Recovery
 - Publish immutable `<tag>-<hardware>-<variant>` tags; ordinary semantic-tag
   releases contain active `cpu-slim`, `cpu-full`, `apple-slim`, and
@@ -148,7 +163,7 @@ vendor device runtime.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `c26fd3e39755202a0870c2ba78cc44f5f53bbdae45cc614ec6a8311547f5b2db`
+- Repository signal fingerprint: `59cfc539463405fb93e9865fc3c8422ec148931719703b16798449b6560ce4e0`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->
