@@ -16,7 +16,7 @@ on:
         default: false
         type: boolean
       enable_accelerators:
-        description: Publish inactive NVIDIA, AMD, and Intel profiles on matching hosts
+        description: Publish inactive Linux accelerator profiles (NVIDIA, AMD, and Intel)
         required: true
         default: false
         type: boolean
@@ -30,7 +30,7 @@ jobs:
     name: Resolve release capability matrix
     runs-on: ubuntu-24.04
     outputs:
-      active: ${{ steps.matrix.outputs.active }}
+      containers: ${{ steps.matrix.outputs.containers }}
       accelerators: ${{ steps.matrix.outputs.accelerators }}
     steps:
       - uses: actions/checkout@v4
@@ -43,9 +43,9 @@ jobs:
           ENABLE_ACCELERATORS: ${{ inputs.enable_accelerators }}
         run: |
           set -euo pipefail
-          echo "active=$(go run ./cmd/kait matrix --active-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
+          echo "containers=$(go run ./cmd/kait matrix --active-only --runtime container | tr -d '\n')" >> "$GITHUB_OUTPUT"
           if [[ "${ENABLE_ACCELERATORS:-false}" == "true" ]]; then
-            echo "accelerators=$(go run ./cmd/kait matrix --accelerators-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
+            echo "accelerators=$(go run ./cmd/kait matrix --accelerators-only --runtime container | tr -d '\n')" >> "$GITHUB_OUTPUT"
           else
             echo 'accelerators={"include":[]}' >> "$GITHUB_OUTPUT"
           fi
@@ -56,7 +56,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.active) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.containers) }}
     steps:
       - uses: actions/checkout@v4
       - name: Set release metadata
@@ -73,6 +73,7 @@ jobs:
           [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
           publish_stable="${INPUT_PUBLISH_STABLE:-true}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "runtime_version=${version#v}" >> "$GITHUB_OUTPUT"
           echo "publish_stable=$publish_stable" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -102,6 +103,7 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ matrix.base_image }}
             BUILDKITE_AGENT_VERSION=3.123.1
+            KAIT_VERSION=${{ steps.release.outputs.runtime_version }}
             KAIT_HARDWARE=${{ matrix.hardware }}
             KAIT_VARIANT=${{ matrix.variant }}
             KAIT_PROFILE=${{ matrix.profile }}
@@ -126,7 +128,7 @@ jobs:
       packages: read
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.active) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.containers) }}
     steps:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/setup-qemu-action@v3
@@ -178,6 +180,7 @@ jobs:
           version="${INPUT_VERSION:-${REF_NAME}}"
           [[ "$version" == v* ]] || version="v$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "runtime_version=${version#v}" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -190,6 +193,7 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ matrix.base_image }}
             BUILDKITE_AGENT_VERSION=3.123.1
+            KAIT_VERSION=${{ steps.release.outputs.runtime_version }}
             KAIT_HARDWARE=${{ matrix.hardware }}
             KAIT_VARIANT=${{ matrix.variant }}
             KAIT_PROFILE=${{ matrix.profile }}
@@ -206,7 +210,7 @@ jobs:
 
   github-release:
     name: Annotate GitHub release with profile images
-    needs: verify
+    needs: [verify]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -234,6 +238,7 @@ jobs:
           - \`${image}:${version}-<hardware>-training\`
           - \`${image}:${version}-<hardware>-orchestration\`
           - \`${image}:${version}-<hardware>-serving\`
+
           EOF
           )
           if gh release view "$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then

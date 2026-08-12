@@ -6,15 +6,15 @@ description: Kait supervisor, capability contract, deployment, and release archi
 
 # Architecture
 
-Kait is a thin Go supervisor packaged into hardware-specific Linux images.
-Buildkite remains the orchestrator; Kait owns the reproducible runtime and
-hardware contract, process lifecycle, identity validation, health/metrics, and
-diagnostic subcommands.
+Kait is a thin Go supervisor packaged into hardware-specific Linux images and a
+reserved native macOS worker bundle path. Buildkite remains the orchestrator;
+Kait owns the reproducible runtime and hardware contract, process lifecycle, identity
+validation, health/metrics, and diagnostic subcommands.
 
 ## Operating boundary
 
 ```text
-Docker / Kubernetes
+Docker / Kubernetes / macOS
         │
         ▼
 ┌───────────────────┐     start / signals      ┌────────────────────┐
@@ -37,15 +37,17 @@ real, prepared, and validated execution surface.
 [`cmd/kait/capability-contract.json`](../cmd/kait/capability-contract.json) is
 the authoritative model. It defines:
 
-- hardware classes, base images, platforms, Python interpreters, and runner labels;
+- hardware classes, execution runtimes, base images where applicable, platforms, Python interpreters, and runner labels;
 - workload capabilities, dependency relationships, manifest layers, summaries, and smoke programs;
 - public profiles: `slim`, `full`, `data-science`, `training`, `orchestration`, and `serving`.
 
-The embedded supervisor reads that model through `go:embed`. During image
-construction, `kait contract` resolves the selected hardware/profile and emits
-the identity plus the exact ordered requirements. The Dockerfile installs that
-list and copies the same output to `/etc/kait/identity.json`. `kait matrix`
-emits the CI/release matrix from the same model.
+The embedded supervisor reads that model through `go:embed`. During container
+construction or native bundle packaging, `kait contract` resolves the selected
+hardware/profile and emits the identity plus the exact ordered requirements.
+The Dockerfile installs container manifests and copies the identity to
+`/etc/kait/identity.json`; the macOS bundle installs the same identity under
+`/Library/Application Support/Kait`. `kait matrix` emits separate container
+and native CI/release matrices from the same model.
 
 The resulting flow is:
 
@@ -53,7 +55,7 @@ The resulting flow is:
 capability model
   -> profile composition and hardware compatibility
   -> ordered requirement manifests
-  -> Docker image and baked identity
+  -> container image or native bundle and baked identity
   -> startup identity validation
   -> Buildkite agent tags
   -> doctor/smoke proof
@@ -61,9 +63,10 @@ capability model
   -> pipeline selectors and documentation
 ```
 
-`docker-bake.hcl` is the release-facing projection of this model. Its target
-arguments are checked by the contract tests and use the same six profiles; it
-does not define an alternative capability vocabulary.
+`docker-bake.hcl` is the release-facing projection for container rows. The
+native macOS packager is the reserved projection for Apple rows. Both consume
+the same six profiles; neither defines an alternative capability vocabulary.
+Apple is currently inactive, like the other accelerator classes.
 
 ## Identity and startup
 
@@ -71,8 +74,10 @@ Official images contain an identity like:
 
 ```json
 {
-  "schema": 2,
+  "schema": 3,
   "hardware": "cpu",
+  "runtime": "container",
+  "accelerator": "cpu",
   "variant": "full",
   "profile": "training",
   "capabilities": ["data-science", "training"],
@@ -83,8 +88,9 @@ Official images contain an identity like:
 The identity file is mandatory. Runtime values can assert or constrain the
 baked values, but cannot create a capability claim when the file is absent or
 replace one with a different value. The supervisor validates profile,
-capability composition, hardware support, and ordered requirement manifests
-before starting Buildkite.
+capability composition, hardware support, execution runtime, accelerator, and
+ordered requirement manifests before starting Buildkite. A native Apple
+identity is the only identity that can advertise `accelerator=mps`.
 
 OCI labels repeat image inputs for registry inspection; they are not a second
 runtime authority.
@@ -134,15 +140,15 @@ matching. Kait does not need to know the graph at image-build time.
 | Hardware | Base/runtime | Platforms | Status |
 | --- | --- | --- | --- |
 | CPU | Ubuntu 24.04 + CPU PyTorch when required | amd64, arm64 | Active |
-| Apple | Ubuntu 24.04 arm64 + CPU PyTorch when required | arm64 | Active; no Metal passthrough claim |
+| Apple | Native macOS arm64 + Metal/MPS PyTorch when required | darwin/arm64 | Inactive; reserved native worker bundle |
 | NVIDIA | CUDA 12.6.3 + CUDA PyTorch when required | amd64 | Explicit opt-in |
 | AMD | ROCm 6.2.4 + ROCm PyTorch when required | amd64 | Explicit opt-in |
 | Intel | oneAPI Base Toolkit + XPU PyTorch when required | amd64 | Explicit opt-in |
 
 Every hardware class is structurally modeled against every public profile.
 Accelerator profiles are not considered physically proven merely because their
-images build: `kait smoke` requires the matching device for profiles that
-include the data-science PyTorch contract.
+container or bundle builds: `kait smoke` requires the matching device for
+profiles that include the data-science PyTorch contract.
 
 ## Diagnostics and observability
 
@@ -159,14 +165,16 @@ credentials remain outside the image.
 
 The Docker launcher chooses `hardware-profile` tags and forwards the profile
 assertion. Kubernetes uses the same identity-derived tags and profile values.
-Buildkite jobs run in the selected official image; they do not pull or rebuild
-Kait inside each step.
+Buildkite jobs run in the selected official container; the native worker bundle
+path is reserved while Apple is inactive. Jobs do not pull or rebuild Kait
+inside each step.
 
-CI asks `kait matrix --active-only` for CPU and Apple profiles. The opt-in
-accelerator job asks for the inactive hardware rows only when matching runner
-labels are intentionally enabled. Release uses the same generated rows,
-publishes immutable `<version>-<hardware>-<profile>` tags, and retains
-`<hardware>-slim`, `<hardware>-full`, and bare `<hardware>` compatibility aliases.
+CI asks `kait matrix --active-only --runtime container` for the active Linux CPU
+images. The opt-in accelerator job asks for inactive hardware rows only when
+matching runner labels are intentionally enabled. Release publishes immutable
+container `<version>-<hardware>-<profile>` tags. Apple MPS bundles remain
+prepared in source but are not built or released while Apple is inactive;
+Apple Silicon CPU users use the multi-architecture CPU images.
 
 ## Downstream derivation
 
@@ -186,6 +194,7 @@ the resulting compatibility surface.
 | `docker-bake.hcl` | Release-facing hardware/profile targets and aliases |
 | `requirements/` | Leaf dependency manifests selected by the model |
 | `deploy/` | Docker and Kubernetes direct-use paths |
+| `deploy/macos/` | Native Apple MPS bundle, installation, and direct-use paths |
 | `examples/` | Heterogeneous Buildkite selector example |
 | `.github/workflows/` | Generated-matrix image CI and release publication |
 | `docs/` | Operator and architectural contract documentation |

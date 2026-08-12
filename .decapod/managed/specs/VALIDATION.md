@@ -4,17 +4,21 @@
 Validation is a release gate, not documentation theater.
 
 ## Validation Harness
-Local proof is the Makefile-backed Go harness plus the Docker Bake graph.
-Image builds and `kait smoke` run on tagged releases (and can be run locally
-per hardware target).
+Local proof is the Makefile-backed Go harness plus the Docker Bake graph and
+the reserved native macOS bundle packager. Active container builds and `kait
+smoke` run on Linux hosts; Apple builds remain inactive until a matching host
+surface is enabled.
 
 - Automated tests: `make test` (or `GOCACHE=… go test ./...`)
 - Static checks: `make vet`
 - Formatting: `make fmt`
 - Local binary: `make build` → `bin/kait`
 - Image contract: `make build-plan` / `docker buildx bake --print`
-- Dependency contract: review `requirements/*.txt` install order; native CPU
-  and Apple `*-slim`/`*-full` image builds with `kait smoke`
+- Reserved native contract: `deploy/macos/package.sh` with the installed
+  bundle's doctor/smoke checks when Apple is re-enabled
+- Dependency contract: review `requirements/*.txt` install order; active Linux
+  CPU containers install their hardware-specific PyTorch manifest before the
+  shared layers
 - Governance: `decapod validate`
 
 ## Proof Surfaces
@@ -22,6 +26,8 @@ per hardware target).
 - GOCACHE=/tmp/kait-gocache go test ./...
 - GOCACHE=/tmp/kait-gocache go vet ./...
 - docker buildx bake --print
+- GOCACHE=/tmp/kait-darwin-gocache GOOS=darwin GOARCH=arm64 go test -c ./cmd/kait
+- Native macOS arm64 doctor/smoke output
 - Kubernetes YAML review with a cluster-specific validation tool before apply
 
 ## Promotion Gates
@@ -30,7 +36,7 @@ per hardware target).
 | Architecture and interface drift | decapod validate | Gate output |
 | Go tests pass | GOCACHE=/tmp/kait-gocache go test ./... | CI and local logs |
 | Bake graph valid | docker buildx bake --print | CI output |
-| Active dependency layers resolve | native CPU/Apple slim/full Docker builds | Image build logs and variant-aware `kait smoke` |
+| Active dependency layers resolve | Linux CPU container matrix builds | Image logs and variant-aware `kait smoke` |
 | Docs/specs current | README and living-spec diff | PR diff |
 | Security scan | image scanner on tagged builds | Scanner reports |
 
@@ -45,8 +51,8 @@ per hardware target).
 ## Regression Guardrails
 - A missing Buildkite token must continue to fail closed.
 - Child exit codes must remain observable and non-zero when the job fails.
-- Hardware and variant tags must match the image target, KAIT_HARDWARE, and
-  KAIT_VARIANT values.
+- Hardware, runtime, accelerator, and variant tags must match the immutable
+  target identity and any matching KAIT_* assertions.
 - O11y mode changes must not require vendor credentials in the Kait image.
 
 ## CI Flow
@@ -55,11 +61,10 @@ per hardware target).
 3. A push to `main` creates or updates the Release Please PR.
 4. Merging the Release Please PR creates the semantic tag and GitHub release;
    the release workflow explicitly dispatches image publication for that tag.
-5. The tagged image workflow builds active `*-slim` and `*-full` targets on
-   native hosts, runs the container smoke contract for each variant, and
-   publishes versioned and stable GHCR tags.
+5. The tagged workflow builds active Linux container profiles on native Linux
+   hosts, runs the appropriate smoke contract, and publishes GHCR tags.
 6. After verify succeeds, the workflow annotates the existing GitHub Release
-   with GHCR pull commands (`gh release edit --notes-file`, never
+   with GHCR pull/install commands (`gh release edit --notes-file`, never
    `--generate-notes`). Re-runs are idempotent when the section already exists.
 7. Image scanning and signing remain promotion requirements before production
    use. Operator docs (README, SECURITY.md) state that GHCR package Public
@@ -72,14 +77,15 @@ Please owns the main-to-release-PR and release-PR-to-tag transitions, while
 release annotation. The explicit dispatch is required because GitHub does not
 recursively trigger workflows from resources created with `GITHUB_TOKEN`.
 
-Supervisor version proof: `cmd/kait` `version` constant and unit tests must
-match the released package version so doctor/smoke/Prometheus labels are not
-stale relative to the GitHub/GHCR tag.
+Supervisor version proof: release builds must inject the semver into
+`cmd/kait`'s version variable so doctor/smoke/Prometheus labels are not stale
+relative to the GitHub/GHCR tag or a future native Apple bundle.
 
 The dependency proof must show that the hardware manifest is installed before
-the shared AI/ML layers, that the active CPU and Apple manifests resolve Linux
-`amd64` and `arm64` wheels, that slim and full image tags are distinct, and that
-the variant-aware image smoke command imports the advertised full toolchain.
+the shared AI/ML layers, that the active CPU container resolves Linux wheels,
+that slim and full compositions are distinct, and that the variant-aware smoke
+command imports the advertised toolchain and validates any required
+accelerator.
 Accelerator-only packages are not counted as portable proof until their
 matching inactive host jobs are deliberately enabled.
 
@@ -128,6 +134,18 @@ matching inactive host jobs are deliberately enabled.
 - Repository signal fingerprint: `78c5a2a428b61f0537536a7760c39baf655e4a7ccba937b82df5782515238444`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
+
+## Codebase Attestation
+
+- Repository signal fingerprint: `c70f67f5dedfa45dbe5c2c90971c52f165d80c3755cabac1982850ba12279dc0`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
+
+## Codebase Attestation
+
+- Repository signal fingerprint: `86745f1d768dec3083405ef392f8fbdd95b764429be12b432601e3ca3ac2743b`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
+- Refreshed from the current codebase by `decapod specs.refresh`
+<!-- decapod:codebase-attestation:end -->
 
 <!-- decapod:capability-overlay:background-processing:start -->
 
@@ -189,7 +207,7 @@ matching inactive host jobs are deliberately enabled.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `c70f67f5dedfa45dbe5c2c90971c52f165d80c3755cabac1982850ba12279dc0`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
+- Repository signal fingerprint: `09785926cd7f035e50e28ff508548568636bef945ba1806b74e7a1d1c19aa712`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

@@ -36,7 +36,7 @@ func loadConfig() (config, error) {
 		o11y:           lowerEnv("KAIT_O11Y", "none"),
 		runMode:        lowerEnv("KAIT_RUN_MODE", "agent"),
 		metricsAddr:    os.Getenv("KAIT_METRICS_ADDR"),
-		buildkiteBin:   envOr("BUILDKITE_AGENT_BIN", "/buildkite/bin/buildkite-agent"),
+		buildkiteBin:   envOr("BUILDKITE_AGENT_BIN", defaultBuildkiteAgentBinary()),
 		buildkiteToken: os.Getenv("BUILDKITE_AGENT_TOKEN"),
 		tokenFile:      os.Getenv("BUILDKITE_AGENT_TOKEN_FILE"),
 		command:        os.Getenv("KAIT_COMMAND"),

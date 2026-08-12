@@ -4,6 +4,7 @@
   "profile_order": ["slim", "full", "data-science", "training", "orchestration", "serving"],
   "hardware": {
     "cpu": {
+      "runtime": "container",
       "platforms": ["linux/amd64", "linux/arm64"],
       "python": "python3",
       "base_image": "ubuntu:24.04",
@@ -14,16 +15,18 @@
       "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
     },
     "apple": {
-      "platforms": ["linux/arm64"],
+      "runtime": "native-macos",
+      "platforms": ["darwin/arm64"],
       "python": "python3",
-      "base_image": "ubuntu:24.04",
-      "runner": "ubuntu-24.04-arm",
-      "active": true,
-      "accelerator": "cpu",
-      "python_requirements": "apple.txt",
+      "base_image": "",
+      "runner": "macos-14",
+      "active": false,
+      "accelerator": "mps",
+      "python_requirements": "apple-mps.txt",
       "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
     },
     "nvidia": {
+      "runtime": "container",
       "platforms": ["linux/amd64"],
       "python": "python3",
       "base_image": "nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04",
@@ -34,6 +37,7 @@
       "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
     },
     "amd": {
+      "runtime": "container",
       "platforms": ["linux/amd64"],
       "python": "python3",
       "base_image": "rocm/dev-ubuntu-24.04:6.2.4-complete",
@@ -44,6 +48,7 @@
       "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]
     },
     "intel": {
+      "runtime": "container",
       "platforms": ["linux/amd64"],
       "python": "python3.11",
       "base_image": "intel/oneapi-basekit:2025.0.1-0-devel-ubuntu22.04",

@@ -4,11 +4,12 @@ ARG BASE_IMAGE=ubuntu:24.04
 FROM --platform=$BUILDPLATFORM golang:1.23-bookworm AS kait-build
 ARG TARGETOS
 ARG TARGETARCH
+ARG KAIT_VERSION=dev
 WORKDIR /src
 COPY go.mod ./
 COPY cmd/kait ./cmd/kait
 RUN test -n "${TARGETOS}" -a -n "${TARGETARCH}" \
-    && CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -trimpath -ldflags='-s -w' -o /out/kait ./cmd/kait
+    && CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -trimpath -ldflags="-s -w -X main.version=${KAIT_VERSION}" -o /out/kait ./cmd/kait
 
 FROM ${BASE_IMAGE} AS runtime
 ARG BUILDKITE_AGENT_VERSION=3.123.1
@@ -22,6 +23,7 @@ ARG TARGETARCH
 
 LABEL io.kait.identity="/etc/kait/identity.json" \
       io.kait.hardware="${KAIT_HARDWARE}" \
+      io.kait.runtime="container" \
       io.kait.variant="${KAIT_VARIANT}" \
       io.kait.profile="${KAIT_PROFILE}" \
       io.kait.capabilities="${KAIT_CAPABILITIES}"
@@ -76,7 +78,7 @@ RUN set -eux; \
     if [ -n "${KAIT_VARIANT}" ]; then contract_args="${contract_args} --variant ${KAIT_VARIANT}"; fi; \
     if [ -n "${KAIT_CAPABILITIES}" ]; then contract_args="${contract_args} --capabilities ${KAIT_CAPABILITIES}"; fi; \
     /usr/local/bin/kait contract ${contract_args} > /tmp/kait-contract.json; \
-    jq -e '.schema == 2 and (.hardware | length > 0) and (.profile | length > 0) and (.capabilities | length > 0)' /tmp/kait-contract.json >/dev/null; \
+    jq -e '.schema == 3 and .runtime == "container" and (.hardware | length > 0) and (.profile | length > 0) and (.capabilities | length > 0)' /tmp/kait-contract.json >/dev/null || { echo "Dockerfile only builds container execution contracts" >&2; exit 1; }; \
     jq -r '.requirements[]' /tmp/kait-contract.json | while IFS= read -r requirements_file; do \
       test -f "/opt/kait/requirements/${requirements_file}" || { echo "missing requirements manifest: ${requirements_file}" >&2; exit 1; }; \
       /opt/kait/venv/bin/pip install --no-cache-dir -r "/opt/kait/requirements/${requirements_file}"; \

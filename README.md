@@ -4,12 +4,13 @@
 [![CI](https://github.com/alexhraber/kait/actions/workflows/build-images.yml/badge.svg?branch=main)](https://github.com/alexhraber/kait/actions/workflows/build-images.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GHCR](https://img.shields.io/badge/ghcr.io-alexhraber%2Fkait-blue)](https://github.com/alexhraber/kait/pkgs/container/kait)
-[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.97.0-dc2626)](https://github.com/DecapodLabs/decapod)
+[![🦀 Decapod](https://img.shields.io/badge/🦀%20Decapod-v0.98.0-dc2626)](https://github.com/DecapodLabs/decapod)
 
 Self-hosted [Buildkite](https://buildkite.com) agents with a batteries-included
 AI/ML execution environment. Choose the work capability and hardware; the
-image already contains the Buildkite agent, pinned Python toolchain, hardware
-contract, diagnostics, and lightweight observability.
+selected Linux container already contains the Buildkite integration, pinned
+Python toolchain, hardware contract, diagnostics, and lightweight
+observability.
 
 Kait is pronounced “kite.” Its spelling keeps `ai` at the center, reflecting
 its focus on AI and machine-learning execution. It also carries a small
@@ -38,6 +39,11 @@ For a training, orchestration, or serving job, choose the matching workload
 profile. The worker advertises the capabilities baked into that image; the
 pipeline does not install them at job start.
 
+Apple is modeled as a native macOS/MPS hardware contract, but it is currently
+disabled like the other accelerator classes. On Apple Silicon, use the
+ordinary multi-architecture Linux CPU image through Docker or Apple Container
+and advertise `kait.hardware=cpu`.
+
 Pin a release for production:
 
 ```bash
@@ -55,12 +61,12 @@ Registry: [`ghcr.io/alexhraber/kait`](https://github.com/alexhraber/kait/pkgs/co
 
 | Tag | Platform (published) | Footprint |
 | --- | --- | --- |
-| `<hardware>-slim` / `<hardware>-full` | hardware contract | Compatibility profiles |
+| `<hardware>-slim` / `<hardware>-full` | Linux container hardware contract | Compatibility profiles |
 | `<hardware>-data-science` | hardware contract | NumPy, pandas, scikit-learn, Jupyter, and hardware-specific PyTorch |
 | `<hardware>-training` | hardware contract | Data-science plus Hugging Face and Lightning |
 | `<hardware>-orchestration` | hardware contract | Ray, MLflow, and W&B |
 | `<hardware>-serving` | hardware contract | FastAPI, Gradio, and Uvicorn |
-| `vX.Y.Z-<hardware>-<profile>` | hardware contract | Immutable release tags |
+| `vX.Y.Z-<hardware>-<profile>` | Linux container hardware contract | Immutable release tags |
 
 `slim` is the compact data-science stack. `full` adds Hugging Face training,
 Ray/MLflow/W&B, and FastAPI/Gradio serving.
@@ -74,16 +80,20 @@ The public capability set is deliberately small:
 | `orchestration` | `full`, `orchestration` | Ray plus MLflow and W&B |
 | `serving` | `full`, `serving` | FastAPI, Gradio, and Uvicorn |
 
-Every official image records this set in `/etc/kait/identity.json`, exposes it
+Every official container records this set in `/etc/kait/identity.json`, exposes it
 through `kait doctor`, and advertises it to Buildkite as
 `kait.capability.<name>=true`. `slim` and `full` remain compatibility names;
 they describe package footprints, while capabilities describe usable work.
 
-Versioned tags use the same six profiles, for example
-`v0.2.1-cpu-training` and `v0.2.1-apple-serving`. Unversioned profile aliases
-track the latest successful release. `slim` and `full` remain compatibility
-profiles, while workload-specific tags are real images with their own baked
-profile identity and smoke proof.
+The native Apple MPS contract remains modeled for future re-enablement, but is
+inactive in CI and release matrices and is not a published execution surface.
+
+Versioned container tags use the six profiles, for example
+`v0.5.0-cpu-training`. Apple-specific profiles are currently not released;
+Apple Silicon users should use the `cpu-*` multi-architecture images.
+Previously published `apple-*` tags remain Linux CPU compatibility artifacts
+and are not GPU surfaces. `slim` and `full` remain compatibility profiles,
+while workload-specific artifacts have their own identity and smoke proof.
 
 NVIDIA / AMD / Intel bake targets exist for deliberate host testing but are
 **inactive** in automatic CI/release. Opt in with `make build-all-accelerators`
@@ -91,9 +101,9 @@ or the image workflow’s accelerator input.
 
 ```bash
 make build-plan   # print bake graph (Docker Buildx)
-make build-slim   # cpu + apple slim compatibility profiles
-make build-full   # cpu + apple full compatibility profiles
-make build-profiles # all six active CPU/Apple profiles
+make build-slim   # Linux CPU slim compatibility profile
+make build-full   # Linux CPU full compatibility profile
+make build-profiles # all six active Linux container profiles
 ```
 
 ## Runtime
@@ -126,6 +136,10 @@ declared capability and validates accelerator access when the profile includes
 the PyTorch data-science contract. A missing baked identity or runtime attempt
 to override it fails closed.
 
+On Apple Silicon, run the Linux CPU image and use the CPU hardware selector.
+Apple-native doctor/smoke execution is inactive until a matching GPU surface
+is deliberately re-enabled.
+
 Deeper layout: [docs/architecture.md](docs/architecture.md) and the
 [capability contract](docs/capabilities.md).
 
@@ -154,11 +168,16 @@ workload promise. See [`examples/pipeline.yml`](examples/pipeline.yml) for a
 complete set of selectors. Kait reserves `kait.*` agent tags so custom tags
 cannot silently contradict the image identity.
 
+Apple Silicon CPU jobs use the same selector as any other CPU worker:
+`kait.hardware: cpu`. Apple GPU selectors remain unavailable until the native
+hardware contract is deliberately re-enabled.
+
 ## Toolchain layers
 
 | Layer | Installed when | Contents |
 | --- | --- | --- |
-| `slim.txt` + `<hardware>.txt` | `data-science` | NumPy/pandas/sklearn/Jupyter + hardware PyTorch |
+| `slim.txt` + `<hardware>.txt` | Linux `data-science` | NumPy/pandas/sklearn/Jupyter + hardware PyTorch |
+| `apple-mps.txt` + `slim.txt` | Reserved native Apple contract | Inactive until Apple GPU execution is re-enabled |
 | `base.txt` + `training.txt` | `training` | Hugging Face and Lightning training stack, composed on data-science |
 | `orchestration.txt` | `orchestration` | Ray/MLflow/W&B |
 | `serving.txt` | `serving` | FastAPI/Gradio/Uvicorn |
@@ -211,8 +230,8 @@ Release Please opens a release PR from `main`. Merging it:
 
 1. Creates the semver tag and GitHub release
 2. Dispatches `release-images.yml` against that tag (`actions: write` required)
-3. Publishes all six active CPU/Apple profiles to GHCR with provenance and SBOM
-4. Annotates the GitHub release with pull commands
+3. Publishes active Linux container profiles to GHCR with provenance and SBOM
+4. Annotates the GitHub release with pull/install commands
 
 When a merged change has no conventional release unit, the same workflow opens
 an automatic patch release PR so infrastructure, documentation, and identity

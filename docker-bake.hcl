@@ -19,6 +19,7 @@ target "common" {
   dockerfile = "Dockerfile"
   args = {
     BUILDKITE_AGENT_VERSION = AGENT_VERSION
+    KAIT_VERSION = VERSION
   }
 }
 
@@ -31,12 +32,6 @@ target "cpu-base" {
   inherits = ["common"]
   platforms = ["linux/amd64", "linux/arm64"]
   args = { BASE_IMAGE = "ubuntu:24.04", KAIT_HARDWARE = "cpu", KAIT_PYTHON = "python3" }
-}
-
-target "apple-base" {
-  inherits = ["common"]
-  platforms = ["linux/arm64"]
-  args = { BASE_IMAGE = "ubuntu:24.04", KAIT_HARDWARE = "apple", KAIT_PYTHON = "python3" }
 }
 
 target "nvidia-base" {
@@ -86,38 +81,6 @@ target "cpu-orchestration" {
 target "cpu-serving" {
   inherits = ["cpu-base"]
   tags = ["${REGISTRY}:${VERSION}-cpu-serving", "${REGISTRY}:cpu-serving"]
-  args = { KAIT_VARIANT = "full", KAIT_PROFILE = "serving", KAIT_CAPABILITIES = "serving" }
-}
-
-target "apple-slim" {
-  inherits = ["apple-base"]
-  tags = ["${REGISTRY}:${VERSION}-apple-slim", "${REGISTRY}:apple-slim", "${REGISTRY}:${VERSION}-apple", "${REGISTRY}:apple"]
-  args = { KAIT_VARIANT = "slim", KAIT_PROFILE = "slim", KAIT_CAPABILITIES = "data-science" }
-}
-target "apple" { inherits = ["apple-slim"] }
-target "apple-full" {
-  inherits = ["apple-base"]
-  tags = ["${REGISTRY}:${VERSION}-apple-full", "${REGISTRY}:apple-full"]
-  args = { KAIT_VARIANT = "full", KAIT_PROFILE = "full", KAIT_CAPABILITIES = "data-science,training,orchestration,serving" }
-}
-target "apple-data-science" {
-  inherits = ["apple-base"]
-  tags = ["${REGISTRY}:${VERSION}-apple-data-science", "${REGISTRY}:apple-data-science"]
-  args = { KAIT_VARIANT = "slim", KAIT_PROFILE = "data-science", KAIT_CAPABILITIES = "data-science" }
-}
-target "apple-training" {
-  inherits = ["apple-base"]
-  tags = ["${REGISTRY}:${VERSION}-apple-training", "${REGISTRY}:apple-training"]
-  args = { KAIT_VARIANT = "full", KAIT_PROFILE = "training", KAIT_CAPABILITIES = "data-science,training" }
-}
-target "apple-orchestration" {
-  inherits = ["apple-base"]
-  tags = ["${REGISTRY}:${VERSION}-apple-orchestration", "${REGISTRY}:apple-orchestration"]
-  args = { KAIT_VARIANT = "full", KAIT_PROFILE = "orchestration", KAIT_CAPABILITIES = "orchestration" }
-}
-target "apple-serving" {
-  inherits = ["apple-base"]
-  tags = ["${REGISTRY}:${VERSION}-apple-serving", "${REGISTRY}:apple-serving"]
   args = { KAIT_VARIANT = "full", KAIT_PROFILE = "serving", KAIT_CAPABILITIES = "serving" }
 }
 

@@ -20,6 +20,8 @@ type metrics struct {
 	lastExit     atomic.Int64
 	startTime    time.Time
 	hardware     string
+	runtime      string
+	accelerator  string
 	variant      string
 	profile      string
 	capabilities string
@@ -73,7 +75,7 @@ func shutdownServer(server *http.Server) {
 }
 
 func (m *metrics) prometheus() string {
-	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",variant=\"" + prometheusLabel(m.variant) + "\",profile=\"" + prometheusLabel(m.profile) + "\",capabilities=\"" + prometheusLabel(m.capabilities) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
+	labels := "hardware=\"" + prometheusLabel(m.hardware) + "\",runtime=\"" + prometheusLabel(m.runtime) + "\",accelerator=\"" + prometheusLabel(m.accelerator) + "\",variant=\"" + prometheusLabel(m.variant) + "\",profile=\"" + prometheusLabel(m.profile) + "\",capabilities=\"" + prometheusLabel(m.capabilities) + "\",o11y=\"" + prometheusLabel(m.o11y) + "\""
 	var b strings.Builder
 	fmt.Fprintf(&b, "# HELP kait_info Kait runtime build and configuration information.\n# TYPE kait_info gauge\nkait_info{version=\"%s\",%s} 1\n", version, labels)
 	fmt.Fprintf(&b, "# HELP kait_agent_starts_total Number of child process starts.\n# TYPE kait_agent_starts_total counter\nkait_agent_starts_total{%s} %d\n", labels, m.starts.Load())
@@ -94,7 +96,7 @@ func newDogStatsD(cfg config) (*dogStatsD, error) {
 	if err != nil {
 		return nil, err
 	}
-	tags := "kait_hardware:" + cfg.hardware + ",kait_variant:" + cfg.variant + ",kait_o11y:datadog"
+	tags := "kait_hardware:" + cfg.hardware + ",kait_runtime:" + cfg.identity.Runtime + ",kait_accelerator:" + cfg.identity.Accelerator + ",kait_variant:" + cfg.variant + ",kait_o11y:datadog"
 	return &dogStatsD{conn: conn, tags: tags}, nil
 }
 

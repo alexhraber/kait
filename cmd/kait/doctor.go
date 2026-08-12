@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
-	"runtime"
 	"strings"
 )
 
@@ -52,7 +52,7 @@ func writeDoctor(w io.Writer) error {
 func detectHardware(expected string) hardwareReport {
 	evidence := map[string]bool{
 		"cpu":    true,
-		"apple":  runtime.GOARCH == "arm64",
+		"apple":  detectAppleGPU(),
 		"nvidia": commandAvailable("nvidia-smi"),
 		"amd":    commandAvailable("rocminfo"),
 		"intel":  commandAvailable("sycl-ls"),
@@ -97,7 +97,7 @@ func smokeFrameworkCheck(hardware string, capabilities []string) (string, error)
 		return "", err
 	}
 	if hardware == "apple" {
-		if err := requireAppleArch(); err != nil {
+		if err := requireApplePlatform(); err != nil {
 			return "", err
 		}
 	}
@@ -114,6 +114,9 @@ func smokeFrameworkCheck(hardware string, capabilities []string) (string, error)
 		default:
 			check += "\nassert not torch.cuda.is_available(), \"CPU/Apple contract unexpectedly exposes CUDA\""
 		}
+	}
+	if hardware == "apple" && containsCapability(capabilities, "data-science") {
+		check += "\nassert torch.backends.mps.is_built(), \"PyTorch was not built with MPS support\"\nassert torch.backends.mps.is_available(), \"PyTorch cannot see the Apple GPU\"\n_mps = torch.ones((2, 2), device=\"mps\")\nassert _mps.device.type == \"mps\""
 	}
 	check += "\nprint(\"Kait capability contract ready\")"
 	return check, nil
@@ -138,10 +141,13 @@ func writeHardware(w io.Writer) error {
 		fmt.Fprintln(w, "cpu")
 		return nil
 	case "apple":
-		if err := requireAppleArch(); err != nil {
+		if err := requireApplePlatform(); err != nil {
 			return err
 		}
-		fmt.Fprintln(w, "apple (linux/arm64 CPU; Apple GPU is not exposed by Ubuntu containers)")
+		if !detectAppleGPU() {
+			return errors.New("Apple GPU/Metal was not detected by system_profiler")
+		}
+		fmt.Fprintln(w, "apple (native macOS/arm64; Metal/MPS GPU detected)")
 		return nil
 	case "nvidia":
 		return runCheck(w, "nvidia-smi", "--query-gpu=name,driver_version,memory.total", "--format=csv,noheader")

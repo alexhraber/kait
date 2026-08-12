@@ -7,13 +7,15 @@ proof-backed delivery invariants.
 ## What This Project Is
 Kait is the open-source AI runtime for self-hosted Buildkite. It packages the
 agent, standard Python toolchain, hardware runtime, process supervision, and
-observability adapters into one deployable image.
+observability adapters into deployable Linux images or a reserved native macOS
+worker path.
 
 ## Runtime Boundary
-Kait is a Go supervisor packaged into hardware-specific Linux images. The
-supervisor owns process lifecycle, input validation, health endpoints, metrics,
-structured logs, and Buildkite agent invocation. Buildkite remains the system
-that dispatches and records jobs.
+Kait is a Go supervisor packaged into hardware-specific Linux images with a
+reserved native macOS arm64 Apple MPS worker path. The supervisor owns process lifecycle,
+input validation, health endpoints, metrics, structured logs, and Buildkite
+agent invocation. Buildkite remains the system that dispatches and records
+jobs.
 
 ## Principles
 - Simplicity: the Buildkite agent remains the job executor.
@@ -26,24 +28,29 @@ that dispatches and records jobs.
 
 ## Current Facts
 - Runtime/languages: Go supervisor, Ubuntu-based Docker images, Python venv.
-- Hardware surfaces: Ubuntu CPU, Apple Silicon Linux arm64 CPU, CUDA/NVIDIA,
-  ROCm/AMD, and Intel oneAPI.
+- Hardware surfaces: Ubuntu CPU containers, reserved native macOS Apple Silicon
+  MPS, CUDA/NVIDIA, ROCm/AMD, and Intel oneAPI.
 - Toolchain: Go/Buildkite in every image; the embedded capability model resolves
   the six profiles `slim`, `full`, `data-science`, `training`, `orchestration`,
-  and `serving` into ordered requirement manifests and smoke programs.
+  and `serving` into ordered requirement manifests and smoke programs. CPU
+  CPU containers are the active contract; Apple MPS and vendor-specific native
+  extensions remain operator extras until their inactive host paths are enabled
+  and proven.
 - Product type: self-hosted Buildkite AI runtime.
 
 ## Capability Contract
 Kait keeps hardware and workload capability as separate contracts. The
 authoritative `cmd/kait/capability-contract.json` model resolves the public
 profiles into dependency composition, compatibility variants, baked identity,
-smoke programs, and release matrix rows. Docker writes that identity to
-`/etc/kait/identity.json`; the Go supervisor refuses a missing or conflicting
-identity, smoke-tests representative programs, and advertises one canonical
-`kait.capability.<name>=true` Buildkite tag per declared capability. Pipeline
-selectors therefore consume an artifact-backed contract, while organizations
-can derive images from an immutable Kait base without rebuilding the common
-supervisor and hardware substrate.
+smoke programs, and release matrix rows. Docker writes container identity to
+`/etc/kait/identity.json`; native Apple bundles install the same identity under
+`/Library/Application Support/Kait`. The Go supervisor refuses a missing or
+conflicting identity, smoke-tests representative programs, and advertises
+canonical runtime, accelerator, hardware, and `kait.capability.<name>=true`
+Buildkite tags per declared capability. Pipeline selectors therefore consume
+an artifact-backed contract, while organizations can derive images from an
+immutable Kait base without rebuilding the common supervisor and hardware
+substrate.
 
 ## Architecture Map
 - `cmd/kait/`: Go supervisor split by concern — `main`, `config`, `contract`,
@@ -53,21 +60,22 @@ supervisor and hardware substrate.
   matrix, deploy paths, observability model, failure/exit codes, release flow).
 - `Dockerfile` + `docker-bake.hcl`: shared image implementation and matrix.
 - `requirements/`: leaf Python manifests selected by the embedded capability model.
-- `deploy/`: Docker launcher and Kubernetes one-shot Job template.
+- `deploy/`: Docker launcher, Kubernetes one-shot Job template, and native
+  macOS Apple MPS bundle scripts.
 - `examples/`: Buildkite agent-targeting snippets.
 - Root `README.md` + `CONTRIBUTING.md`: quick start and contributor entry;
   the README links to `docs/architecture.md` for the longer story.
 
-The image matrix uses Ubuntu/glibc for every target. Each hardware target
-projects six public profiles. **Published platforms (active release):** CPU
-images are `linux/amd64` + `linux/arm64`; Apple images are `linux/arm64`.
-NVIDIA, AMD, and Intel remain manual opt-ins and are `linux/amd64` contracts.
-Versioned tags are `<tag>-<hardware>-<profile>`; unversioned profile aliases
-track the latest successful release. A musl/Alpine image would be a separate
+The container matrix uses Ubuntu/glibc. Each hardware target projects six
+public profiles. **Published platforms (active release):** CPU images are
+`linux/amd64` + `linux/arm64`. Apple is reserved as a native `darwin/arm64`
+contract, while NVIDIA, AMD, and Intel remain manual opt-ins and are
+`linux/amd64` container contracts. Versioned container tags are
+`<tag>-<hardware>-<profile>`. A musl/Alpine image would be a separate
 dependency contract and is not treated as equivalent.
 
 Image delivery is host-matrixed. Active CI builds and runs `kait smoke` on
-native CPU and arm64 hosts. Accelerator definitions and their
+native Linux CPU hosts. Accelerator definitions and their
 `kait-nvidia` / `kait-amd` / `kait-intel` runner labels remain manual
 opt-ins so a green release cannot queue work on missing GPU infrastructure.
 
@@ -208,7 +216,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `c70f67f5dedfa45dbe5c2c90971c52f165d80c3755cabac1982850ba12279dc0`
-- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (4 files), `go.mod/` (1 files), `requirements/` (1 files)
+- Repository signal fingerprint: `09785926cd7f035e50e28ff508548568636bef945ba1806b74e7a1d1c19aa712`
+- Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

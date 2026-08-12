@@ -52,6 +52,16 @@ func TestCapabilityContractDefinesOfficialProfilesAndHardware(t *testing.T) {
 			}
 		}
 	}
+	apple, err := resolveContract("apple", "data-science", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if apple.Runtime != "native-macos" || apple.Accelerator != "mps" || apple.Requirements[0] != "apple-mps.txt" {
+		t.Fatalf("Apple contract = %+v, want native macOS MPS with apple-mps.txt", apple)
+	}
+	if authoritativeCapabilities.Hardware["apple"].Active {
+		t.Fatal("Apple hardware must remain inactive until a matching GPU execution surface is enabled")
+	}
 }
 
 func TestCapabilityCompositionIsIntentional(t *testing.T) {
@@ -129,6 +139,8 @@ func TestBuildAgentArgsUsesIdentityTagsAndRejectsOverrides(t *testing.T) {
 		"custom=true",
 		"kait=true",
 		"kait.hardware=cpu",
+		"kait.runtime=container",
+		"kait.accelerator=cpu",
 		"kait.profile=full",
 		"kait.capability.training=true",
 		"kait.capability.serving=true",
@@ -179,16 +191,76 @@ func TestMatrixIsDerivedFromContract(t *testing.T) {
 	if err := json.Unmarshal(output.Bytes(), &matrix); err != nil {
 		t.Fatal(err)
 	}
-	if len(matrix.Include) != 12 {
-		t.Fatalf("active matrix entries = %d, want 12", len(matrix.Include))
+	if len(matrix.Include) != 6 {
+		t.Fatalf("active matrix entries = %d, want 6", len(matrix.Include))
 	}
 	for _, entry := range matrix.Include {
-		if entry.Hardware != "cpu" && entry.Hardware != "apple" {
-			t.Fatalf("inactive hardware in active matrix: %+v", entry)
+		if entry.Hardware == "cpu" && entry.Runtime != "container" {
+			t.Fatalf("CPU matrix entry is not a container: %+v", entry)
+		}
+		if entry.Hardware == "apple" {
+			t.Fatalf("inactive Apple hardware appeared in active matrix: %+v", entry)
 		}
 		if entry.Capabilities == "" || entry.Target == "" {
 			t.Fatalf("incomplete matrix entry: %+v", entry)
 		}
+	}
+	var containers bytes.Buffer
+	if err := writeMatrix(&containers, []string{"--active-only", "--runtime", "container"}); err != nil {
+		t.Fatal(err)
+	}
+	var containerMatrix struct {
+		Include []matrixEntry `json:"include"`
+	}
+	if err := json.Unmarshal(containers.Bytes(), &containerMatrix); err != nil {
+		t.Fatal(err)
+	}
+	if len(containerMatrix.Include) != len(profileNames()) {
+		t.Fatalf("container matrix entries = %d, want %d", len(containerMatrix.Include), len(profileNames()))
+	}
+	for _, entry := range containerMatrix.Include {
+		if entry.Hardware != "cpu" || entry.Runtime != "container" {
+			t.Fatalf("non-container hardware in container matrix: %+v", entry)
+		}
+	}
+	var native bytes.Buffer
+	if err := writeMatrix(&native, []string{"--active-only", "--runtime", "native-macos"}); err != nil {
+		t.Fatal(err)
+	}
+	var nativeMatrix struct {
+		Include []matrixEntry `json:"include"`
+	}
+	if err := json.Unmarshal(native.Bytes(), &nativeMatrix); err != nil {
+		t.Fatal(err)
+	}
+	if len(nativeMatrix.Include) != 0 {
+		t.Fatalf("inactive native matrix entries = %d, want 0", len(nativeMatrix.Include))
+	}
+	var acceleratorContainers bytes.Buffer
+	if err := writeMatrix(&acceleratorContainers, []string{"--accelerators-only", "--runtime", "container"}); err != nil {
+		t.Fatal(err)
+	}
+	var acceleratorContainerMatrix struct {
+		Include []matrixEntry `json:"include"`
+	}
+	if err := json.Unmarshal(acceleratorContainers.Bytes(), &acceleratorContainerMatrix); err != nil {
+		t.Fatal(err)
+	}
+	if len(acceleratorContainerMatrix.Include) != 18 {
+		t.Fatalf("inactive container accelerator entries = %d, want 18", len(acceleratorContainerMatrix.Include))
+	}
+	for _, entry := range acceleratorContainerMatrix.Include {
+		if entry.Runtime != "container" || entry.Hardware == "cpu" || entry.Hardware == "apple" {
+			t.Fatalf("unexpected inactive container accelerator entry: %+v", entry)
+		}
+	}
+}
+
+func TestNativeIdentityCannotClaimContainerRuntime(t *testing.T) {
+	id := installTestIdentity(t, "apple", "full")
+	id.Runtime = "container"
+	if err := validateIdentity(id); err == nil || !strings.Contains(err.Error(), "runtime") {
+		t.Fatalf("validateIdentity() error = %v, want runtime mismatch", err)
 	}
 }
 

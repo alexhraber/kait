@@ -1,0 +1,6 @@
+# Native macOS/arm64 Apple GPU contract.
+# PyTorch's macOS wheel uses Apple's Metal Performance Shaders (MPS) backend;
+# the runtime smoke check must prove that the host can actually use it.
+torch==2.9.0
+torchvision==0.24.0
+torchaudio==2.9.0
