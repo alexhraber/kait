@@ -20,7 +20,7 @@
       "python": "python3",
       "base_image": "",
       "runner": "macos-14",
-      "active": true,
+      "active": false,
       "accelerator": "mps",
       "python_requirements": "apple-mps.txt",
       "supported_profiles": ["slim", "full", "data-science", "training", "orchestration", "serving"]

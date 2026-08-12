@@ -8,8 +8,8 @@
 
 Self-hosted [Buildkite](https://buildkite.com) agents with a batteries-included
 AI/ML execution environment. Choose the work capability and hardware; the
-selected container or native worker already contains the Buildkite integration,
-pinned Python toolchain, hardware contract, diagnostics, and lightweight
+selected Linux container already contains the Buildkite integration, pinned
+Python toolchain, hardware contract, diagnostics, and lightweight
 observability.
 
 Kait is pronounced “kite.” Its spelling keeps `ai` at the center, reflecting
@@ -39,10 +39,10 @@ For a training, orchestration, or serving job, choose the matching workload
 profile. The worker advertises the capabilities baked into that image; the
 pipeline does not install them at job start.
 
-Apple GPU workers are different by necessity: Apple Container runs Linux OCI
-images but does not expose Metal. Install the native macOS Apple MPS bundle
-from a release on an arm64 Mac, then run `deploy/macos/run.sh` with the
-Buildkite token.
+Apple is modeled as a native macOS/MPS hardware contract, but it is currently
+disabled like the other accelerator classes. On Apple Silicon, use the
+ordinary multi-architecture Linux CPU image through Docker or Apple Container
+and advertise `kait.hardware=cpu`.
 
 Pin a release for production:
 
@@ -85,17 +85,15 @@ through `kait doctor`, and advertises it to Buildkite as
 `kait.capability.<name>=true`. `slim` and `full` remain compatibility names;
 they describe package footprints, while capabilities describe usable work.
 
-Native Apple bundles record the same identity at
-`/Library/Application Support/Kait/identity.json` and additionally advertise
-`kait.runtime=native-macos` and `kait.accelerator=mps`.
+The native Apple MPS contract remains modeled for future re-enablement, but is
+inactive in CI and release matrices and is not a published execution surface.
 
 Versioned container tags use the six profiles, for example
-`v0.5.0-cpu-training`. Apple profiles are released as
-`kait-vX.Y.Z-apple-<profile>.tar.gz` native macOS bundles instead of OCI
-images. The old `v0.5.0-apple-*` tags remain Linux CPU compatibility artifacts
-and must not be used for GPU work. `slim` and `full` remain compatibility
-profiles, while workload-specific artifacts have their own identity and smoke
-proof.
+`v0.5.0-cpu-training`. Apple-specific profiles are currently not released;
+Apple Silicon users should use the `cpu-*` multi-architecture images.
+Previously published `apple-*` tags remain Linux CPU compatibility artifacts
+and are not GPU surfaces. `slim` and `full` remain compatibility profiles,
+while workload-specific artifacts have their own identity and smoke proof.
 
 NVIDIA / AMD / Intel bake targets exist for deliberate host testing but are
 **inactive** in automatic CI/release. Opt in with `make build-all-accelerators`
@@ -105,7 +103,6 @@ or the image workflow’s accelerator input.
 make build-plan   # print bake graph (Docker Buildx)
 make build-slim   # Linux CPU slim compatibility profile
 make build-full   # Linux CPU full compatibility profile
-make build-apple  # native macOS arm64 Apple MPS bundles
 make build-profiles # all six active Linux container profiles
 ```
 
@@ -139,9 +136,9 @@ declared capability and validates accelerator access when the profile includes
 the PyTorch data-science contract. A missing baked identity or runtime attempt
 to override it fails closed.
 
-On Apple, `kait doctor` requires native macOS arm64 and reports Metal/MPS GPU
-evidence. `kait smoke` exercises `torch.backends.mps` and performs a small MPS
-tensor operation for profiles containing `data-science`.
+On Apple Silicon, run the Linux CPU image and use the CPU hardware selector.
+Apple-native doctor/smoke execution is inactive until a matching GPU surface
+is deliberately re-enabled.
 
 Deeper layout: [docs/architecture.md](docs/architecture.md) and the
 [capability contract](docs/capabilities.md).
@@ -153,9 +150,6 @@ the execution-substrate perspective, capability contract, and architecture.
 
 - **Docker:** [`deploy/docker/run.sh`](deploy/docker/run.sh) — local agent launch.
   Use `deploy/docker/smoke.sh` for device/framework checks without a token.
-- **Native Apple GPU:** [`deploy/macos/install.sh`](deploy/macos/install.sh) and
-  [`deploy/macos/run.sh`](deploy/macos/run.sh) — install and launch the native
-  macOS arm64 MPS worker bundle.
 - **Kubernetes:** [`deploy/kubernetes/kait-agent.yaml`](deploy/kubernetes/kait-agent.yaml)
   — one-shot Job. See [`deploy/kubernetes/README.md`](deploy/kubernetes/README.md).
 - **Pipeline targeting:** [`examples/pipeline.yml`](examples/pipeline.yml)
@@ -174,16 +168,16 @@ workload promise. See [`examples/pipeline.yml`](examples/pipeline.yml) for a
 complete set of selectors. Kait reserves `kait.*` agent tags so custom tags
 cannot silently contradict the image identity.
 
-Apple GPU jobs add `kait.hardware: apple`, `kait.runtime: native-macos`, and
-`kait.accelerator: mps`; they target the native Buildkite macOS agent rather
-than an Ubuntu container.
+Apple Silicon CPU jobs use the same selector as any other CPU worker:
+`kait.hardware: cpu`. Apple GPU selectors remain unavailable until the native
+hardware contract is deliberately re-enabled.
 
 ## Toolchain layers
 
 | Layer | Installed when | Contents |
 | --- | --- | --- |
 | `slim.txt` + `<hardware>.txt` | Linux `data-science` | NumPy/pandas/sklearn/Jupyter + hardware PyTorch |
-| `apple-mps.txt` + `slim.txt` | Native Apple `data-science` | NumPy/pandas/sklearn/Jupyter + Metal/MPS PyTorch |
+| `apple-mps.txt` + `slim.txt` | Reserved native Apple contract | Inactive until Apple GPU execution is re-enabled |
 | `base.txt` + `training.txt` | `training` | Hugging Face and Lightning training stack, composed on data-science |
 | `orchestration.txt` | `orchestration` | Ray/MLflow/W&B |
 | `serving.txt` | `serving` | FastAPI/Gradio/Uvicorn |
@@ -237,8 +231,7 @@ Release Please opens a release PR from `main`. Merging it:
 1. Creates the semver tag and GitHub release
 2. Dispatches `release-images.yml` against that tag (`actions: write` required)
 3. Publishes active Linux container profiles to GHCR with provenance and SBOM
-4. Uploads native Apple MPS profile bundles to the GitHub release
-5. Annotates the GitHub release with pull/install commands
+4. Annotates the GitHub release with pull/install commands
 
 When a merged change has no conventional release unit, the same workflow opens
 an automatic patch release PR so infrastructure, documentation, and identity

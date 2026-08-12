@@ -33,18 +33,6 @@ steps:
       kait.hardware: cpu
       kait.capability.orchestration: "true"
 
-  - label: ":apple: Apple GPU evaluation"
-    key: "apple-evaluate"
-    command: "python evaluate.py"
-    depends_on: "train"
-    agents:
-      queue: apple-gpu
-      kait: "true"
-      kait.hardware: apple
-      kait.runtime: native-macos
-      kait.accelerator: mps
-      kait.capability.training: "true"
-
   - label: ":satellite: serve"
     command: "python serve.py"
     depends_on: "record"

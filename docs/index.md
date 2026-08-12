@@ -47,7 +47,7 @@ description: Capability-oriented AI and ML execution environments for self-hoste
   <a class="card" href="{{ '/architecture/' | relative_url }}">
     <h3>Architecture</h3>
     <p>
-      The supervisor, container/native matrix, identity model, deployment
+      The supervisor, container matrix, identity model, deployment
       paths, and release topology behind the contract.
     </p>
   </a>
@@ -71,7 +71,7 @@ steps:
 ~~~
 
 <p>
-  The selected container or native worker already contains the common
+  The selected container already contains the common
   execution substrate. The step does not spend its first minutes rebuilding
   Python, accelerator, and diagnostic machinery.
 </p>

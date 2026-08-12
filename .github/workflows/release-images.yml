@@ -16,7 +16,7 @@ on:
         default: false
         type: boolean
       enable_accelerators:
-        description: Publish inactive NVIDIA, AMD, and Intel profiles on matching hosts
+        description: Publish inactive Linux accelerator profiles (NVIDIA, AMD, and Intel)
         required: true
         default: false
         type: boolean
@@ -31,7 +31,6 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       containers: ${{ steps.matrix.outputs.containers }}
-      native: ${{ steps.matrix.outputs.native }}
       accelerators: ${{ steps.matrix.outputs.accelerators }}
     steps:
       - uses: actions/checkout@v4
@@ -45,9 +44,8 @@ jobs:
         run: |
           set -euo pipefail
           echo "containers=$(go run ./cmd/kait matrix --active-only --runtime container | tr -d '\n')" >> "$GITHUB_OUTPUT"
-          echo "native=$(go run ./cmd/kait matrix --active-only --runtime native-macos | tr -d '\n')" >> "$GITHUB_OUTPUT"
           if [[ "${ENABLE_ACCELERATORS:-false}" == "true" ]]; then
-            echo "accelerators=$(go run ./cmd/kait matrix --accelerators-only | tr -d '\n')" >> "$GITHUB_OUTPUT"
+            echo "accelerators=$(go run ./cmd/kait matrix --accelerators-only --runtime container | tr -d '\n')" >> "$GITHUB_OUTPUT"
           else
             echo 'accelerators={"include":[]}' >> "$GITHUB_OUTPUT"
           fi
@@ -120,53 +118,6 @@ jobs:
           docker pull --platform "${PLATFORM}" "${IMAGE}"
           docker run --rm --platform "${PLATFORM}" "${IMAGE}" doctor
           docker run --rm --platform "${PLATFORM}" "${IMAGE}" smoke
-
-  publish-native:
-    name: Publish native ${{ matrix.hardware }}-${{ matrix.profile }} bundle
-    needs: plan
-    runs-on: ${{ matrix.runner }}
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.native) }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - name: Set release metadata
-        id: release
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          version="${INPUT_VERSION:-${REF_NAME}}"
-          [[ "$version" == v* ]] || version="v$version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "runtime_version=${version#v}" >> "$GITHUB_OUTPUT"
-      - name: Package and smoke native Apple MPS worker
-        env:
-          PROFILE: ${{ matrix.profile }}
-          VERSION: ${{ steps.release.outputs.version }}
-          RUNNER_TEMP: ${{ runner.temp }}
-        run: |
-          set -euo pipefail
-          [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]
-          bundle="$RUNNER_TEMP/kait-${VERSION}-apple-${PROFILE}.tar.gz"
-          ./deploy/macos/package.sh --profile "$PROFILE" --version "$VERSION" --output "$bundle"
-          mkdir -p "$RUNNER_TEMP/kait-bundle"
-          tar -xzf "$bundle" -C "$RUNNER_TEMP/kait-bundle"
-          "$RUNNER_TEMP/kait-bundle/install.sh"
-          export PATH="/opt/kait/venv/bin:$PATH"
-          /usr/local/bin/kait doctor
-          /usr/local/bin/kait smoke
-      - uses: actions/upload-artifact@v4
-        with:
-          name: kait-apple-${{ matrix.profile }}
-          path: ${{ runner.temp }}/kait-${{ steps.release.outputs.version }}-apple-${{ matrix.profile }}.tar.gz
-          if-no-files-found: error
 
   verify:
     name: Verify released ${{ matrix.hardware }}-${{ matrix.profile }} manifest
@@ -259,16 +210,11 @@ jobs:
 
   github-release:
     name: Annotate GitHub release with profile images
-    needs: [verify, publish-native]
+    needs: [verify]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: native-artifacts
-          pattern: kait-apple-*
-          merge-multiple: true
       - name: Point release notes at published GHCR profiles
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -293,9 +239,6 @@ jobs:
           - \`${image}:${version}-<hardware>-orchestration\`
           - \`${image}:${version}-<hardware>-serving\`
 
-          Native Apple GPU profiles are uploaded as
-          \`kait-${version}-apple-<profile>.tar.gz\` release assets. They run on
-          native macOS arm64 hosts and validate PyTorch MPS access.
           EOF
           )
           if gh release view "$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -304,15 +247,3 @@ jobs:
               gh release edit "$version" --repo "$GITHUB_REPOSITORY" --notes "${body}${section}"
             fi
           fi
-      - name: Upload native Apple MPS bundles to the GitHub release
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="${INPUT_VERSION:-${REF_NAME}}"
-          [[ "$version" == v* ]] || version="v$version"
-          mapfile -t bundles < <(find native-artifacts -type f -name '*.tar.gz' -print)
-          [[ "${#bundles[@]}" -gt 0 ]]
-          gh release upload "$version" "${bundles[@]}" --repo "$GITHUB_REPOSITORY" --clobber

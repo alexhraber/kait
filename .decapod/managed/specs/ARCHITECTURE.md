@@ -7,12 +7,12 @@ proof-backed delivery invariants.
 ## What This Project Is
 Kait is the open-source AI runtime for self-hosted Buildkite. It packages the
 agent, standard Python toolchain, hardware runtime, process supervision, and
-observability adapters into deployable Linux images or native macOS worker
-bundles.
+observability adapters into deployable Linux images or a reserved native macOS
+worker path.
 
 ## Runtime Boundary
-Kait is a Go supervisor packaged into hardware-specific Linux images and native
-macOS arm64 Apple MPS worker bundles. The supervisor owns process lifecycle,
+Kait is a Go supervisor packaged into hardware-specific Linux images with a
+reserved native macOS arm64 Apple MPS worker path. The supervisor owns process lifecycle,
 input validation, health endpoints, metrics, structured logs, and Buildkite
 agent invocation. Buildkite remains the system that dispatches and records
 jobs.
@@ -28,14 +28,14 @@ jobs.
 
 ## Current Facts
 - Runtime/languages: Go supervisor, Ubuntu-based Docker images, Python venv.
-- Hardware surfaces: Ubuntu CPU containers, native macOS Apple Silicon MPS,
-  CUDA/NVIDIA, ROCm/AMD, and Intel oneAPI.
+- Hardware surfaces: Ubuntu CPU containers, reserved native macOS Apple Silicon
+  MPS, CUDA/NVIDIA, ROCm/AMD, and Intel oneAPI.
 - Toolchain: Go/Buildkite in every image; the embedded capability model resolves
   the six profiles `slim`, `full`, `data-science`, `training`, `orchestration`,
   and `serving` into ordered requirement manifests and smoke programs. CPU
-  containers and native Apple MPS bundles are the active contracts; vendor-
-  specific native extensions remain operator extras until their inactive host
-  paths are enabled and proven.
+  CPU containers are the active contract; Apple MPS and vendor-specific native
+  extensions remain operator extras until their inactive host paths are enabled
+  and proven.
 - Product type: self-hosted Buildkite AI runtime.
 
 ## Capability Contract
@@ -68,15 +68,14 @@ substrate.
 
 The container matrix uses Ubuntu/glibc. Each hardware target projects six
 public profiles. **Published platforms (active release):** CPU images are
-`linux/amd64` + `linux/arm64`; Apple profiles are native `darwin/arm64`
-bundles. NVIDIA, AMD, and Intel remain manual opt-ins and are `linux/amd64`
-container contracts. Versioned container tags are
-`<tag>-<hardware>-<profile>`; Apple bundles are immutable GitHub Release
-assets. A musl/Alpine image would be a separate dependency contract and is not
-treated as equivalent.
+`linux/amd64` + `linux/arm64`. Apple is reserved as a native `darwin/arm64`
+contract, while NVIDIA, AMD, and Intel remain manual opt-ins and are
+`linux/amd64` container contracts. Versioned container tags are
+`<tag>-<hardware>-<profile>`. A musl/Alpine image would be a separate
+dependency contract and is not treated as equivalent.
 
 Image delivery is host-matrixed. Active CI builds and runs `kait smoke` on
-native Linux CPU and macOS Apple MPS hosts. Accelerator definitions and their
+native Linux CPU hosts. Accelerator definitions and their
 `kait-nvidia` / `kait-amd` / `kait-intel` runner labels remain manual
 opt-ins so a green release cannot queue work on missing GPU infrastructure.
 
@@ -217,7 +216,7 @@ structured logs. The orchestrator owns restart and rollback.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `d6993cfb34484a0c37b542359b327a6d9ef2f62893edf89c327a8429a5e19e94`
+- Repository signal fingerprint: `09785926cd7f035e50e28ff508548568636bef945ba1806b74e7a1d1c19aa712`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

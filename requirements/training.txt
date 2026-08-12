@@ -1,4 +1,5 @@
-# Framework-neutral training stack shared by the active CPU and Apple images.
+# Framework-neutral training stack shared by active CPU images and reserved
+# accelerator contracts.
 accelerate==1.14.0
 datasets==5.0.1
 diffusers==0.39.0

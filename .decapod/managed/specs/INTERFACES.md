@@ -6,15 +6,15 @@
 - Secrets are supplied by the executor and never baked into an image.
 
 ## Runtime Interfaces
-Kait has an environment-driven container interface and a native macOS worker
-interface rather than an HTTP control-plane API. Both expose health and
-Prometheus-compatible metrics when enabled; both load an immutable contract
-identity from a platform-specific path.
+Kait has an environment-driven container interface and a reserved native macOS
+worker interface rather than an HTTP control-plane API. The active container
+surface exposes health and Prometheus-compatible metrics when enabled and loads
+an immutable contract identity.
 
 | Interface | Inputs | Outputs | Errors | Ownership |
 |---|---|---|---|---|
 | Container entrypoint | KAIT_*, BUILDKITE_*, optional mounted token | Buildkite agent process | Exit 2 for invalid config; child exit otherwise | Orchestrator restarts container |
-| Native Apple runner | macOS arm64, installed identity, BUILDKITE_* token | Native Buildkite agent process | Fails closed if MPS or identity is unavailable | Operator/queue owner restarts worker |
+| Native Apple runner | Reserved macOS arm64, installed identity, BUILDKITE_* token | Native Buildkite agent process | Inactive until Apple execution is enabled | Operator/queue owner restarts worker |
 | GET /healthz | HTTP request | 200 while supervisor is alive | 5xx if server unavailable | Kubernetes liveness |
 | GET /readyz | HTTP request | 200 after child starts | 503 before child starts | Kubernetes readiness |
 | GET /metrics | HTTP request | Prometheus text exposition | 5xx if server unavailable | Prometheus scrape |
@@ -55,15 +55,14 @@ ordering, checkout, command execution, artifact upload, and job status.
 | Target | Base and platform | Status | Hardware behavior |
 |---|---|---|---|
 | Linux `<hardware>-<profile>` | Contract model base/platform; six profiles per container hardware | CPU active; accelerators opt-in | Identity and manifests are resolved from the shared profile model |
-| Native `apple-<profile>` bundle | macOS arm64 + MPS, six profiles | Apple active | Identity and manifests are resolved from the shared profile model |
+| Native `apple-<profile>` bundle | macOS arm64 + MPS, six profiles | Apple inactive/reserved | Identity and manifests are resolved from the shared profile model |
 
 Inactive accelerator targets are available for deliberate local or manual
 workflow use. Their matching `kait-nvidia`, `kait-amd`, and `kait-intel`
 runner labels do not participate in ordinary CI or semantic-tag releases.
-Canonical container tags use `<tag>-<hardware>-<profile>`; Apple native
-profiles use `kait-<tag>-apple-<profile>.tar.gz` release assets. Historical
-Apple OCI aliases are CPU-only compatibility artifacts and cannot satisfy an
-MPS selector.
+Canonical container tags use `<tag>-<hardware>-<profile>`. Apple native
+profiles are not release assets while inactive. Historical Apple OCI aliases
+are CPU-only compatibility artifacts and cannot satisfy an MPS selector.
 
 ## Data Ownership
 - Buildkite is the source of truth for job state, logs, artifacts, and metadata.
@@ -126,7 +125,7 @@ MPS selector.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `d6993cfb34484a0c37b542359b327a6d9ef2f62893edf89c327a8429a5e19e94`
+- Repository signal fingerprint: `09785926cd7f035e50e28ff508548568636bef945ba1806b74e7a1d1c19aa712`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

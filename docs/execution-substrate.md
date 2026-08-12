@@ -103,7 +103,7 @@ properties exposed through agent tags correspond to reproducible execution
 environments. Kait provides that layer for AI and machine-learning workloads.
 
 Kait supplies capability-oriented runtime environments for self-hosted
-Buildkite agents. An official container or native worker bundle contains the
+Buildkite agents. An official container contains the
 Buildkite agent integration, a pinned Python toolchain, workload dependencies,
 hardware handling, diagnostics, and lightweight observability. The execution
 surface is prepared and validated before a job arrives, allowing the worker to
@@ -124,17 +124,17 @@ The current official workload capabilities are:
 | `serving` | FastAPI, Gradio, and Uvicorn application interfaces |
 
 The current hardware classes are CPU, Apple, NVIDIA, AMD, and Intel. Apple GPU
-execution is a native macOS arm64 surface: Apple Container can run Linux OCI
-images, but it does not expose Metal to those Linux VMs. Therefore Kait does
-not label an Ubuntu arm64 image as Apple GPU-capable. Apple profiles are
-released as native bundles, and their identity carries
-`kait.runtime=native-macos` and `kait.accelerator=mps`.
+execution is modeled as a native macOS arm64 surface: Apple Container can run
+Linux OCI images, but it does not expose Metal to those Linux VMs. The Apple
+contract is currently disabled like the other accelerator classes, so Kait
+does not build or release Apple profiles. Apple Silicon users run the active
+multi-architecture Linux CPU profiles and advertise `kait.hardware=cpu`.
 
 Kait publishes six explicit profiles across the hardware matrix: the
 compatibility profiles `slim` and `full`, plus the workload profiles
 `data-science`, `training`, `orchestration`, and `serving`. The workload
 profiles are real environment compositions, not aliases to a larger image.
-Linux profiles are OCI images and Apple profiles are native bundles. `training`
+Linux profiles are OCI images and the native Apple path is reserved. `training`
 composes the data-science foundation; `orchestration` and `serving` remain
 independent so their selectors describe meaningful execution environments;
 `full` composes all four official workload capabilities.
@@ -168,15 +168,16 @@ capability. Buildkite routes the job onto an eligible execution surface. Kait
 supplies the training runtime. The pipeline expresses the computational
 capability required for the job.
 
-The container's `/etc/kait/identity.json`, or the native bundle's
-`/Library/Application Support/Kait/identity.json`, is produced during
-construction by the same contract resolver that selects its manifests.
+The container's `/etc/kait/identity.json` is produced during construction by
+the same contract resolver that selects its manifests. The reserved native
+path uses the same resolver when it is re-enabled.
 `kait doctor` reports that identity and host hardware evidence, while
 `kait smoke` executes bounded local checks for every advertised capability.
 Runtime environment variables may assert the baked values but cannot create a
-capability claim or replace a different execution identity. On Apple, the
-data-science smoke path must prove `torch.backends.mps.is_available()` and
-execute a small tensor operation on the MPS device.
+capability claim or replace a different execution identity. Before Apple is
+re-enabled, its data-science smoke path must prove
+`torch.backends.mps.is_available()` and execute a small tensor operation on
+the MPS device.
 
 This is the operating model Kait makes concrete:
 
@@ -279,10 +280,11 @@ execution surfaces with explicit provisioning boundaries.
 
 ## Direct use and downstream derivation
 
-Kait supports direct execution through an official container or native worker
-bundle. An organization can run a Linux image as a self-hosted Buildkite
-worker, or install the Apple bundle on a compatible macOS arm64 host, then
-target the advertised hardware and workload capabilities from a pipeline.
+Kait supports direct execution through an official Linux container. An
+organization can run a Linux image as a self-hosted Buildkite worker, including
+on Apple Silicon through Docker or Apple Container, then target the advertised
+CPU hardware and workload capabilities from a pipeline. The native Apple
+bundle remains reserved while Apple is inactive.
 
 Kait also serves as a base layer for organizational container environments:
 

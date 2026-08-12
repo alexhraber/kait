@@ -86,7 +86,7 @@ case "${hardware}" in
   intel) args+=(--device /dev/dri --group-add video) ;;
   cpu) ;;
   apple)
-    echo "Apple GPU workers require the native macOS arm64 bundle; Apple Container/Linux OCI images do not expose Metal/MPS" >&2
+    echo "Apple hardware is inactive; use the multi-architecture Linux CPU image with KAIT_HARDWARE=cpu" >&2
     exit 2
     ;;
   *) echo "unsupported KAIT_HARDWARE=${hardware}" >&2; exit 2 ;;

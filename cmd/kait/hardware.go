@@ -56,11 +56,17 @@ func detectAppleGPU() bool {
 		return false
 	}
 	output, err := exec.Command("system_profiler", "SPDisplaysDataType", "-json").Output()
-	if err != nil {
-		return false
+	if err == nil {
+		text := strings.ToLower(string(output))
+		if strings.Contains(text, "apple") && (strings.Contains(text, "gpu") || strings.Contains(text, "spdisplays")) {
+			return true
+		}
 	}
-	text := string(output)
-	return strings.Contains(text, "Apple") && strings.Contains(text, "spdisplays")
+	// Headless macOS runners may omit display-tree data even though the Apple
+	// Silicon GPU is present. Apple arm64 always includes the Metal GPU; the
+	// data-science smoke path separately proves that PyTorch can use MPS.
+	output, err = exec.Command("sysctl", "-n", "hw.optional.arm64").Output()
+	return err == nil && strings.TrimSpace(string(output)) == "1"
 }
 
 func commandAvailable(name string) bool {

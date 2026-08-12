@@ -7,8 +7,9 @@ description: The workload and hardware capability contract exposed by Kait image
 # Kait capability contract
 
 `cmd/kait/capability-contract.json` is Kait's single capability model. The
-embedded Go supervisor, container Dockerfile, native macOS bundle, smoke
-checks, Buildkite tags, and CI/release matrix all consume the same definitions.
+embedded Go supervisor, container Dockerfile, reserved native macOS bundle,
+smoke checks, Buildkite tags, and CI/release matrix all consume the same
+definitions.
 A package appearing in a manifest is not sufficient: the profile must also
 have an immutable identity, a runtime check, and a schedulable tag.
 
@@ -16,7 +17,7 @@ have an immutable identity, a runtime check, and a schedulable tag.
 
 The public execution profiles are `slim`, `full`, and the individual workload
 profiles `data-science`, `training`, `orchestration`, and `serving`. Container
-profiles are OCI images; Apple profiles are native macOS worker bundles.
+profiles are OCI images. Apple native profiles are reserved and inactive.
 
 | Profile | Baked workload capabilities | Runtime contract |
 | --- | --- | --- |
@@ -39,7 +40,7 @@ Hardware remains separate from workload capability:
 | Hardware | Runtime contract | Current build/release status |
 | --- | --- | --- |
 | `cpu` | Ubuntu 24.04, CPU PyTorch, amd64/arm64 | Active |
-| `apple` | Native macOS arm64 execution with Apple Metal/MPS GPU access | Active; native bundle |
+| `apple` | Reserved native macOS arm64 Apple Metal/MPS execution | Inactive; use CPU Linux on Apple Silicon |
 | `nvidia` | CUDA 12.6.3 and CUDA PyTorch | Explicit opt-in; matching host required for accelerator smoke |
 | `amd` | ROCm 6.2.4 and ROCm PyTorch | Explicit opt-in; matching host required for accelerator smoke |
 | `intel` | oneAPI Base Toolkit and XPU PyTorch | Explicit opt-in; matching host required for accelerator smoke |
@@ -49,18 +50,16 @@ does not turn a missing physical accelerator into a passing hardware result:
 `kait doctor` reports the host evidence and `kait smoke` fails when a profile
 that includes data-science cannot see its required accelerator.
 
-The old `apple-*` OCI tags from releases before native MPS support are Linux CPU
-images. They remain pullable for compatibility, but they must not be selected
-for GPU work. Apple Container can run those Linux images, but it does not
-provide Metal GPU passthrough. New Apple profiles are native macOS worker
-bundles so the Buildkite agent and PyTorch process run in the macOS process
-environment where MPS is available.
+The old `apple-*` OCI tags are Linux CPU images. They remain pullable for
+compatibility, but they are not Apple GPU surfaces. Apple Container can run
+Linux OCI images, but it does not provide Metal GPU passthrough. Current Apple
+Silicon use should select the ordinary multi-architecture `cpu-*` image and
+the `kait.hardware=cpu` contract. Native Apple MPS remains dormant until a
+matching execution surface is deliberately re-enabled.
 
 ## Baked execution identity
 
-Every official container contains `/etc/kait/identity.json`. Native Apple
-bundles install the same contract identity at
-`/Library/Application Support/Kait/identity.json`. Both are produced by the
+Every official container contains `/etc/kait/identity.json`, produced by the
 embedded contract resolver:
 
 ```json
@@ -76,9 +75,10 @@ embedded contract resolver:
 }
 ```
 
-Apple MPS identities instead contain `runtime: native-macos`,
-`accelerator: mps`, and `requirements: ["apple-mps.txt", ...]`. The supervisor
-refuses to start without that installed identity. `KAIT_HARDWARE`,
+The reserved Apple MPS identity would contain `runtime: native-macos`,
+`accelerator: mps`, and `requirements: ["apple-mps.txt", ...]`; it is not in
+the active release matrix. The supervisor refuses to start without an
+installed identity. `KAIT_HARDWARE`,
 `KAIT_VARIANT`, `KAIT_PROFILE`, and `KAIT_CAPABILITIES` may assert or constrain
 the identity, but cannot create or replace it. Conflicts fail closed before
 the Buildkite agent starts. Runtime identity also validates the execution
@@ -117,14 +117,12 @@ steps:
 selectors because Kait does not assume that the execution graph was known at
 image-build time.
 
-Apple GPU work targets the native surface in exactly the same way:
+Apple Silicon CPU work targets the ordinary CPU surface:
 
 ```yaml
 agents:
-  queue: apple-gpu
-  kait.hardware: apple
-  kait.runtime: native-macos
-  kait.accelerator: mps
+  queue: ai
+  kait.hardware: cpu
   kait.capability.training: "true"
 ```
 
@@ -146,11 +144,10 @@ experiment is required.
 
 ## Direct use and derivation
 
-Use an immutable container profile directly as a self-hosted Buildkite worker,
-or install an immutable native Apple bundle on a compatible macOS host. The
-native bundle includes the Kait supervisor, contract identity, and ordered
-Python manifests; the Buildkite macOS agent is installed with the host's
-normal agent policy.
+Use an immutable container profile directly as a self-hosted Buildkite worker.
+On Apple Silicon, run the multi-architecture Linux CPU image through Docker or
+Apple Container. Native Apple bundles remain reserved until the GPU execution
+surface is re-enabled.
 
 Container derivation remains:
 

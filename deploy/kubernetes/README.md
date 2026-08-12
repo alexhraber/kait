@@ -29,9 +29,9 @@ Agent Stack only.
 Change `image`, `KAIT_HARDWARE`, `KAIT_VARIANT`, `KAIT_PROFILE`, capability
 tags, and resources for the host class. Kubernetes supports the Linux container
 surface: CPU (`linux/amd64` + `arm64`) and explicit accelerator opt-ins with the
-matching device plugin. Apple GPU workers are not Kubernetes images; use the
-native macOS arm64 bundle and Buildkite macOS agent described in
-`deploy/macos/`. The image's baked identity must agree with the values and tags
+matching device plugin. Apple is currently inactive; Apple Silicon CPU users
+should use the CPU image, while the reserved native macOS bundle is not a
+Kubernetes path. The image's baked identity must agree with the values and tags
 in the manifest.
 
 Pipeline side:

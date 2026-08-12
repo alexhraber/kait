@@ -24,15 +24,15 @@ ordinary Buildkite jobs in the validated execution surface.
 
 ## What This Project Is
 A small Go supervisor (`cmd/kait`) packaged into hardware-specific Linux
-images and native macOS Apple MPS worker bundles. Buildkite remains the
+images and a reserved native macOS Apple MPS worker path. Buildkite remains the
 orchestrator; Kait owns the authoritative capability model, profile
 composition, immutable identity, process supervision, input validation,
 health/metrics, and diagnostic subcommands (`doctor`, `smoke`, `hardware`).
-Active delivery targets are Linux CPU containers and native macOS arm64 Apple
-GPU workers. NVIDIA, AMD, and Intel profiles stay available for deliberate host
-testing but are inactive in automatic CI and release until matching runners
-exist. Previously published Linux `apple-*` images are CPU-only compatibility
-artifacts, not Apple GPU surfaces.
+Active delivery targets are Linux CPU containers. Apple, NVIDIA, AMD, and Intel
+profiles remain available for deliberate host testing but are inactive in
+automatic CI and release until matching execution surfaces exist. Previously
+published Linux `apple-*` images are CPU-only compatibility artifacts, not
+Apple GPU surfaces.
 
 Key operating facts:
 - **Release images:** Release Please tags must dispatch `release-images.yml`
@@ -108,7 +108,7 @@ flowchart LR
 - [x] Buildkite cluster tokens are supplied at runtime through an environment variable or mounted file.
 - [x] Vendor collectors/agents own Datadog and Splunk credentials; Kait emits compatible runtime signals.
 - [ ] Exact accelerator base-image availability is verified by image CI and may require operator overrides.
-- [x] Ubuntu/glibc is the common Linux image contract; Apple MPS runs in the native macOS process environment because Apple Container does not expose Metal to Linux containers.
+- [x] Ubuntu/glibc is the common Linux image contract; Apple MPS is reserved because Apple Container does not expose Metal to Linux containers, so Apple Silicon currently uses the CPU Linux contract.
 
 ### Confidence & Risk Level
 - **Confidence**: Medium (Rationale: runtime contract and local tests are concrete; accelerator builds depend on upstream base images.)
@@ -134,7 +134,7 @@ flowchart LR
 ### Proof Required Before Completion
 - [ ] GOCACHE=/tmp/kait-gocache go test ./... passes.
 - [ ] `kait matrix` resolves all 30 structural hardware/profile combinations, separates container/native rows, and `docker buildx bake --print` renders only container targets.
-- [ ] GitHub Actions routes active Linux CPU containers and native Apple MPS workers to matching hosts; accelerator work is routed to explicit host labels only after the inactive manual path is enabled, rather than relying on emulation for device proof.
+- [ ] GitHub Actions routes active Linux CPU containers to matching hosts; Apple and other accelerator work is routed to explicit host labels only after its inactive manual path is enabled, rather than relying on emulation for device proof.
 - [ ] decapod validate passes after generated artifacts and living specs are refreshed.
 
 ## Tradeoffs Register
@@ -158,7 +158,7 @@ flowchart LR
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `d6993cfb34484a0c37b542359b327a6d9ef2f62893edf89c327a8429a5e19e94`
+- Repository signal fingerprint: `09785926cd7f035e50e28ff508548568636bef945ba1806b74e7a1d1c19aa712`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

@@ -11,14 +11,14 @@
 ## Deployment Model
 Kait runs as a long-lived self-hosted agent or a one-shot Kubernetes Job.
 Docker hosts and Kubernetes node pools select Linux image tags and device
-resources; native macOS arm64 hosts install Apple MPS bundles. The Buildkite
-queue selects where work is dispatched.
+resources. The native macOS Apple path is reserved while inactive. The
+Buildkite queue selects where work is dispatched.
 
 Semantic-tag publication uses the matching native GitHub host for each active
 surface: Linux containers are built on `ubuntu-24.04` for their declared Linux
-platforms, and Apple bundles are built and smoked on `macos-14` for
-`darwin/arm64`. Release publication does not rely on QEMU or a Linux VM to
-prove Apple MPS access.
+platforms. Apple and other accelerator publication remains disabled until its
+matching execution surface is enabled. Release publication does not rely on
+QEMU or a Linux VM to prove accelerator access.
 
 Release promotion is a two-stage workflow. A push to `main` runs Release Please,
 which creates or updates the release PR for ordinary merged changes. Merging
@@ -42,7 +42,7 @@ container variants also contain the pinned Linux Buildkite agent, while the
 native bundle uses the host's native macOS agent. `*-slim` stops after the compact Python foundation; `*-full`
 also installs portable data/science foundations, the Hugging Face training
 stack, experiment/distributed orchestration, and serving interfaces. CPU Linux
-containers and Apple native MPS bundles are active contracts; vendor-specific
+CPU Linux containers are the active contract; Apple MPS and vendor-specific
 native extensions remain operator extras until their inactive host paths are
 enabled and proven.
 Release Please requires the repository permission for `GITHUB_TOKEN` to create
@@ -54,12 +54,12 @@ image reference, then places `KAIT_CONTAINER_COMMAND` after the image. This
 keeps agent launches and one-shot commands such as `smoke` valid for Docker
 and Kubernetes executor workflows.
 
-## Native Apple Launch Wrapper
+## Reserved Native Apple Launch Wrapper
 `deploy/macos/install.sh` installs the immutable Apple identity, ordered Python
-manifests, and Darwin/arm64 supervisor. `deploy/macos/run.sh` asserts the
-Apple hardware class, preserves the host's native Metal environment, and
-starts the host-installed Buildkite agent. It intentionally does not launch an
-Apple GPU job inside an OCI container.
+manifests, and Darwin/arm64 supervisor when the inactive Apple contract is
+re-enabled. `deploy/macos/run.sh` asserts the Apple hardware class and starts
+the host-installed Buildkite agent. It intentionally does not launch an Apple
+GPU job inside an OCI container.
 
 ## Service Level Objectives
 | SLI | Initial target | Measurement |
@@ -116,7 +116,7 @@ user-facing conventional types (`feat`, `fix`, `perf`). Squash titles of
 `chore:` / `docs:` / `ci:` produce a successful Release PR workflow run with
 **no** release PR and a skipped image dispatch (observed after #13).
 
-After active container images and native Apple bundles pass verify, the
+After active container images pass verify, the
 **Annotate GitHub release with image tags**
 job appends a Container images section (pull table + example) to the existing
 release body. It uses `gh release edit --notes-file` (or `create` only if the
@@ -134,9 +134,8 @@ return 404 depending on token scopes.
 
 ## Rollout and Recovery
 - Publish immutable `<tag>-<hardware>-<profile>` container tags and
-  `kait-<tag>-apple-<profile>.tar.gz` native bundles; ordinary semantic-tag
-  releases contain active CPU containers and Apple MPS assets. Historical
-  Apple OCI aliases remain CPU-only compatibility artifacts.
+  releases contain active CPU containers. Historical Apple OCI aliases remain
+  CPU-only compatibility artifacts.
 - Start one canary agent per hardware queue.
 - Verify health, agent registration, and a reference job.
 - Roll the queue to the new image after the canary is healthy.
@@ -188,7 +187,7 @@ vendor device runtime.
 
 ## Codebase Attestation
 
-- Repository signal fingerprint: `d6993cfb34484a0c37b542359b327a6d9ef2f62893edf89c327a8429a5e19e94`
+- Repository signal fingerprint: `09785926cd7f035e50e28ff508548568636bef945ba1806b74e7a1d1c19aa712`
 - Significant implementation surfaces: `.github/` (4 files), `Dockerfile/` (1 files), `Makefile/` (1 files), `README.md/` (1 files), `deploy/` (7 files), `go.mod/` (1 files), `requirements/` (1 files)
 - Refreshed from the current codebase by `decapod specs.refresh`
 <!-- decapod:codebase-attestation:end -->

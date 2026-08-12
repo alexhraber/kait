@@ -6,9 +6,9 @@ description: Kait supervisor, capability contract, deployment, and release archi
 
 # Architecture
 
-Kait is a thin Go supervisor packaged into hardware-specific Linux images and
-native macOS worker bundles. Buildkite remains the orchestrator; Kait owns the
-reproducible runtime and hardware contract, process lifecycle, identity
+Kait is a thin Go supervisor packaged into hardware-specific Linux images and a
+reserved native macOS worker bundle path. Buildkite remains the orchestrator;
+Kait owns the reproducible runtime and hardware contract, process lifecycle, identity
 validation, health/metrics, and diagnostic subcommands.
 
 ## Operating boundary
@@ -64,9 +64,9 @@ capability model
 ```
 
 `docker-bake.hcl` is the release-facing projection for container rows. The
-native macOS packager is the release-facing projection for Apple rows. Both
-consume the same six profiles; neither defines an alternative capability
-vocabulary.
+native macOS packager is the reserved projection for Apple rows. Both consume
+the same six profiles; neither defines an alternative capability vocabulary.
+Apple is currently inactive, like the other accelerator classes.
 
 ## Identity and startup
 
@@ -140,7 +140,7 @@ matching. Kait does not need to know the graph at image-build time.
 | Hardware | Base/runtime | Platforms | Status |
 | --- | --- | --- | --- |
 | CPU | Ubuntu 24.04 + CPU PyTorch when required | amd64, arm64 | Active |
-| Apple | Native macOS arm64 + Metal/MPS PyTorch when required | darwin/arm64 | Active; native worker bundle |
+| Apple | Native macOS arm64 + Metal/MPS PyTorch when required | darwin/arm64 | Inactive; reserved native worker bundle |
 | NVIDIA | CUDA 12.6.3 + CUDA PyTorch when required | amd64 | Explicit opt-in |
 | AMD | ROCm 6.2.4 + ROCm PyTorch when required | amd64 | Explicit opt-in |
 | Intel | oneAPI Base Toolkit + XPU PyTorch when required | amd64 | Explicit opt-in |
@@ -165,16 +165,16 @@ credentials remain outside the image.
 
 The Docker launcher chooses `hardware-profile` tags and forwards the profile
 assertion. Kubernetes uses the same identity-derived tags and profile values.
-Buildkite jobs run in the selected official container or native worker bundle;
-they do not pull or rebuild Kait inside each step.
+Buildkite jobs run in the selected official container; the native worker bundle
+path is reserved while Apple is inactive. Jobs do not pull or rebuild Kait
+inside each step.
 
-CI asks `kait matrix --active-only --runtime container` for Linux images and
-`--runtime native-macos` for Apple MPS workers. The opt-in accelerator job asks
-for inactive container hardware rows only when matching runner labels are
-intentionally enabled. Release publishes immutable container
-`<version>-<hardware>-<profile>` tags and uploads immutable
-`kait-<version>-apple-<profile>.tar.gz` native bundles. Historical Apple OCI
-aliases are compatibility CPU artifacts, not the Apple GPU release surface.
+CI asks `kait matrix --active-only --runtime container` for the active Linux CPU
+images. The opt-in accelerator job asks for inactive hardware rows only when
+matching runner labels are intentionally enabled. Release publishes immutable
+container `<version>-<hardware>-<profile>` tags. Apple MPS bundles remain
+prepared in source but are not built or released while Apple is inactive;
+Apple Silicon CPU users use the multi-architecture CPU images.
 
 ## Downstream derivation
 

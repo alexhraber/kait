@@ -59,6 +59,9 @@ func TestCapabilityContractDefinesOfficialProfilesAndHardware(t *testing.T) {
 	if apple.Runtime != "native-macos" || apple.Accelerator != "mps" || apple.Requirements[0] != "apple-mps.txt" {
 		t.Fatalf("Apple contract = %+v, want native macOS MPS with apple-mps.txt", apple)
 	}
+	if authoritativeCapabilities.Hardware["apple"].Active {
+		t.Fatal("Apple hardware must remain inactive until a matching GPU execution surface is enabled")
+	}
 }
 
 func TestCapabilityCompositionIsIntentional(t *testing.T) {
@@ -188,15 +191,15 @@ func TestMatrixIsDerivedFromContract(t *testing.T) {
 	if err := json.Unmarshal(output.Bytes(), &matrix); err != nil {
 		t.Fatal(err)
 	}
-	if len(matrix.Include) != 12 {
-		t.Fatalf("active matrix entries = %d, want 12", len(matrix.Include))
+	if len(matrix.Include) != 6 {
+		t.Fatalf("active matrix entries = %d, want 6", len(matrix.Include))
 	}
 	for _, entry := range matrix.Include {
 		if entry.Hardware == "cpu" && entry.Runtime != "container" {
 			t.Fatalf("CPU matrix entry is not a container: %+v", entry)
 		}
-		if entry.Hardware == "apple" && (entry.Runtime != "native-macos" || entry.Accelerator != "mps") {
-			t.Fatalf("Apple matrix entry is not native MPS: %+v", entry)
+		if entry.Hardware == "apple" {
+			t.Fatalf("inactive Apple hardware appeared in active matrix: %+v", entry)
 		}
 		if entry.Capabilities == "" || entry.Target == "" {
 			t.Fatalf("incomplete matrix entry: %+v", entry)
@@ -230,12 +233,25 @@ func TestMatrixIsDerivedFromContract(t *testing.T) {
 	if err := json.Unmarshal(native.Bytes(), &nativeMatrix); err != nil {
 		t.Fatal(err)
 	}
-	if len(nativeMatrix.Include) != len(profileNames()) {
-		t.Fatalf("native matrix entries = %d, want %d", len(nativeMatrix.Include), len(profileNames()))
+	if len(nativeMatrix.Include) != 0 {
+		t.Fatalf("inactive native matrix entries = %d, want 0", len(nativeMatrix.Include))
 	}
-	for _, entry := range nativeMatrix.Include {
-		if entry.Hardware != "apple" || entry.Runtime != "native-macos" {
-			t.Fatalf("unexpected native matrix entry: %+v", entry)
+	var acceleratorContainers bytes.Buffer
+	if err := writeMatrix(&acceleratorContainers, []string{"--accelerators-only", "--runtime", "container"}); err != nil {
+		t.Fatal(err)
+	}
+	var acceleratorContainerMatrix struct {
+		Include []matrixEntry `json:"include"`
+	}
+	if err := json.Unmarshal(acceleratorContainers.Bytes(), &acceleratorContainerMatrix); err != nil {
+		t.Fatal(err)
+	}
+	if len(acceleratorContainerMatrix.Include) != 18 {
+		t.Fatalf("inactive container accelerator entries = %d, want 18", len(acceleratorContainerMatrix.Include))
+	}
+	for _, entry := range acceleratorContainerMatrix.Include {
+		if entry.Runtime != "container" || entry.Hardware == "cpu" || entry.Hardware == "apple" {
+			t.Fatalf("unexpected inactive container accelerator entry: %+v", entry)
 		}
 	}
 }
