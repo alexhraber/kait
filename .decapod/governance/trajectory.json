@@ -35,6 +35,7 @@
   "evidence": [
     "validation epoch ve_5b6e0e36fb225f8a completed with zero failures",
     "validation epoch ve_71b04300ea538cd4 completed with zero failures",
+    "validation epoch ve_a9b70f3b95ebeca5 completed with zero failures",
     "validation epoch ve_afc50909e5e1bf10 completed with zero failures"
   ],
   "shortcut_risk_signals": [],
@@ -46,7 +47,7 @@
     "shortcut_risk": "supported",
     "completion_proof": "supported"
   },
-  "artifact_hash": "sha256:c8cafeeaaad33c0873b7d058df14d5d71f10f9a4094ebf70809ebec1c1bebe82",
+  "artifact_hash": "sha256:b4a0de5c22ab3bbb7885c8ae2c9227374c294f1c7e2997e9403cbe12c9a852a3",
   "custody": {
     "schema_version": "1.0.0",
     "intents": {
@@ -121,6 +122,13 @@
       {
         "sequence": 9,
         "event_id": "event:9",
+        "intent_id": "intent:validation_01KZSK8319CGAFKV76A14GDD57",
+        "kind": "trajectory_step_recorded",
+        "detail": "trajectory:validation_01KZSK8319CGAFKV76A14GDD57"
+      },
+      {
+        "sequence": 10,
+        "event_id": "event:10",
         "intent_id": "intent:validation_01KZSK8319CGAFKV76A14GDD57",
         "kind": "trajectory_step_recorded",
         "detail": "trajectory:validation_01KZSK8319CGAFKV76A14GDD57"
@@ -245,12 +253,31 @@
             ],
             "validation_findings": [],
             "custody_event_id": "event:9"
+          },
+          {
+            "sequence": 10,
+            "action": "validation",
+            "command": "decapod validate",
+            "scope": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json"
+            ],
+            "observations": [
+              ".decapod/governance/trajectory.json",
+              ".decapod/governance/validation.json",
+              "validation epoch ve_a9b70f3b95ebeca5 completed with zero failures"
+            ],
+            "proof_refs": [
+              "decapod validate"
+            ],
+            "validation_findings": [],
+            "custody_event_id": "event:10"
           }
         ]
       }
     },
     "summaries": {},
     "knowledge_candidates": [],
-    "next_sequence": 9
+    "next_sequence": 10
   }
 }
