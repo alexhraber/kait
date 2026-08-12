@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/alexhraber/kait/compare/v0.5.0...v0.6.0) (2026-08-12)
+
+
+### Features
+
+* add native Apple MPS execution surface ([674ab65](https://github.com/alexhraber/kait/commit/674ab657abb43f0ddeeca10cc8290658343c5425))
+* add native Apple MPS execution surface ([ac29b84](https://github.com/alexhraber/kait/commit/ac29b8469be1faa6cc25780a9e5bc254c7478c36))
+
+
+### Bug Fixes
+
+* keep Apple execution surface inactive ([0c96174](https://github.com/alexhraber/kait/commit/0c96174b5fab23243799f137ba94a7f5bde97ea1))
+
 ## [0.5.0](https://github.com/alexhraber/kait/compare/v0.4.0...v0.5.0) (2026-08-11)
 
 
